@@ -1,13 +1,35 @@
 import { app, BrowserWindow } from "electron";
 
 const FOREGROUND_WINDOW_SIZE = { width: 1280, height: 900 };
-const GHOST_TAB_PROTOTYPE_URL = "https://example.com/";
+const GHOST_TAB_PROTOTYPE_URL = "https://google.com/";
 const SMOKE_TEST_URL = "about:blank";
+const DEFAULT_REMOTE_DEBUGGING_PORT = "9333";
 
 const isSmokeTest = app.commandLine.hasSwitch("smoke-test");
+const keepAlive = app.commandLine.hasSwitch("keep-alive");
+const isCdpHost = app.commandLine.hasSwitch("cdp-host");
+const showGhostTab = app.commandLine.hasSwitch("show-ghost-tab");
+
+if (isCdpHost) {
+  app.disableHardwareAcceleration();
+
+  if (!app.commandLine.hasSwitch("disable-gpu")) {
+    app.commandLine.appendSwitch("disable-gpu");
+  }
+
+  if (!app.commandLine.hasSwitch("remote-debugging-port")) {
+    const requestedPort = process.env.GHOST_REMOTE_DEBUGGING_PORT ?? DEFAULT_REMOTE_DEBUGGING_PORT;
+    app.commandLine.appendSwitch("remote-debugging-port", requestedPort);
+  }
+}
 
 let foregroundWindow: BrowserWindow | null = null;
 let ghostTabWindow: BrowserWindow | null = null;
+
+function getRemoteDebuggingPort(): string | null {
+  const configuredPort = app.commandLine.getSwitchValue("remote-debugging-port");
+  return configuredPort.length > 0 ? configuredPort : null;
+}
 
 function logHeadlessModeStatus(): void {
   const headlessMode = app.commandLine.getSwitchValue("headless");
@@ -33,13 +55,15 @@ async function createForegroundWindow(): Promise<BrowserWindow> {
   return window;
 }
 
-async function createHeadlessGhostTab(url: string): Promise<BrowserWindow> {
+async function createGhostTab(url: string): Promise<BrowserWindow> {
   const ghostWindow = new BrowserWindow({
     ...FOREGROUND_WINDOW_SIZE,
-    show: false,
-    webPreferences: {
-      offscreen: true
-    }
+    show: showGhostTab,
+    webPreferences: showGhostTab
+      ? undefined
+      : {
+          offscreen: true
+        }
   });
 
   ghostWindow.webContents.on("did-finish-load", () => {
@@ -60,18 +84,27 @@ async function createHeadlessGhostTab(url: string): Promise<BrowserWindow> {
 async function bootstrap(): Promise<void> {
   logHeadlessModeStatus();
 
-  foregroundWindow = await createForegroundWindow();
-  foregroundWindow.on("closed", () => {
-    foregroundWindow = null;
-  });
+  if (!isCdpHost) {
+    foregroundWindow = await createForegroundWindow();
+    foregroundWindow.on("closed", () => {
+      foregroundWindow = null;
+    });
+  }
 
-  const ghostTabUrl = isSmokeTest ? SMOKE_TEST_URL : GHOST_TAB_PROTOTYPE_URL;
-  ghostTabWindow = await createHeadlessGhostTab(ghostTabUrl);
+  const ghostTabUrl = isCdpHost || isSmokeTest ? SMOKE_TEST_URL : GHOST_TAB_PROTOTYPE_URL;
+  ghostTabWindow = await createGhostTab(ghostTabUrl);
   ghostTabWindow.on("closed", () => {
     ghostTabWindow = null;
   });
 
-  if (isSmokeTest) {
+  if (isCdpHost) {
+    const remoteDebugPort = getRemoteDebuggingPort();
+    if (remoteDebugPort) {
+      console.info(`[electron] CDP host listening on http://127.0.0.1:${remoteDebugPort}/json/version`);
+    }
+  }
+
+  if (isSmokeTest && !keepAlive) {
     app.quit();
   }
 }

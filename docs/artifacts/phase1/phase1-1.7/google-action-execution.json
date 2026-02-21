@@ -1,0 +1,60 @@
+{
+  "milestone": "1.7",
+  "targetUrl": "https://www.google.com/",
+  "searchTarget": {
+    "x": 567.68359375,
+    "y": 402
+  },
+  "summary": {
+    "click": {
+      "status": "acted",
+      "action": "CLICK",
+      "currentUrl": "https://www.google.com/",
+      "navigationObserved": false,
+      "domMutationObserved": false,
+      "extractedData": null,
+      "message": null
+    },
+    "type": {
+      "status": "acted",
+      "action": "TYPE",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=9fcb0994feb150f1&source=hp&ei=wBeaaZSNMcix5NoPyKvYoQM&iflsig=AFdpzrgAAAAAaZol0I7vhn-VLAkP7bYBnr-S-X6D_wsA&ved=0ahUKEwiU7canuOuSAxXIGFkFHcgVNjQQ4dUDCCg&uact=5&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkczIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQLhiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQNIvhVQ4RNYuBVwAXgAkAEAmAFGoAH3AqoBATi4AQPIAQD4AQGYAgmgApEDqAIKwgIKEAAYAxjqAhiPAcICChAuGAMY6gIYjwHCAgsQABiABBixAxiDAcICCxAuGIAEGNEDGMcBwgIOEAAYgAQYsQMYgwEYigXCAg4QLhiABBixAxjRAxjHAcICBRAAGIAEwgILEC4YgAQYsQMYgwHCAhEQLhiABBixAxjHARiOBRivAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAhEQLhiABBixAxjRAxiDARjHAcICBRAuGIAEwgIOEC4YgAQYxwEYjgUYrwGYAwfxBQfiqV1_r3TdkgcBOaAHlluyBwE4uAeJA8IHBTAuOC4xyAcSgAgA&sclient=gws-wiz",
+      "navigationObserved": false,
+      "domMutationObserved": false,
+      "extractedData": null,
+      "message": null
+    },
+    "scroll": {
+      "status": "acted",
+      "action": "SCROLL",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=9fcb0994feb150f1&source=hp&ei=wBeaaZSNMcix5NoPyKvYoQM&iflsig=AFdpzrgAAAAAaZol0I7vhn-VLAkP7bYBnr-S-X6D_wsA&ved=0ahUKEwiU7canuOuSAxXIGFkFHcgVNjQQ4dUDCCg&uact=5&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkczIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQLhiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQNIvhVQ4RNYuBVwAXgAkAEAmAFGoAH3AqoBATi4AQPIAQD4AQGYAgmgApEDqAIKwgIKEAAYAxjqAhiPAcICChAuGAMY6gIYjwHCAgsQABiABBixAxiDAcICCxAuGIAEGNEDGMcBwgIOEAAYgAQYsQMYgwEYigXCAg4QLhiABBixAxjRAxjHAcICBRAAGIAEwgILEC4YgAQYsQMYgwHCAhEQLhiABBixAxjHARiOBRivAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAhEQLhiABBixAxjRAxiDARjHAcICBRAuGIAEwgIOEC4YgAQYxwEYjgUYrwGYAwfxBQfiqV1_r3TdkgcBOaAHlluyBwE4uAeJA8IHBTAuOC4xyAcSgAgA&sclient=gws-wiz&sei=xheaaeTLH-Hj5NoP-Jq74AE",
+      "navigationObserved": false,
+      "domMutationObserved": true,
+      "extractedData": null,
+      "message": null
+    },
+    "extract": {
+      "status": "acted",
+      "action": "EXTRACT",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=9fcb0994feb150f1&source=hp&ei=wBeaaZSNMcix5NoPyKvYoQM&iflsig=AFdpzrgAAAAAaZol0I7vhn-VLAkP7bYBnr-S-X6D_wsA&ved=0ahUKEwiU7canuOuSAxXIGFkFHcgVNjQQ4dUDCCg&uact=5&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkczIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQLhiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQNIvhVQ4RNYuBVwAXgAkAEAmAFGoAH3AqoBATi4AQPIAQD4AQGYAgmgApEDqAIKwgIKEAAYAxjqAhiPAcICChAuGAMY6gIYjwHCAgsQABiABBixAxiDAcICCxAuGIAEGNEDGMcBwgIOEAAYgAQYsQMYgwEYigXCAg4QLhiABBixAxjRAxjHAcICBRAAGIAEwgILEC4YgAQYsQMYgwHCAhEQLhiABBixAxjHARiOBRivAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAhEQLhiABBixAxjRAxiDARjHAcICBRAuGIAEwgIOEC4YgAQYxwEYjgUYrwGYAwfxBQfiqV1_r3TdkgcBOaAHlluyBwE4uAeJA8IHBTAuOC4xyAcSgAgA&sclient=gws-wiz&sei=xheaaeTLH-Hj5NoP-Jq74AE",
+      "navigationObserved": false,
+      "domMutationObserved": true,
+      "extractedData": {
+        "title": "mechanical keyboards - Google Search",
+        "url": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=9fcb0994feb150f1&source=hp&ei=wBeaaZSNMcix5NoPyKvYoQM&iflsig=AFdpzrgAAAAAaZol0I7vhn-VLAkP7bYBnr-S-X6D_wsA&ved=0ahUKEwiU7canuOuSAxXIGFkFHcgVNjQQ4dUDCCg&uact=5&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkczIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQLhiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQNIvhVQ4RNYuBVwAXgAkAEAmAFGoAH3AqoBATi4AQPIAQD4AQGYAgmgApEDqAIKwgIKEAAYAxjqAhiPAcICChAuGAMY6gIYjwHCAgsQABiABBixAxiDAcICCxAuGIAEGNEDGMcBwgIOEAAYgAQYsQMYgwEYigXCAg4QLhiABBixAxjRAxjHAcICBRAAGIAEwgILEC4YgAQYsQMYgwHCAhEQLhiABBixAxjHARiOBRivAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAhEQLhiABBixAxjRAxiDARjHAcICBRAuGIAEwgIOEC4YgAQYxwEYjgUYrwGYAwfxBQfiqV1_r3TdkgcBOaAHlluyBwE4uAeJA8IHBTAuOC4xyAcSgAgA&sclient=gws-wiz&sei=xheaaeTLH-Hj5NoP-Jq74AE",
+        "query": "mechanical keyboards",
+        "scrollY": 89
+      },
+      "message": null
+    },
+    "done": {
+      "status": "done",
+      "action": "DONE",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=9fcb0994feb150f1&source=hp&ei=wBeaaZSNMcix5NoPyKvYoQM&iflsig=AFdpzrgAAAAAaZol0I7vhn-VLAkP7bYBnr-S-X6D_wsA&ved=0ahUKEwiU7canuOuSAxXIGFkFHcgVNjQQ4dUDCCg&uact=5&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkczIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQLhiABBixAzIIEAAYgAQYsQMyCBAAGIAEGLEDMggQABiABBixAzIIEAAYgAQYsQNIvhVQ4RNYuBVwAXgAkAEAmAFGoAH3AqoBATi4AQPIAQD4AQGYAgmgApEDqAIKwgIKEAAYAxjqAhiPAcICChAuGAMY6gIYjwHCAgsQABiABBixAxiDAcICCxAuGIAEGNEDGMcBwgIOEAAYgAQYsQMYgwEYigXCAg4QLhiABBixAxjRAxjHAcICBRAAGIAEwgILEC4YgAQYsQMYgwHCAhEQLhiABBixAxjHARiOBRivAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAhEQLhiABBixAxjRAxiDARjHAcICBRAuGIAEwgIOEC4YgAQYxwEYjgUYrwGYAwfxBQfiqV1_r3TdkgcBOaAHlluyBwE4uAeJA8IHBTAuOC4xyAcSgAgA&sclient=gws-wiz&sei=xheaaeTLH-Hj5NoP-Jq74AE",
+      "navigationObserved": false,
+      "domMutationObserved": false,
+      "extractedData": null,
+      "message": "action sequence complete"
+    }
+  }
+}

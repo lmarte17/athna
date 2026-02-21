@@ -9,6 +9,12 @@
   ],
   "scripts": {
     "start": "npm run start -w @ghost-browser/electron",
+    "cdp:smoke": "npm run cdp:smoke -w @ghost-browser/orchestration",
+    "ax:smoke": "npm run ax:smoke -w @ghost-browser/orchestration",
+    "index:smoke": "npm run index:smoke -w @ghost-browser/orchestration",
+    "navigator:smoke": "npm run navigator:smoke -w @ghost-browser/orchestration",
+    "action:smoke": "npm run action:smoke -w @ghost-browser/orchestration",
+    "loop:smoke": "npm run loop:smoke -w @ghost-browser/orchestration",
     "gemini:spike": "npm run gemini:spike -w @ghost-browser/orchestration",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

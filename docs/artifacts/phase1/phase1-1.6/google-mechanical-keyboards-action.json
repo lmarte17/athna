@@ -1,0 +1,25 @@
+{
+  "milestone": "1.6",
+  "url": "https://www.google.com/",
+  "intent": "search for mechanical keyboards",
+  "decision": {
+    "action": "CLICK",
+    "target": {
+      "x": 567.685,
+      "y": 405
+    },
+    "text": null,
+    "confidence": 1,
+    "reasoning": "Initial step for search intent, clicking the main search input field."
+  },
+  "runConfig": {
+    "useToonEncoding": false
+  },
+  "contextStats": {
+    "interactiveElementCount": 22,
+    "indexCharCount": 2832,
+    "normalizedCharCount": 5250,
+    "rawNormalizedTreeCharCount": 5250,
+    "navigatorNormalizedTreeCharCount": 5250
+  }
+}

@@ -4,11 +4,19 @@
   "private": true,
   "scripts": {
     "gemini:spike": "node --env-file=../.env scripts/gemini-integration-spike.mjs",
+    "cdp:smoke": "npm run build && node scripts/cdp-smoke.mjs",
+    "ax:smoke": "npm run build && node scripts/ax-smoke.mjs",
+    "index:smoke": "npm run build && node scripts/interactive-index-smoke.mjs",
+    "navigator:smoke": "npm run build && node --env-file=../.env scripts/navigator-smoke.mjs",
+    "action:smoke": "npm run build && node scripts/action-executor-smoke.mjs",
+    "loop:smoke": "npm run build && node --env-file=../.env scripts/loop-smoke.mjs",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@google/genai": "^1.42.0"
+    "@google/genai": "^1.42.0",
+    "playwright-core": "^1.58.2",
+    "sharp": "^0.34.5"
   }
 }

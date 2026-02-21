@@ -5,6 +5,8 @@
   "main": "dist/main.js",
   "scripts": {
     "start": "npm run build && electron dist/main.js",
+    "cdp:host": "npm run build && electron dist/main.js --cdp-host --smoke-test --keep-alive --headless=new",
+    "cdp:host:headful": "npm run build && electron dist/main.js --cdp-host --smoke-test --keep-alive --show-ghost-tab",
     "smoke": "npm run build && electron dist/main.js --smoke-test",
     "smoke:headless": "npm run build && electron dist/main.js --headless=new --smoke-test",
     "lint": "eslint \"src/**/*.ts\"",
