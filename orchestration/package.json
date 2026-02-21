@@ -1,0 +1,11 @@
+{
+  "name": "@ghost-browser/orchestration",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json"
+  }
+}
+
