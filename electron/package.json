@@ -2,10 +2,16 @@
   "name": "@ghost-browser/electron",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/main.js",
   "scripts": {
+    "start": "npm run build && electron dist/main.js",
+    "smoke": "npm run build && electron dist/main.js --smoke-test",
+    "smoke:headless": "npm run build && electron dist/main.js --headless=new --smoke-test",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "electron": "^36.0.0"
   }
 }
-

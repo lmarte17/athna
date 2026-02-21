@@ -8,6 +8,8 @@
     "cloud"
   ],
   "scripts": {
+    "start": "npm run start -w @ghost-browser/electron",
+    "gemini:spike": "npm run gemini:spike -w @ghost-browser/orchestration",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "prettier . --write",
@@ -22,4 +24,3 @@
     "typescript": "^5.9.2"
   }
 }
-
