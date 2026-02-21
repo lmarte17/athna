@@ -1,8 +1,14 @@
-import { GoogleGenAI } from "@google/genai";
+import {
+  GoogleGenAI,
+  createPartFromBase64,
+  createPartFromText,
+  createUserContent
+} from "@google/genai";
 
 import type { InteractiveElementIndexEntry } from "../cdp/client.js";
 
 const DEFAULT_FLASH_MODEL = "gemini-2.5-flash";
+const DEFAULT_PRO_MODEL = "gemini-2.5-pro";
 const MAX_MALFORMED_RETRIES = 1;
 const ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
 
@@ -21,21 +27,40 @@ export interface NavigatorActionDecision {
   reasoning: string;
 }
 
+export type NavigatorInferenceTier = "TIER_1_AX" | "TIER_2_VISION";
+export type NavigatorEscalationReason = "LOW_CONFIDENCE" | "AX_DEFICIENT" | "RETRY_AFTER_SCROLL";
+
+export interface NavigatorScreenshotInput {
+  base64: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  mode?: string;
+}
+
 export interface NavigatorObservationInput {
   currentUrl?: string;
   interactiveElementIndex?: InteractiveElementIndexEntry[];
   normalizedAXTree?: unknown[];
   previousActions?: NavigatorActionDecision[];
   previousObservations?: string[];
+  screenshot?: NavigatorScreenshotInput | null;
 }
 
 export interface NavigatorDecisionRequest {
   intent: string;
   observation: NavigatorObservationInput;
+  tier?: NavigatorInferenceTier;
+  escalationReason?: NavigatorEscalationReason | null;
 }
 
 export interface NavigatorEngine {
   decideNextAction(input: NavigatorDecisionRequest): Promise<NavigatorActionDecision>;
+}
+
+export interface NavigatorEngineOptions {
+  flashModel?: string;
+  proModel?: string;
 }
 
 interface GeminiClientContext {
@@ -43,9 +68,10 @@ interface GeminiClientContext {
   authMode: "gemini-api-key" | "vertex-ai";
 }
 
-class GeminiFlashNavigatorEngine implements NavigatorEngine {
+class GeminiTieredNavigatorEngine implements NavigatorEngine {
   constructor(
-    private readonly model: string,
+    private readonly flashModel: string,
+    private readonly proModel: string,
     private readonly clientContext: GeminiClientContext
   ) {}
 
@@ -54,14 +80,22 @@ class GeminiFlashNavigatorEngine implements NavigatorEngine {
       throw new Error("Navigator intent is required.");
     }
 
-    const userPayload = buildNavigatorUserPayload(input);
+    const tier = input.tier ?? "TIER_1_AX";
+    if (tier === "TIER_2_VISION" && !input.observation.screenshot) {
+      throw new Error("Tier 2 vision inference requires a screenshot payload.");
+    }
+
+    const userPayload = buildNavigatorUserPayload(input, tier);
     let previousRawResponse: string | null = null;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= MAX_MALFORMED_RETRIES; attempt += 1) {
       const response = await this.clientContext.ai.models.generateContent({
-        model: this.model,
-        contents: buildNavigatorPrompt(userPayload, previousRawResponse, attempt),
+        model: tier === "TIER_2_VISION" ? this.proModel : this.flashModel,
+        contents: buildNavigatorContents(
+          buildNavigatorPrompt(userPayload, previousRawResponse, attempt),
+          input.observation.screenshot
+        ),
         config: {
           responseMimeType: "application/json"
         }
@@ -87,7 +121,24 @@ class GeminiFlashNavigatorEngine implements NavigatorEngine {
   }
 }
 
-function buildNavigatorUserPayload(input: NavigatorDecisionRequest): Record<string, unknown> {
+function buildNavigatorContents(
+  prompt: string,
+  screenshot: NavigatorScreenshotInput | null | undefined
+) {
+  if (!screenshot) {
+    return createUserContent(createPartFromText(prompt));
+  }
+
+  return createUserContent([
+    createPartFromText(prompt),
+    createPartFromBase64(screenshot.base64, screenshot.mimeType)
+  ]);
+}
+
+function buildNavigatorUserPayload(
+  input: NavigatorDecisionRequest,
+  tier: NavigatorInferenceTier
+): Record<string, unknown> {
   const previousActions = input.observation.previousActions ?? [];
   const observation: Record<string, unknown> = {
     currentUrl: input.observation.currentUrl ?? null,
@@ -107,8 +158,21 @@ function buildNavigatorUserPayload(input: NavigatorDecisionRequest): Record<stri
     observation.normalizedAXTree = [];
   }
 
+  if (input.observation.screenshot) {
+    observation.screenshot = {
+      mimeType: input.observation.screenshot.mimeType,
+      width: input.observation.screenshot.width,
+      height: input.observation.screenshot.height,
+      mode: input.observation.screenshot.mode ?? null
+    };
+  } else {
+    observation.screenshot = null;
+  }
+
   return {
     intent: input.intent.trim(),
+    tier,
+    escalationReason: input.escalationReason ?? null,
     isInitialStep: previousActions.length === 0,
     observation
   };
@@ -141,6 +205,8 @@ function buildNavigatorPrompt(
     "- For TYPE, text must be non-empty; target may be null if typing into focused input.",
     "- If isInitialStep=true for a search intent, the first action MUST be CLICK on the best input/search field before any TYPE action.",
     "- normalizedAXTree may be raw normalized nodes OR a compact encoded array where index 0 is a legend string. Use the legend to decode.",
+    "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",
+    "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
     "- Keep reasoning concise.",
     "- Return valid JSON only, no markdown.",
     correctionSection,
@@ -280,11 +346,42 @@ function createGeminiClientFromEnv(): GeminiClientContext {
   );
 }
 
-export function createNavigatorEngine(model: string = resolveNavigatorModelFromEnv()): NavigatorEngine {
+export function createNavigatorEngine(
+  options: NavigatorEngineOptions | string = {}
+): NavigatorEngine {
+  const resolvedOptions =
+    typeof options === "string"
+      ? {
+          flashModel: options,
+          proModel: resolveNavigatorProModelFromEnv()
+        }
+      : {
+          flashModel: options.flashModel ?? resolveNavigatorModelFromEnv(),
+          proModel: options.proModel ?? resolveNavigatorProModelFromEnv()
+        };
+
   const clientContext = createGeminiClientFromEnv();
-  return new GeminiFlashNavigatorEngine(model, clientContext);
+  return new GeminiTieredNavigatorEngine(
+    resolvedOptions.flashModel,
+    resolvedOptions.proModel,
+    clientContext
+  );
 }
 
 export function resolveNavigatorModelFromEnv(): string {
-  return process.env.GEMINI_NAVIGATOR_MODEL ?? process.env.GEMINI_TEXT_MODEL ?? DEFAULT_FLASH_MODEL;
+  return (
+    process.env.GEMINI_NAVIGATOR_FLASH_MODEL ??
+    process.env.GEMINI_NAVIGATOR_MODEL ??
+    process.env.GEMINI_TEXT_MODEL ??
+    DEFAULT_FLASH_MODEL
+  );
+}
+
+export function resolveNavigatorProModelFromEnv(): string {
+  return (
+    process.env.GEMINI_NAVIGATOR_PRO_MODEL ??
+    process.env.GEMINI_VISION_MODEL ??
+    process.env.GEMINI_PRO_MODEL ??
+    DEFAULT_PRO_MODEL
+  );
 }

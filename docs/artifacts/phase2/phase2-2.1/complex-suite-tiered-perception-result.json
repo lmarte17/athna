@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "phase": "2.1",
+  "suiteName": "complex",
+  "runLabel": "complex-suite",
+  "summary": {
+    "scenarioCount": 1,
+    "suiteTierUsage": {
+      "tier1Calls": 0,
+      "tier2Calls": 6,
+      "tier3Scrolls": 3,
+      "axDeficientDetections": 6,
+      "resolvedAtTier1": 0,
+      "resolvedAtTier2": 3,
+      "estimatedCostUsd": 0.018
+    },
+    "scenarios": [
+      {
+        "name": "below-fold-footer-scroll-tier3",
+        "intent": "open the Privacy link in the page footer",
+        "startUrl": "https://developer.mozilla.org/en-US/",
+        "status": "MAX_STEPS",
+        "stepsTaken": 6,
+        "finalUrl": "https://developer.mozilla.org/en-US/",
+        "tierUsage": {
+          "tier1Calls": 0,
+          "tier2Calls": 6,
+          "tier3Scrolls": 3,
+          "axDeficientDetections": 6,
+          "resolvedAtTier1": 0,
+          "resolvedAtTier2": 3,
+          "estimatedCostUsd": 0.018
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase2/phase2-2.1/scenarios/below-fold-footer-scroll-tier3-tiered-perception-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "scenarios": [
+      {
+        "name": "below-fold-footer-scroll-tier3",
+        "intent": "open the Privacy link in the page footer",
+        "startUrl": "https://developer.mozilla.org/en-US/",
+        "maxSteps": 6,
+        "axDeficientInteractiveThreshold": 10000,
+        "maxScrollSteps": 3,
+        "expectations": {
+          "expectTier2": true,
+          "expectTier3Scroll": true
+        }
+      }
+    ],
+    "globalOverrides": {},
+    "globalExpectations": {}
+  }
+}

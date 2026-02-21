@@ -1,0 +1,330 @@
+{
+  "status": "MAX_STEPS",
+  "intent": "open the Privacy link in the page footer",
+  "startUrl": "https://developer.mozilla.org/en-US/",
+  "finalUrl": "https://developer.mozilla.org/en-US/",
+  "stepsTaken": 6,
+  "history": [
+    {
+      "step": 1,
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "SCROLL",
+        "target": null,
+        "text": "800",
+        "confidence": 1,
+        "reasoning": "The target link \"Website Privacy Notice\" is in the footer, which is not visible in the current viewport. I need to scroll down to find it."
+      },
+      "action": {
+        "action": "SCROLL",
+        "target": null,
+        "text": "800",
+        "confidence": 1,
+        "reasoning": "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "SCROLL",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_3_SCROLL",
+      "escalationReason": "RETRY_AFTER_SCROLL",
+      "axDeficientDetected": true,
+      "scrollCount": 1,
+      "interactiveElementCount": 35,
+      "normalizedNodeCount": 35,
+      "normalizedCharCount": 7788,
+      "navigatorNormalizedTreeCharCount": 3654,
+      "navigatorObservationCharCount": 8660,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T22:54:44.723Z"
+    },
+    {
+      "step": 2,
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "SCROLL",
+        "target": null,
+        "text": "800",
+        "confidence": 1,
+        "reasoning": "The 'Privacy' link is not visible in the current viewport. I need to scroll down to find it in the footer."
+      },
+      "action": {
+        "action": "SCROLL",
+        "target": null,
+        "text": "800",
+        "confidence": 1,
+        "reasoning": "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "SCROLL",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_3_SCROLL",
+      "escalationReason": "RETRY_AFTER_SCROLL",
+      "axDeficientDetected": true,
+      "scrollCount": 2,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7951,
+      "navigatorNormalizedTreeCharCount": 4217,
+      "navigatorObservationCharCount": 9097,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T22:55:06.828Z"
+    },
+    {
+      "step": 3,
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 205,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.8,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 205,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.8,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "scrollCount": 2,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7955,
+      "navigatorNormalizedTreeCharCount": 4217,
+      "navigatorObservationCharCount": 9386,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T22:55:22.180Z"
+    },
+    {
+      "step": 4,
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 205,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.8,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 205,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.8,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "scrollCount": 2,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7955,
+      "navigatorNormalizedTreeCharCount": 4217,
+      "navigatorObservationCharCount": 9887,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T22:55:31.045Z"
+    },
+    {
+      "step": 5,
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 215,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.8,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click. Previous attempts at (205, 880) did not succeed, so I'm trying slightly different coordinates near the center of the link text."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 215,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.8,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click. Previous attempts at (205, 880) did not succeed, so I'm trying slightly different coordinates near the center of the link text."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "scrollCount": 2,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7955,
+      "navigatorNormalizedTreeCharCount": 4217,
+      "navigatorObservationCharCount": 10388,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T22:56:02.845Z"
+    },
+    {
+      "step": 6,
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 160,
+          "y": 880
+        },
+        "text": null,
+        "confidence": 0.7,
+        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click. Previous attempts at (205, 880) and (215, 880) did not succeed, so I'm trying slightly different coordinates further to the left, closer to the Mozilla logo."
+      },
+      "action": {
+        "action": "SCROLL",
+        "target": {
+          "x": 160,
+          "y": 880
+        },
+        "text": "800",
+        "confidence": 0.7,
+        "reasoning": "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "SCROLL",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_3_SCROLL",
+      "escalationReason": "RETRY_AFTER_SCROLL",
+      "axDeficientDetected": true,
+      "scrollCount": 3,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7955,
+      "navigatorNormalizedTreeCharCount": 4217,
+      "navigatorObservationCharCount": 11017,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T22:56:36.310Z"
+    }
+  ],
+  "tierUsage": {
+    "tier1Calls": 0,
+    "tier2Calls": 6,
+    "tier3Scrolls": 3,
+    "axDeficientDetections": 6,
+    "resolvedAtTier1": 0,
+    "resolvedAtTier2": 3,
+    "estimatedCostUsd": 0.018
+  },
+  "finalAction": {
+    "action": "SCROLL",
+    "target": {
+      "x": 160,
+      "y": 880
+    },
+    "text": "800",
+    "confidence": 0.7,
+    "reasoning": "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
+  },
+  "finalExecution": {
+    "status": "acted",
+    "action": "SCROLL",
+    "currentUrl": "https://developer.mozilla.org/en-US/",
+    "navigationObserved": false,
+    "domMutationObserved": false,
+    "extractedData": null,
+    "message": null
+  },
+  "runConfig": {
+    "suiteName": "complex",
+    "scenario": {
+      "name": "below-fold-footer-scroll-tier3",
+      "intent": "open the Privacy link in the page footer",
+      "startUrl": "https://developer.mozilla.org/en-US/",
+      "maxSteps": 6,
+      "axDeficientInteractiveThreshold": 10000,
+      "maxScrollSteps": 3,
+      "expectations": {
+        "expectTier2": true,
+        "expectTier3Scroll": true
+      }
+    },
+    "globalOverrides": {},
+    "globalExpectations": {}
+  }
+}

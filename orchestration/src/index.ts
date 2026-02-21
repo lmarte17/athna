@@ -27,11 +27,15 @@ export {
 export {
   createNavigatorEngine,
   resolveNavigatorModelFromEnv,
+  resolveNavigatorProModelFromEnv,
   type NavigatorActionDecision,
   type NavigatorActionTarget,
   type NavigatorActionType,
   type NavigatorDecisionRequest,
+  type NavigatorEngineOptions,
   type NavigatorEngine,
+  type NavigatorEscalationReason,
+  type NavigatorInferenceTier,
   type NavigatorObservationInput
 } from "./navigator/engine.js";
 
@@ -41,5 +45,7 @@ export {
   type LoopStepRecord,
   type PerceptionActionLoopOptions,
   type PerceptionActionTaskInput,
-  type PerceptionActionTaskResult
+  type PerceptionActionTaskResult,
+  type ResolvedPerceptionTier,
+  type TierUsageMetrics
 } from "./loop/orchestrator.js";
