@@ -20,6 +20,7 @@
     "decomposition:smoke": "npm run decomposition:smoke -w @ghost-browser/orchestration",
     "structured-error:smoke": "npm run structured-error:smoke -w @ghost-browser/orchestration",
     "observation-cache:smoke": "npm run observation-cache:smoke -w @ghost-browser/orchestration",
+    "request-interception:smoke": "npm run request-interception:smoke -w @ghost-browser/orchestration",
     "context:smoke": "npm run context:smoke -w @ghost-browser/orchestration",
     "pool:smoke": "npm run pool:smoke -w @ghost-browser/orchestration",
     "state:smoke": "npm run state:smoke -w @ghost-browser/orchestration",

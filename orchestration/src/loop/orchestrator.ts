@@ -1316,8 +1316,10 @@ class PerceptionActionLoop {
             if (cachedScreenshot) {
               screenshotPayload = cachedScreenshot.screenshot;
             } else {
-              const screenshot = await this.options.cdpClient.captureScreenshot({
-                mode: "viewport"
+              const screenshot = await this.options.cdpClient.withVisualRenderPass(async () => {
+                return this.options.cdpClient.captureScreenshot({
+                  mode: "viewport"
+                });
               });
               screenshotPayload = {
                 base64: screenshot.base64,

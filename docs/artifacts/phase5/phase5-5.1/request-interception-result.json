@@ -1,0 +1,629 @@
+{
+  "ok": true,
+  "phase": "5.1",
+  "harnessOrigin": "http://127.0.0.1:57917",
+  "runCount": 3,
+  "threshold": {
+    "minExpectedLoadReductionRatio": 0.4,
+    "observedLoadReductionRatio": 0.919
+  },
+  "baseline": {
+    "label": "baseline-visual",
+    "mode": "VISUAL_RENDER",
+    "runCount": 3,
+    "medianDurationMs": 801,
+    "minDurationMs": 795,
+    "maxDurationMs": 831,
+    "runs": [
+      {
+        "runId": "baseline-visual-1-1771797951300",
+        "startedAt": "2026-02-22T22:05:51.300Z",
+        "durationMs": 831,
+        "apiResult": {
+          "payload": {
+            "ok": true,
+            "runId": "baseline-visual-1-1771797951300",
+            "source": "phase5.1-harness"
+          },
+          "error": null
+        },
+        "metrics": {
+          "enabled": true,
+          "mode": "VISUAL_RENDER",
+          "blockedResourceTypes": [
+            "Font",
+            "Image",
+            "Media"
+          ],
+          "lifetime": {
+            "requestedUrl": null,
+            "startedAt": "2026-02-22T22:05:51.300Z",
+            "completedAt": null,
+            "totalRequests": 30,
+            "continuedRequests": 30,
+            "blockedRequests": 0,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 2,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {},
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 28,
+              "OTHER": 0
+            }
+          },
+          "currentNavigation": {
+            "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=baseline-visual-1-1771797951300",
+            "startedAt": "2026-02-22T22:05:51.300Z",
+            "completedAt": "2026-02-22T22:05:52.131Z",
+            "totalRequests": 30,
+            "continuedRequests": 30,
+            "blockedRequests": 0,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 2,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {},
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 28,
+              "OTHER": 0
+            }
+          },
+          "visualRenderPassCount": 0
+        }
+      },
+      {
+        "runId": "baseline-visual-2-1771797954638",
+        "startedAt": "2026-02-22T22:05:54.638Z",
+        "durationMs": 795,
+        "apiResult": {
+          "payload": {
+            "ok": true,
+            "runId": "baseline-visual-2-1771797954638",
+            "source": "phase5.1-harness"
+          },
+          "error": null
+        },
+        "metrics": {
+          "enabled": true,
+          "mode": "VISUAL_RENDER",
+          "blockedResourceTypes": [
+            "Font",
+            "Image",
+            "Media"
+          ],
+          "lifetime": {
+            "requestedUrl": null,
+            "startedAt": "2026-02-22T22:05:54.638Z",
+            "completedAt": null,
+            "totalRequests": 30,
+            "continuedRequests": 30,
+            "blockedRequests": 0,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 2,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {},
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 28,
+              "OTHER": 0
+            }
+          },
+          "currentNavigation": {
+            "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=baseline-visual-2-1771797954638",
+            "startedAt": "2026-02-22T22:05:54.638Z",
+            "completedAt": "2026-02-22T22:05:55.433Z",
+            "totalRequests": 30,
+            "continuedRequests": 30,
+            "blockedRequests": 0,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 2,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {},
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 28,
+              "OTHER": 0
+            }
+          },
+          "visualRenderPassCount": 0
+        }
+      },
+      {
+        "runId": "baseline-visual-3-1771797957939",
+        "startedAt": "2026-02-22T22:05:57.939Z",
+        "durationMs": 801,
+        "apiResult": {
+          "payload": {
+            "ok": true,
+            "runId": "baseline-visual-3-1771797957939",
+            "source": "phase5.1-harness"
+          },
+          "error": null
+        },
+        "metrics": {
+          "enabled": true,
+          "mode": "VISUAL_RENDER",
+          "blockedResourceTypes": [
+            "Font",
+            "Image",
+            "Media"
+          ],
+          "lifetime": {
+            "requestedUrl": null,
+            "startedAt": "2026-02-22T22:05:57.939Z",
+            "completedAt": null,
+            "totalRequests": 30,
+            "continuedRequests": 30,
+            "blockedRequests": 0,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 2,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {},
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 28,
+              "OTHER": 0
+            }
+          },
+          "currentNavigation": {
+            "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=baseline-visual-3-1771797957939",
+            "startedAt": "2026-02-22T22:05:57.939Z",
+            "completedAt": "2026-02-22T22:05:58.740Z",
+            "totalRequests": 30,
+            "continuedRequests": 30,
+            "blockedRequests": 0,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 2,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {},
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 28,
+              "OTHER": 0
+            }
+          },
+          "visualRenderPassCount": 0
+        }
+      }
+    ]
+  },
+  "filtered": {
+    "label": "agent-fast",
+    "mode": "AGENT_FAST",
+    "runCount": 3,
+    "medianDurationMs": 65,
+    "minDurationMs": 62,
+    "maxDurationMs": 75,
+    "runs": [
+      {
+        "runId": "agent-fast-1-1771797961247",
+        "startedAt": "2026-02-22T22:06:01.247Z",
+        "durationMs": 75,
+        "apiResult": {
+          "payload": {
+            "ok": true,
+            "runId": "agent-fast-1-1771797961247",
+            "source": "phase5.1-harness"
+          },
+          "error": null
+        },
+        "metrics": {
+          "enabled": true,
+          "mode": "AGENT_FAST",
+          "blockedResourceTypes": [
+            "Font",
+            "Image",
+            "Media"
+          ],
+          "lifetime": {
+            "requestedUrl": null,
+            "startedAt": "2026-02-22T22:06:01.247Z",
+            "completedAt": null,
+            "totalRequests": 29,
+            "continuedRequests": 3,
+            "blockedRequests": 26,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 1,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {
+              "Image": 24,
+              "Font": 1,
+              "Media": 1
+            },
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 27,
+              "OTHER": 0
+            }
+          },
+          "currentNavigation": {
+            "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=agent-fast-1-1771797961247",
+            "startedAt": "2026-02-22T22:06:01.247Z",
+            "completedAt": "2026-02-22T22:06:01.322Z",
+            "totalRequests": 29,
+            "continuedRequests": 3,
+            "blockedRequests": 26,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 1,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {
+              "Image": 24,
+              "Font": 1,
+              "Media": 1
+            },
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 27,
+              "OTHER": 0
+            }
+          },
+          "visualRenderPassCount": 0
+        }
+      },
+      {
+        "runId": "agent-fast-2-1771797963827",
+        "startedAt": "2026-02-22T22:06:03.827Z",
+        "durationMs": 65,
+        "apiResult": {
+          "payload": {
+            "ok": true,
+            "runId": "agent-fast-2-1771797963827",
+            "source": "phase5.1-harness"
+          },
+          "error": null
+        },
+        "metrics": {
+          "enabled": true,
+          "mode": "AGENT_FAST",
+          "blockedResourceTypes": [
+            "Font",
+            "Image",
+            "Media"
+          ],
+          "lifetime": {
+            "requestedUrl": null,
+            "startedAt": "2026-02-22T22:06:03.827Z",
+            "completedAt": null,
+            "totalRequests": 29,
+            "continuedRequests": 3,
+            "blockedRequests": 26,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 1,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {
+              "Image": 24,
+              "Font": 1,
+              "Media": 1
+            },
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 27,
+              "OTHER": 0
+            }
+          },
+          "currentNavigation": {
+            "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=agent-fast-2-1771797963827",
+            "startedAt": "2026-02-22T22:06:03.828Z",
+            "completedAt": "2026-02-22T22:06:03.892Z",
+            "totalRequests": 29,
+            "continuedRequests": 3,
+            "blockedRequests": 26,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 1,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {
+              "Image": 24,
+              "Font": 1,
+              "Media": 1
+            },
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 27,
+              "OTHER": 0
+            }
+          },
+          "visualRenderPassCount": 0
+        }
+      },
+      {
+        "runId": "agent-fast-3-1771797966399",
+        "startedAt": "2026-02-22T22:06:06.399Z",
+        "durationMs": 62,
+        "apiResult": {
+          "payload": {
+            "ok": true,
+            "runId": "agent-fast-3-1771797966399",
+            "source": "phase5.1-harness"
+          },
+          "error": null
+        },
+        "metrics": {
+          "enabled": true,
+          "mode": "AGENT_FAST",
+          "blockedResourceTypes": [
+            "Font",
+            "Image",
+            "Media"
+          ],
+          "lifetime": {
+            "requestedUrl": null,
+            "startedAt": "2026-02-22T22:06:06.399Z",
+            "completedAt": null,
+            "totalRequests": 29,
+            "continuedRequests": 3,
+            "blockedRequests": 26,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 1,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {
+              "Image": 24,
+              "Font": 1,
+              "Media": 1
+            },
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 27,
+              "OTHER": 0
+            }
+          },
+          "currentNavigation": {
+            "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=agent-fast-3-1771797966399",
+            "startedAt": "2026-02-22T22:06:06.399Z",
+            "completedAt": "2026-02-22T22:06:06.461Z",
+            "totalRequests": 29,
+            "continuedRequests": 3,
+            "blockedRequests": 26,
+            "resourceTypeCounts": {
+              "Document": 1,
+              "Stylesheet": 1,
+              "Image": 24,
+              "XHR": 1,
+              "Font": 1,
+              "Media": 1
+            },
+            "blockedResourceTypeCounts": {
+              "Image": 24,
+              "Font": 1,
+              "Media": 1
+            },
+            "classificationCounts": {
+              "DOCUMENT_HTML": 1,
+              "JSON_API": 1,
+              "STATIC_ASSET": 27,
+              "OTHER": 0
+            }
+          },
+          "visualRenderPassCount": 0
+        }
+      }
+    ]
+  },
+  "visualPass": {
+    "runId": "visual-pass-1771797968969",
+    "screenshot": {
+      "mode": "viewport",
+      "width": 1280,
+      "height": 900,
+      "base64Length": 35768
+    },
+    "preImageState": {
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    "postImageState": {
+      "complete": true,
+      "naturalWidth": 1,
+      "naturalHeight": 1
+    },
+    "apiResult": {
+      "payload": {
+        "ok": true,
+        "runId": "visual-pass-1771797968969",
+        "source": "phase5.1-harness"
+      },
+      "error": null
+    },
+    "metrics": {
+      "enabled": true,
+      "mode": "AGENT_FAST",
+      "blockedResourceTypes": [
+        "Font",
+        "Image",
+        "Media"
+      ],
+      "lifetime": {
+        "requestedUrl": null,
+        "startedAt": "2026-02-22T22:06:08.969Z",
+        "completedAt": null,
+        "totalRequests": 54,
+        "continuedRequests": 28,
+        "blockedRequests": 26,
+        "resourceTypeCounts": {
+          "Document": 1,
+          "Stylesheet": 1,
+          "Image": 48,
+          "XHR": 1,
+          "Font": 1,
+          "Media": 2
+        },
+        "blockedResourceTypeCounts": {
+          "Image": 24,
+          "Font": 1,
+          "Media": 1
+        },
+        "classificationCounts": {
+          "DOCUMENT_HTML": 1,
+          "JSON_API": 1,
+          "STATIC_ASSET": 52,
+          "OTHER": 0
+        }
+      },
+      "currentNavigation": {
+        "requestedUrl": "http://127.0.0.1:57917/media-heavy?run=visual-pass-1771797968969",
+        "startedAt": "2026-02-22T22:06:08.969Z",
+        "completedAt": "2026-02-22T22:06:09.035Z",
+        "totalRequests": 54,
+        "continuedRequests": 28,
+        "blockedRequests": 26,
+        "resourceTypeCounts": {
+          "Document": 1,
+          "Stylesheet": 1,
+          "Image": 48,
+          "XHR": 1,
+          "Font": 1,
+          "Media": 2
+        },
+        "blockedResourceTypeCounts": {
+          "Image": 24,
+          "Font": 1,
+          "Media": 1
+        },
+        "classificationCounts": {
+          "DOCUMENT_HTML": 1,
+          "JSON_API": 1,
+          "STATIC_ASSET": 52,
+          "OTHER": 0
+        }
+      },
+      "visualRenderPassCount": 1
+    }
+  },
+  "requestsByRun": {
+    "agent-fast-1-1771797961247": {
+      "total": 3,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "API": 1
+      }
+    },
+    "agent-fast-2-1771797963827": {
+      "total": 3,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "API": 1
+      }
+    },
+    "agent-fast-3-1771797966399": {
+      "total": 3,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "API": 1
+      }
+    },
+    "baseline-visual-1-1771797951300": {
+      "total": 29,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "IMAGE": 24,
+        "API": 1,
+        "FONT": 1,
+        "MEDIA": 1
+      }
+    },
+    "baseline-visual-2-1771797954638": {
+      "total": 29,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "IMAGE": 24,
+        "API": 1,
+        "FONT": 1,
+        "MEDIA": 1
+      }
+    },
+    "baseline-visual-3-1771797957939": {
+      "total": 29,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "IMAGE": 24,
+        "API": 1,
+        "FONT": 1,
+        "MEDIA": 1
+      }
+    },
+    "visual-pass-1771797968969": {
+      "total": 28,
+      "byKind": {
+        "DOCUMENT": 1,
+        "STYLESHEET": 1,
+        "API": 1,
+        "IMAGE": 24,
+        "MEDIA": 1
+      }
+    }
+  },
+  "timestamp": "2026-02-22T22:06:16.855Z"
+}

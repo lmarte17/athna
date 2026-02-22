@@ -21,6 +21,10 @@ const DEFAULT_WAIT_ACTION_TIMEOUT_MS = 5_000;
 const DEFAULT_AX_CHAR_BUDGET = 8_000;
 const DEFAULT_AX_NORMALIZATION_TIME_BUDGET_MS = 15;
 const DEFAULT_AX_BBOX_CONCURRENCY = 8;
+const DEFAULT_REQUEST_INTERCEPTION_ENABLED = true;
+const DEFAULT_REQUEST_INTERCEPTION_BLOCK_STYLESHEETS = false;
+const DEFAULT_VISUAL_RENDER_SETTLE_MS = 250;
+const DEFAULT_AGENT_FAST_BLOCKED_RESOURCE_TYPES = new Set(["Image", "Font", "Media"]);
 const PRUNED_AX_ROLES = new Set(["generic", "none", "presentation", "inlinetextbox"]);
 const INTERACTIVE_AX_ROLES = new Set([
   "button",
@@ -37,12 +41,48 @@ const INTERACTIVE_AX_ROLES = new Set([
   "textbox"
 ]);
 const AGENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
+const REQUEST_INTERCEPTION_MODES = ["AGENT_FAST", "VISUAL_RENDER", "DISABLED"] as const;
+const REQUEST_CLASSIFICATIONS = ["DOCUMENT_HTML", "JSON_API", "STATIC_ASSET", "OTHER"] as const;
+const BLOCKABLE_RESOURCE_TYPES = new Set(["Image", "Font", "Media", "Stylesheet"]);
 
 export interface ConnectToGhostTabCdpOptions {
   endpointURL: string;
   connectTimeoutMs?: number;
   targetPageIndex?: number;
   targetUrlIncludes?: string;
+  requestInterception?: RequestInterceptionSettings;
+}
+
+export type RequestInterceptionMode = (typeof REQUEST_INTERCEPTION_MODES)[number];
+export type RequestClassification = (typeof REQUEST_CLASSIFICATIONS)[number];
+
+export interface RequestInterceptionSettings {
+  enabled?: boolean;
+  initialMode?: RequestInterceptionMode;
+  blockStylesheets?: boolean;
+  blockedResourceTypes?: string[];
+  visualRenderSettleMs?: number;
+}
+
+export interface RequestInterceptionMetricsSnapshot {
+  requestedUrl: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  totalRequests: number;
+  continuedRequests: number;
+  blockedRequests: number;
+  resourceTypeCounts: Record<string, number>;
+  blockedResourceTypeCounts: Record<string, number>;
+  classificationCounts: Record<RequestClassification, number>;
+}
+
+export interface RequestInterceptionMetrics {
+  enabled: boolean;
+  mode: RequestInterceptionMode;
+  blockedResourceTypes: string[];
+  lifetime: RequestInterceptionMetricsSnapshot;
+  currentNavigation: RequestInterceptionMetricsSnapshot | null;
+  visualRenderPassCount: number;
 }
 
 export interface CaptureJpegOptions {
@@ -269,6 +309,11 @@ export interface GhostViewportSettings {
 export interface GhostTabCdpClient {
   navigate(url: string, timeoutMs?: number): Promise<void>;
   getLastNavigationOutcome(): NavigationOutcome | null;
+  setRequestInterceptionMode(mode: RequestInterceptionMode): Promise<void>;
+  getRequestInterceptionMode(): RequestInterceptionMode;
+  getRequestInterceptionMetrics(): RequestInterceptionMetrics;
+  resetRequestInterceptionMetrics(): void;
+  withVisualRenderPass<T>(operation: () => Promise<T>): Promise<T>;
   extractNormalizedAXTree(
     options?: ExtractNormalizedAXTreeOptions
   ): Promise<ExtractNormalizedAXTreeResult>;
@@ -313,6 +358,21 @@ interface ResolvedExtractDomInteractiveElementsOptions {
   maxElements: number;
 }
 
+interface ResolvedRequestInterceptionSettings {
+  enabled: boolean;
+  initialMode: RequestInterceptionMode;
+  blockedResourceTypes: Set<string>;
+  visualRenderSettleMs: number;
+}
+
+interface NormalizedRequestPausedEvent {
+  requestId: string;
+  resourceType: string | null;
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+}
+
 interface DocumentMetrics {
   scrollY: number;
   viewportHeight: number;
@@ -347,14 +407,31 @@ interface RawAXNode {
 
 class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   private readonly crashListeners = new Set<(event: GhostTabCrashEvent) => void>();
+  private readonly requestInterceptionSettings: ResolvedRequestInterceptionSettings;
+  private readonly fetchRequestPausedListener: (event: unknown) => void;
+  private requestInterceptionInitialized = false;
+  private requestInterceptionMode: RequestInterceptionMode;
+  private lifetimeRequestInterceptionMetrics = createRequestInterceptionMetricsSnapshot(null);
+  private currentNavigationRequestInterceptionMetrics: RequestInterceptionMetricsSnapshot | null =
+    null;
+  private visualRenderPassCount = 0;
   private lastCrashEvent: GhostTabCrashEvent | null = null;
   private lastNavigationOutcome: NavigationOutcome | null = null;
 
   constructor(
     private readonly browser: Browser,
     private readonly cdpSession: CDPSession,
-    private readonly page: Page
+    private readonly page: Page,
+    requestInterceptionSettings: ResolvedRequestInterceptionSettings
   ) {
+    this.requestInterceptionSettings = requestInterceptionSettings;
+    this.requestInterceptionMode = requestInterceptionSettings.enabled
+      ? requestInterceptionSettings.initialMode
+      : "DISABLED";
+    this.fetchRequestPausedListener = (event: unknown) => {
+      void this.handleRequestPaused(event);
+    };
+
     this.cdpSession.on("Target.targetCrashed", (event: unknown) => {
       this.emitCrashEvent(normalizeTargetCrashEvent(event));
     });
@@ -368,40 +445,108 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     });
   }
 
+  async initialize(): Promise<void> {
+    await this.enableRequestInterception();
+  }
+
   async navigate(url: string, timeoutMs = DEFAULT_NAVIGATION_TIMEOUT_MS): Promise<void> {
+    this.beginNavigationRequestInterceptionMetrics(url);
     const mainFrameId = await getMainFrameId(this.cdpSession).catch(() => null);
     const responseTracker = trackMainDocumentResponse(this.cdpSession, {
       timeoutMs,
       mainFrameId
     });
-    const navigationResult = await this.cdpSession.send("Page.navigate", { url });
-    if (navigationResult.errorText) {
-      responseTracker.cancel();
+
+    try {
+      const navigationResult = await this.cdpSession.send("Page.navigate", { url });
+      if (navigationResult.errorText) {
+        responseTracker.cancel();
+        this.lastNavigationOutcome = {
+          requestedUrl: url,
+          finalUrl: await this.getCurrentUrl().catch(() => url),
+          status: null,
+          statusText: null,
+          errorText: navigationResult.errorText,
+          timestamp: new Date().toISOString()
+        };
+        throw new Error(`CDP Page.navigate failed for ${url}: ${navigationResult.errorText}`);
+      }
+
+      await waitForLoadEvent(this.cdpSession, timeoutMs);
+      const response = await responseTracker.promise.catch(() => null);
       this.lastNavigationOutcome = {
         requestedUrl: url,
         finalUrl: await this.getCurrentUrl().catch(() => url),
-        status: null,
-        statusText: null,
-        errorText: navigationResult.errorText,
+        status: response?.status ?? null,
+        statusText: response?.statusText ?? null,
+        errorText: null,
         timestamp: new Date().toISOString()
       };
-      throw new Error(`CDP Page.navigate failed for ${url}: ${navigationResult.errorText}`);
+    } finally {
+      this.completeNavigationRequestInterceptionMetrics();
     }
-
-    await waitForLoadEvent(this.cdpSession, timeoutMs);
-    const response = await responseTracker.promise.catch(() => null);
-    this.lastNavigationOutcome = {
-      requestedUrl: url,
-      finalUrl: await this.getCurrentUrl().catch(() => url),
-      status: response?.status ?? null,
-      statusText: response?.statusText ?? null,
-      errorText: null,
-      timestamp: new Date().toISOString()
-    };
   }
 
   getLastNavigationOutcome(): NavigationOutcome | null {
     return this.lastNavigationOutcome;
+  }
+
+  async setRequestInterceptionMode(mode: RequestInterceptionMode): Promise<void> {
+    if (!REQUEST_INTERCEPTION_MODES.includes(mode)) {
+      throw new Error(`Unsupported request interception mode: ${String(mode)}`);
+    }
+
+    if (!this.requestInterceptionSettings.enabled) {
+      this.requestInterceptionMode = "DISABLED";
+      return;
+    }
+
+    this.requestInterceptionMode = mode;
+  }
+
+  getRequestInterceptionMode(): RequestInterceptionMode {
+    return this.requestInterceptionMode;
+  }
+
+  getRequestInterceptionMetrics(): RequestInterceptionMetrics {
+    return {
+      enabled: this.requestInterceptionSettings.enabled,
+      mode: this.requestInterceptionMode,
+      blockedResourceTypes: [...this.requestInterceptionSettings.blockedResourceTypes].sort(),
+      lifetime: cloneRequestInterceptionMetricsSnapshot(this.lifetimeRequestInterceptionMetrics),
+      currentNavigation: this.currentNavigationRequestInterceptionMetrics
+        ? cloneRequestInterceptionMetricsSnapshot(this.currentNavigationRequestInterceptionMetrics)
+        : null,
+      visualRenderPassCount: this.visualRenderPassCount
+    };
+  }
+
+  resetRequestInterceptionMetrics(): void {
+    this.lifetimeRequestInterceptionMetrics = createRequestInterceptionMetricsSnapshot(null);
+    this.currentNavigationRequestInterceptionMetrics = null;
+    this.visualRenderPassCount = 0;
+  }
+
+  async withVisualRenderPass<T>(operation: () => Promise<T>): Promise<T> {
+    if (!this.requestInterceptionSettings.enabled) {
+      return operation();
+    }
+
+    const previousMode = this.requestInterceptionMode;
+    this.visualRenderPassCount += 1;
+
+    await this.setRequestInterceptionMode("VISUAL_RENDER");
+    await this.refreshVisualAssetsForScreenshot();
+
+    if (this.requestInterceptionSettings.visualRenderSettleMs > 0) {
+      await sleep(this.requestInterceptionSettings.visualRenderSettleMs);
+    }
+
+    try {
+      return await operation();
+    } finally {
+      await this.setRequestInterceptionMode(previousMode);
+    }
   }
 
   async extractNormalizedAXTree(
@@ -902,6 +1047,9 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   }
 
   async close(): Promise<void> {
+    await this.disableRequestInterception().catch(() => {
+      // Ignore teardown races during shutdown.
+    });
     await this.browser.close();
   }
 
@@ -1191,6 +1339,170 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
       await this.page.close();
     } catch {
       // Ignore close races when the target is already gone.
+    }
+  }
+
+  private async enableRequestInterception(): Promise<void> {
+    if (!this.requestInterceptionSettings.enabled || this.requestInterceptionInitialized) {
+      return;
+    }
+
+    await this.cdpSession.send("Fetch.enable", {
+      patterns: [
+        {
+          urlPattern: "*",
+          requestStage: "Request"
+        }
+      ]
+    });
+    this.cdpSession.on("Fetch.requestPaused", this.fetchRequestPausedListener);
+    this.requestInterceptionInitialized = true;
+  }
+
+  private async disableRequestInterception(): Promise<void> {
+    if (!this.requestInterceptionInitialized) {
+      return;
+    }
+
+    this.cdpSession.off("Fetch.requestPaused", this.fetchRequestPausedListener);
+    this.requestInterceptionInitialized = false;
+    await this.cdpSession.send("Fetch.disable");
+  }
+
+  private beginNavigationRequestInterceptionMetrics(requestedUrl: string): void {
+    if (!this.requestInterceptionSettings.enabled) {
+      this.currentNavigationRequestInterceptionMetrics = null;
+      return;
+    }
+
+    this.currentNavigationRequestInterceptionMetrics =
+      createRequestInterceptionMetricsSnapshot(requestedUrl);
+  }
+
+  private completeNavigationRequestInterceptionMetrics(): void {
+    if (!this.currentNavigationRequestInterceptionMetrics) {
+      return;
+    }
+
+    if (!this.currentNavigationRequestInterceptionMetrics.completedAt) {
+      this.currentNavigationRequestInterceptionMetrics.completedAt = new Date().toISOString();
+    }
+  }
+
+  private async handleRequestPaused(rawEvent: unknown): Promise<void> {
+    const event = normalizeRequestPausedEvent(rawEvent);
+    if (!event) {
+      return;
+    }
+
+    const resourceType = event.resourceType ?? "Other";
+    const classification = classifyRequest(event, resourceType);
+    const blocked = this.shouldBlockRequest({
+      mode: this.requestInterceptionMode,
+      resourceType,
+      url: event.url
+    });
+    this.recordRequestInterceptionEvent({
+      resourceType,
+      classification,
+      blocked
+    });
+
+    try {
+      if (blocked) {
+        await this.cdpSession.send("Fetch.failRequest", {
+          requestId: event.requestId,
+          errorReason: "BlockedByClient"
+        });
+        return;
+      }
+
+      await this.cdpSession.send("Fetch.continueRequest", {
+        requestId: event.requestId
+      });
+    } catch {
+      // Ignore detach races; pending requests will be dropped with the session.
+    }
+  }
+
+  private shouldBlockRequest(input: {
+    mode: RequestInterceptionMode;
+    resourceType: string;
+    url: string;
+  }): boolean {
+    if (input.mode !== "AGENT_FAST") {
+      return false;
+    }
+
+    if (input.url.startsWith("data:") || input.url.startsWith("blob:")) {
+      return false;
+    }
+
+    return this.requestInterceptionSettings.blockedResourceTypes.has(input.resourceType);
+  }
+
+  private recordRequestInterceptionEvent(input: {
+    resourceType: string;
+    classification: RequestClassification;
+    blocked: boolean;
+  }): void {
+    applyRequestInterceptionMetricEvent(this.lifetimeRequestInterceptionMetrics, input);
+    if (this.currentNavigationRequestInterceptionMetrics) {
+      applyRequestInterceptionMetricEvent(this.currentNavigationRequestInterceptionMetrics, input);
+    }
+  }
+
+  private async refreshVisualAssetsForScreenshot(): Promise<void> {
+    try {
+      await evaluateJsonExpression<number>(
+        this.cdpSession,
+        `(() => {
+          let retriggered = 0;
+          const cacheBustValue = String(Date.now());
+          const toVisualPassUrl = (src) => {
+            if (typeof src !== "string" || src.length === 0) {
+              return src;
+            }
+            if (src.startsWith("data:") || src.startsWith("blob:")) {
+              return src;
+            }
+            const separator = src.includes("?") ? "&" : "?";
+            return src + separator + "ghost_visual_pass=" + cacheBustValue;
+          };
+
+          for (const image of Array.from(document.images || [])) {
+            if (!(image instanceof HTMLImageElement)) {
+              continue;
+            }
+            const src = image.getAttribute("src");
+            if (!src) {
+              continue;
+            }
+            if (image.complete && image.naturalWidth > 0) {
+              continue;
+            }
+            image.src = toVisualPassUrl(src);
+            retriggered += 1;
+          }
+
+          for (const media of Array.from(document.querySelectorAll("video[src], audio[src]"))) {
+            if (!(media instanceof HTMLMediaElement)) {
+              continue;
+            }
+            const src = media.getAttribute("src");
+            if (!src) {
+              continue;
+            }
+            media.setAttribute("src", toVisualPassUrl(src));
+            media.load();
+            retriggered += 1;
+          }
+
+          return retriggered;
+        })();`
+      );
+    } catch {
+      // Best-effort only; screenshots should still proceed even if no asset retries occur.
     }
   }
 
@@ -2175,12 +2487,279 @@ async function configureDefaultViewport(cdpSession: CDPSession): Promise<void> {
   });
 }
 
+function resolveRequestInterceptionSettings(
+  settings: RequestInterceptionSettings | undefined
+): ResolvedRequestInterceptionSettings {
+  const enabled = settings?.enabled ?? readBooleanLikeEnv("GHOST_REQUEST_INTERCEPTION_ENABLED", DEFAULT_REQUEST_INTERCEPTION_ENABLED);
+  const initialMode =
+    settings?.initialMode ??
+    readRequestInterceptionModeEnv("GHOST_REQUEST_INTERCEPTION_INITIAL_MODE", "AGENT_FAST");
+  const blockStylesheets =
+    settings?.blockStylesheets ??
+    readBooleanLikeEnv(
+      "GHOST_REQUEST_INTERCEPTION_BLOCK_STYLESHEETS",
+      DEFAULT_REQUEST_INTERCEPTION_BLOCK_STYLESHEETS
+    );
+  const visualRenderSettleMs = Math.max(
+    0,
+    settings?.visualRenderSettleMs ??
+      readNonNegativeIntegerEnv(
+        "GHOST_REQUEST_INTERCEPTION_VISUAL_SETTLE_MS",
+        DEFAULT_VISUAL_RENDER_SETTLE_MS
+      )
+  );
+  const blockedResourceTypes = new Set<string>([...DEFAULT_AGENT_FAST_BLOCKED_RESOURCE_TYPES]);
+  if (blockStylesheets) {
+    blockedResourceTypes.add("Stylesheet");
+  }
+
+  const envBlockList = readBlockedResourceTypeListEnv("GHOST_REQUEST_INTERCEPTION_BLOCKLIST");
+  for (const resourceType of envBlockList) {
+    blockedResourceTypes.add(resourceType);
+  }
+
+  for (const resourceType of settings?.blockedResourceTypes ?? []) {
+    if (BLOCKABLE_RESOURCE_TYPES.has(resourceType)) {
+      blockedResourceTypes.add(resourceType);
+    }
+  }
+
+  return {
+    enabled,
+    initialMode: enabled ? initialMode : "DISABLED",
+    blockedResourceTypes,
+    visualRenderSettleMs
+  };
+}
+
+function createRequestInterceptionMetricsSnapshot(
+  requestedUrl: string | null
+): RequestInterceptionMetricsSnapshot {
+  return {
+    requestedUrl,
+    startedAt: new Date().toISOString(),
+    completedAt: null,
+    totalRequests: 0,
+    continuedRequests: 0,
+    blockedRequests: 0,
+    resourceTypeCounts: {},
+    blockedResourceTypeCounts: {},
+    classificationCounts: createRequestClassificationCountMap()
+  };
+}
+
+function createRequestClassificationCountMap(): Record<RequestClassification, number> {
+  const counts = {} as Record<RequestClassification, number>;
+  for (const classification of REQUEST_CLASSIFICATIONS) {
+    counts[classification] = 0;
+  }
+
+  return counts;
+}
+
+function cloneRequestInterceptionMetricsSnapshot(
+  snapshot: RequestInterceptionMetricsSnapshot
+): RequestInterceptionMetricsSnapshot {
+  return {
+    requestedUrl: snapshot.requestedUrl,
+    startedAt: snapshot.startedAt,
+    completedAt: snapshot.completedAt,
+    totalRequests: snapshot.totalRequests,
+    continuedRequests: snapshot.continuedRequests,
+    blockedRequests: snapshot.blockedRequests,
+    resourceTypeCounts: { ...snapshot.resourceTypeCounts },
+    blockedResourceTypeCounts: { ...snapshot.blockedResourceTypeCounts },
+    classificationCounts: { ...snapshot.classificationCounts }
+  };
+}
+
+function applyRequestInterceptionMetricEvent(
+  snapshot: RequestInterceptionMetricsSnapshot,
+  event: {
+    resourceType: string;
+    classification: RequestClassification;
+    blocked: boolean;
+  }
+): void {
+  snapshot.totalRequests += 1;
+  snapshot.resourceTypeCounts[event.resourceType] =
+    (snapshot.resourceTypeCounts[event.resourceType] ?? 0) + 1;
+  snapshot.classificationCounts[event.classification] += 1;
+
+  if (event.blocked) {
+    snapshot.blockedRequests += 1;
+    snapshot.blockedResourceTypeCounts[event.resourceType] =
+      (snapshot.blockedResourceTypeCounts[event.resourceType] ?? 0) + 1;
+    return;
+  }
+
+  snapshot.continuedRequests += 1;
+}
+
+function normalizeRequestPausedEvent(event: unknown): NormalizedRequestPausedEvent | null {
+  if (typeof event !== "object" || event === null) {
+    return null;
+  }
+
+  const candidate = event as Record<string, unknown>;
+  const requestId = typeof candidate.requestId === "string" ? candidate.requestId : null;
+  if (!requestId) {
+    return null;
+  }
+
+  const request =
+    typeof candidate.request === "object" && candidate.request !== null
+      ? (candidate.request as Record<string, unknown>)
+      : null;
+  if (!request) {
+    return null;
+  }
+
+  const url = typeof request.url === "string" ? request.url : "";
+  const method = typeof request.method === "string" ? request.method : "GET";
+  const resourceType = typeof candidate.resourceType === "string" ? candidate.resourceType : null;
+  const headers =
+    typeof request.headers === "object" && request.headers !== null
+      ? (request.headers as Record<string, unknown>)
+      : {};
+  const normalizedHeaders: Record<string, string> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    if (typeof value === "string") {
+      normalizedHeaders[name.toLowerCase()] = value;
+      continue;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean") {
+      normalizedHeaders[name.toLowerCase()] = String(value);
+    }
+  }
+
+  return {
+    requestId,
+    resourceType,
+    url,
+    method,
+    headers: normalizedHeaders
+  };
+}
+
+function classifyRequest(
+  event: NormalizedRequestPausedEvent,
+  resourceType: string
+): RequestClassification {
+  if (resourceType === "Document") {
+    return "DOCUMENT_HTML";
+  }
+
+  if (resourceType === "XHR" || resourceType === "Fetch") {
+    return "JSON_API";
+  }
+
+  if (resourceType === "Other") {
+    if (isLikelyJsonApiUrl(event.url, event.headers)) {
+      return "JSON_API";
+    }
+    return "OTHER";
+  }
+
+  if (BLOCKABLE_RESOURCE_TYPES.has(resourceType)) {
+    return "STATIC_ASSET";
+  }
+
+  return "OTHER";
+}
+
+function isLikelyJsonApiUrl(url: string, headers: Record<string, string>): boolean {
+  const acceptHeader = headers["accept"] ?? "";
+  if (acceptHeader.includes("application/json") || acceptHeader.includes("+json")) {
+    return true;
+  }
+
+  const lowered = url.toLowerCase();
+  if (lowered.includes("/api/")) {
+    return true;
+  }
+
+  return lowered.endsWith(".json") || lowered.includes(".json?");
+}
+
+function readBlockedResourceTypeListEnv(name: string): string[] {
+  const raw = process.env[name];
+  if (!raw || !raw.trim()) {
+    return [];
+  }
+
+  const parts = raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  const normalized = new Set<string>();
+  for (const part of parts) {
+    if (BLOCKABLE_RESOURCE_TYPES.has(part)) {
+      normalized.add(part);
+    }
+  }
+
+  return [...normalized];
+}
+
+function readBooleanLikeEnv(name: string, defaultValue: boolean): boolean {
+  const rawValue = process.env[name];
+  if (!rawValue || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const normalized = rawValue.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
+}
+
+function readNonNegativeIntegerEnv(name: string, defaultValue: number): number {
+  const rawValue = process.env[name];
+  if (!rawValue || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return defaultValue;
+  }
+
+  return parsed;
+}
+
+function readRequestInterceptionModeEnv(
+  name: string,
+  defaultValue: RequestInterceptionMode
+): RequestInterceptionMode {
+  const rawValue = process.env[name];
+  if (!rawValue || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const normalized = rawValue.trim().toUpperCase();
+  if (REQUEST_INTERCEPTION_MODES.includes(normalized as RequestInterceptionMode)) {
+    return normalized as RequestInterceptionMode;
+  }
+
+  return defaultValue;
+}
+
 export async function connectToGhostTabCdp(
   options: ConnectToGhostTabCdpOptions
 ): Promise<GhostTabCdpClient> {
   const connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
   const targetPageIndex = options.targetPageIndex ?? 0;
   const targetUrlIncludes = options.targetUrlIncludes ?? null;
+  const requestInterceptionSettings = resolveRequestInterceptionSettings(
+    options.requestInterception
+  );
   const browser = await chromium.connectOverCDP(options.endpointURL, {
     timeout: connectTimeoutMs
   });
@@ -2198,5 +2777,20 @@ export async function connectToGhostTabCdp(
   await cdpSession.send("Performance.enable");
   await configureDefaultViewport(cdpSession);
 
-  return new PlaywrightGhostTabCdpClient(browser, cdpSession, page);
+  const client = new PlaywrightGhostTabCdpClient(
+    browser,
+    cdpSession,
+    page,
+    requestInterceptionSettings
+  );
+
+  try {
+    await client.initialize();
+    return client;
+  } catch (error) {
+    await browser.close().catch(() => {
+      // Best-effort cleanup on initialization failure.
+    });
+    throw error;
+  }
 }
