@@ -57,3 +57,12 @@ export {
   type ResolvedPerceptionTier,
   type TierUsageMetrics
 } from "./loop/orchestrator.js";
+
+export {
+  createGhostTabPoolManager,
+  type AcquireGhostTabOptions,
+  type GhostTabLease,
+  type GhostTabPoolManagerOptions,
+  type GhostTabPoolSnapshot,
+  type GhostTabTaskPriority
+} from "./pool/manager.js";

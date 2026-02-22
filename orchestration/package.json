@@ -11,6 +11,8 @@
     "action:smoke": "npm run build && node scripts/action-executor-smoke.mjs",
     "loop:smoke": "npm run build && node --env-file=../.env scripts/loop-smoke.mjs",
     "tiered:smoke": "npm run build && node --env-file=../.env scripts/tiered-perception-smoke.mjs",
+    "context:smoke": "npm run build && node scripts/browser-context-isolation-smoke.mjs",
+    "pool:smoke": "npm run build && node scripts/ghost-tab-pool-smoke.mjs",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"

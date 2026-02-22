@@ -41,6 +41,8 @@ const AGENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE"
 export interface ConnectToGhostTabCdpOptions {
   endpointURL: string;
   connectTimeoutMs?: number;
+  targetPageIndex?: number;
+  targetUrlIncludes?: string;
 }
 
 export interface CaptureJpegOptions {
@@ -255,6 +257,7 @@ export interface GhostTabCdpClient {
   captureScreenshot(options?: CaptureScreenshotOptions): Promise<CaptureScreenshotResult>;
   captureJpegBase64(options?: CaptureJpegOptions): Promise<string>;
   getViewport(): GhostViewportSettings;
+  closeTarget(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -313,7 +316,8 @@ interface RawAXNode {
 class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   constructor(
     private readonly browser: Browser,
-    private readonly cdpSession: CDPSession
+    private readonly cdpSession: CDPSession,
+    private readonly page: Page
   ) {}
 
   async navigate(url: string, timeoutMs = DEFAULT_NAVIGATION_TIMEOUT_MS): Promise<void> {
@@ -1040,6 +1044,21 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     const value = await evaluateJsonExpression<string>(this.cdpSession, "window.location.href");
     return value;
   }
+
+  async closeTarget(): Promise<void> {
+    try {
+      await this.cdpSession.send("Page.close");
+      return;
+    } catch {
+      // Fallback for cases where Page.close is unavailable or the session already detached.
+    }
+
+    try {
+      await this.page.close();
+    } catch {
+      // Ignore close races when the target is already gone.
+    }
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -1048,21 +1067,54 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-async function waitForFirstPage(browser: Browser, timeoutMs: number): Promise<Page> {
+function flattenPages(browser: Browser): Page[] {
+  return browser.contexts().flatMap((context) => context.pages());
+}
+
+function pickTargetPage(
+  pages: Page[],
+  selector: {
+    targetPageIndex: number;
+    targetUrlIncludes: string | null;
+  }
+): Page | null {
+  if (selector.targetUrlIncludes) {
+    return pages.find((page) => page.url().includes(selector.targetUrlIncludes ?? "")) ?? null;
+  }
+
+  if (selector.targetPageIndex < 0) {
+    return null;
+  }
+
+  return pages[selector.targetPageIndex] ?? null;
+}
+
+async function waitForTargetPage(
+  browser: Browser,
+  timeoutMs: number,
+  selector: {
+    targetPageIndex: number;
+    targetUrlIncludes: string | null;
+  }
+): Promise<Page> {
   const start = Date.now();
 
   while (Date.now() - start < timeoutMs) {
-    for (const context of browser.contexts()) {
-      const pages = context.pages();
-      if (pages.length > 0) {
-        return pages[0];
-      }
+    const pages = flattenPages(browser);
+    const selected = pickTargetPage(pages, selector);
+    if (selected) {
+      return selected;
     }
 
     await sleep(100);
   }
 
-  throw new Error(`Timed out waiting ${timeoutMs}ms for a Ghost Tab target page.`);
+  const selectorDescription = selector.targetUrlIncludes
+    ? `url includes "${selector.targetUrlIncludes}"`
+    : `index ${selector.targetPageIndex}`;
+  throw new Error(
+    `Timed out waiting ${timeoutMs}ms for a Ghost Tab target page (${selectorDescription}).`
+  );
 }
 
 function waitForLoadEvent(cdpSession: CDPSession, timeoutMs: number): Promise<void> {
@@ -1813,11 +1865,16 @@ export async function connectToGhostTabCdp(
   options: ConnectToGhostTabCdpOptions
 ): Promise<GhostTabCdpClient> {
   const connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
+  const targetPageIndex = options.targetPageIndex ?? 0;
+  const targetUrlIncludes = options.targetUrlIncludes ?? null;
   const browser = await chromium.connectOverCDP(options.endpointURL, {
     timeout: connectTimeoutMs
   });
 
-  const page = await waitForFirstPage(browser, connectTimeoutMs);
+  const page = await waitForTargetPage(browser, connectTimeoutMs, {
+    targetPageIndex,
+    targetUrlIncludes
+  });
   const cdpSession = await page.context().newCDPSession(page);
   await cdpSession.send("Page.enable");
   await cdpSession.send("Runtime.enable");
@@ -1825,5 +1882,5 @@ export async function connectToGhostTabCdp(
   await cdpSession.send("Accessibility.enable");
   await configureDefaultViewport(cdpSession);
 
-  return new PlaywrightGhostTabCdpClient(browser, cdpSession);
+  return new PlaywrightGhostTabCdpClient(browser, cdpSession, page);
 }

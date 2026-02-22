@@ -1,0 +1,131 @@
+{
+  "ok": true,
+  "phase": "3.2",
+  "runConfig": {
+    "poolMinSize": 2,
+    "poolMaxSize": 3,
+    "assignmentTargetMs": 10
+  },
+  "snapshots": {
+    "afterInit": {
+      "minSize": 2,
+      "maxSize": 3,
+      "totalSlots": 3,
+      "cold": 1,
+      "replenishing": 0,
+      "available": 2,
+      "inUse": 0,
+      "queued": 0,
+      "slotStates": [
+        {
+          "contextId": "ctx-1",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 51
+        },
+        {
+          "contextId": "ctx-2",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 12
+        },
+        {
+          "contextId": "ctx-3",
+          "state": "COLD",
+          "lastWarmDurationMs": null
+        }
+      ]
+    },
+    "afterReplenish": {
+      "minSize": 2,
+      "maxSize": 3,
+      "totalSlots": 3,
+      "cold": 0,
+      "replenishing": 0,
+      "available": 2,
+      "inUse": 1,
+      "queued": 0,
+      "slotStates": [
+        {
+          "contextId": "ctx-1",
+          "state": "IN_USE",
+          "lastWarmDurationMs": 51
+        },
+        {
+          "contextId": "ctx-2",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 12
+        },
+        {
+          "contextId": "ctx-3",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 14
+        }
+      ]
+    },
+    "afterExhaustion": {
+      "minSize": 2,
+      "maxSize": 3,
+      "totalSlots": 3,
+      "cold": 0,
+      "replenishing": 0,
+      "available": 0,
+      "inUse": 3,
+      "queued": 0,
+      "slotStates": [
+        {
+          "contextId": "ctx-1",
+          "state": "IN_USE",
+          "lastWarmDurationMs": 51
+        },
+        {
+          "contextId": "ctx-2",
+          "state": "IN_USE",
+          "lastWarmDurationMs": 12
+        },
+        {
+          "contextId": "ctx-3",
+          "state": "IN_USE",
+          "lastWarmDurationMs": 14
+        }
+      ]
+    },
+    "final": {
+      "minSize": 2,
+      "maxSize": 3,
+      "totalSlots": 3,
+      "cold": 0,
+      "replenishing": 0,
+      "available": 3,
+      "inUse": 0,
+      "queued": 0,
+      "slotStates": [
+        {
+          "contextId": "ctx-1",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 51
+        },
+        {
+          "contextId": "ctx-2",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 12
+        },
+        {
+          "contextId": "ctx-3",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 14
+        }
+      ]
+    }
+  },
+  "leaseMetrics": {
+    "lease1WarmAssignmentWaitMs": 0,
+    "queuedLeaseAssignmentWaitMs": 1
+  },
+  "telemetry": {
+    "warmAssignmentCount": 3,
+    "queuedAssignmentCount": 1,
+    "averageWarmAssignmentWaitMs": 0,
+    "averageQueueWaitMs": 1,
+    "averageWarmDurationMs": 25.667,
+    "estimatedColdStartSavingsMs": 25.667
+  }
+}

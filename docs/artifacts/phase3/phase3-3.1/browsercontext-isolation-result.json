@@ -1,0 +1,66 @@
+{
+  "ok": true,
+  "phase": "3.1",
+  "runConfig": {
+    "contextCount": 2
+  },
+  "harness": {
+    "origin": "http://127.0.0.1:56949",
+    "cacheableScriptHits": 2,
+    "cacheableScriptRequests": [
+      {
+        "hit": 1,
+        "query": "",
+        "timestamp": "2026-02-22T06:29:36.326Z"
+      },
+      {
+        "hit": 2,
+        "query": "",
+        "timestamp": "2026-02-22T06:29:37.112Z"
+      }
+    ]
+  },
+  "storageIsolation": {
+    "seededContextOneSnapshot": {
+      "cookie": "A",
+      "localStorage": "A",
+      "sessionStorage": "A",
+      "indexedDb": "A"
+    },
+    "seededContextTwoSnapshot": {
+      "cookie": "B",
+      "localStorage": "B",
+      "sessionStorage": "B",
+      "indexedDb": "B"
+    },
+    "observedContextOneSnapshot": {
+      "cookie": "A",
+      "localStorage": "A",
+      "sessionStorage": "A",
+      "indexedDb": "A"
+    },
+    "observedContextTwoSnapshot": {
+      "cookie": "B",
+      "localStorage": "B",
+      "sessionStorage": "B",
+      "indexedDb": "B"
+    },
+    "recreatedContextOneSnapshot": {
+      "cookie": null,
+      "localStorage": null,
+      "sessionStorage": null,
+      "indexedDb": null
+    },
+    "contextTwoPostDestroySnapshot": {
+      "cookie": "B",
+      "localStorage": "B",
+      "sessionStorage": "B",
+      "indexedDb": "B"
+    }
+  },
+  "httpCacheIsolation": {
+    "hitCountAfterContextOneFirstNav": 1,
+    "hitCountAfterContextOneSecondNav": 1,
+    "hitCountAfterContextTwoFirstNav": 2
+  }
+}

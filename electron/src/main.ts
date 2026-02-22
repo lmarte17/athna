@@ -1,9 +1,12 @@
 import { app, BrowserWindow } from "electron";
 
+import { GhostContextManager } from "./ghost-context-manager.js";
+
 const FOREGROUND_WINDOW_SIZE = { width: 1280, height: 900 };
 const GHOST_TAB_PROTOTYPE_URL = "https://google.com/";
 const SMOKE_TEST_URL = "about:blank";
 const DEFAULT_REMOTE_DEBUGGING_PORT = "9333";
+const DEFAULT_GHOST_CONTEXT_COUNT = 1;
 
 const isSmokeTest = app.commandLine.hasSwitch("smoke-test");
 const keepAlive = app.commandLine.hasSwitch("keep-alive");
@@ -24,7 +27,10 @@ if (isCdpHost) {
 }
 
 let foregroundWindow: BrowserWindow | null = null;
-let ghostTabWindow: BrowserWindow | null = null;
+let ghostContextManager: GhostContextManager | null = null;
+let isQuitting = false;
+let cleanupInProgress = false;
+let cleanupCompleted = false;
 
 function getRemoteDebuggingPort(): string | null {
   const configuredPort = app.commandLine.getSwitchValue("remote-debugging-port");
@@ -44,6 +50,52 @@ function logHeadlessModeStatus(): void {
   );
 }
 
+function parsePositiveIntegerEnv(name: string, defaultValue: number): number {
+  const rawValue = process.env[name];
+  if (!rawValue || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer. Received: ${rawValue}`);
+  }
+
+  return parsed;
+}
+
+function parseBooleanEnv(name: string, defaultValue: boolean): boolean {
+  const rawValue = process.env[name];
+  if (!rawValue || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const normalized = rawValue.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  throw new Error(`${name} must be a boolean-like value. Received: ${rawValue}`);
+}
+
+function buildGhostContextBootstrapUrl(baseUrl: string, contextId: string): string {
+  if (baseUrl.startsWith("about:blank")) {
+    return `about:blank#ghost-context=${contextId}`;
+  }
+
+  try {
+    const parsed = new URL(baseUrl);
+    parsed.hash = `ghost-context=${contextId}`;
+    return parsed.toString();
+  } catch {
+    return `${baseUrl}#ghost-context=${contextId}`;
+  }
+}
+
 async function createForegroundWindow(): Promise<BrowserWindow> {
   const window = new BrowserWindow({
     ...FOREGROUND_WINDOW_SIZE,
@@ -53,32 +105,6 @@ async function createForegroundWindow(): Promise<BrowserWindow> {
 
   await window.loadURL("about:blank");
   return window;
-}
-
-async function createGhostTab(url: string): Promise<BrowserWindow> {
-  const ghostWindow = new BrowserWindow({
-    ...FOREGROUND_WINDOW_SIZE,
-    show: showGhostTab,
-    webPreferences: showGhostTab
-      ? undefined
-      : {
-          offscreen: true
-        }
-  });
-
-  ghostWindow.webContents.on("did-finish-load", () => {
-    console.info(`[ghost-tab] Navigated to ${ghostWindow.webContents.getURL()}`);
-  });
-
-  ghostWindow.webContents.on("did-fail-load", (...args) => {
-    const [, errorCode, errorDescription, validatedURL] = args;
-    console.error(
-      `[ghost-tab] Failed to load ${validatedURL}: (${String(errorCode)}) ${String(errorDescription)}`
-    );
-  });
-
-  await ghostWindow.loadURL(url);
-  return ghostWindow;
 }
 
 async function bootstrap(): Promise<void> {
@@ -92,16 +118,31 @@ async function bootstrap(): Promise<void> {
   }
 
   const ghostTabUrl = isCdpHost || isSmokeTest ? SMOKE_TEST_URL : GHOST_TAB_PROTOTYPE_URL;
-  ghostTabWindow = await createGhostTab(ghostTabUrl);
-  ghostTabWindow.on("closed", () => {
-    ghostTabWindow = null;
+  const ghostContextCount = parsePositiveIntegerEnv(
+    "GHOST_CONTEXT_COUNT",
+    DEFAULT_GHOST_CONTEXT_COUNT
+  );
+  const autoReplenish = parseBooleanEnv("GHOST_CONTEXT_AUTO_REPLENISH", false);
+
+  ghostContextManager = new GhostContextManager({
+    contextCount: ghostContextCount,
+    autoReplenish,
+    defaultSize: FOREGROUND_WINDOW_SIZE,
+    showGhostTab,
+    initialUrlForContext: (contextId) => buildGhostContextBootstrapUrl(ghostTabUrl, contextId),
+    logger: (line) => console.info(line)
   });
+  await ghostContextManager.initialize();
 
   if (isCdpHost) {
     const remoteDebugPort = getRemoteDebuggingPort();
     if (remoteDebugPort) {
       console.info(`[electron] CDP host listening on http://127.0.0.1:${remoteDebugPort}/json/version`);
     }
+    const contextSummaries = ghostContextManager.listContexts();
+    console.info(
+      `[electron] Ghost contexts ready count=${contextSummaries.length} autoReplenish=${autoReplenish}`
+    );
   }
 
   if (isSmokeTest && !keepAlive) {
@@ -126,5 +167,31 @@ app.on("activate", () => {
 });
 
 app.on("window-all-closed", () => {
+  if (isCdpHost && keepAlive && !isQuitting) {
+    return;
+  }
   app.quit();
+});
+
+app.on("before-quit", (event) => {
+  isQuitting = true;
+
+  if (cleanupCompleted || cleanupInProgress || !ghostContextManager) {
+    return;
+  }
+
+  cleanupInProgress = true;
+  event.preventDefault();
+
+  void ghostContextManager
+    .shutdown()
+    .catch((error: unknown) => {
+      console.error("[electron] Ghost context shutdown failed.", error);
+    })
+    .finally(() => {
+      cleanupInProgress = false;
+      cleanupCompleted = true;
+      ghostContextManager = null;
+      app.quit();
+    });
 });
