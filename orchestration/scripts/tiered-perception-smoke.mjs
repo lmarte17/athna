@@ -23,7 +23,7 @@ const CUSTOM_TASK_INTENT = process.env.PHASE2_TASK_INTENT;
 const CUSTOM_TASK_START_URL = process.env.PHASE2_TASK_START_URL;
 const CUSTOM_SCENARIO_NAME = process.env.PHASE2_SCENARIO;
 
-/** @typedef {{ expectTier1?: boolean, expectTier2?: boolean, expectAxDeficient?: boolean, expectTier3Scroll?: boolean, expectLowConfidenceEscalation?: boolean }} ScenarioExpectations */
+/** @typedef {{ expectTier1?: boolean, expectTier2?: boolean, expectAxDeficient?: boolean, expectTier3Scroll?: boolean, expectLowConfidenceEscalation?: boolean, expectDomBypass?: boolean }} ScenarioExpectations */
 
 /**
  * @typedef {Object} ScenarioConfig
@@ -105,6 +105,7 @@ const globalExpectations = {
   expectTier2: parseOptionalBooleanEnv("PHASE2_EXPECT_TIER2"),
   expectAxDeficient: parseOptionalBooleanEnv("PHASE2_EXPECT_AX_DEFICIENT"),
   expectTier3Scroll: parseOptionalBooleanEnv("PHASE2_EXPECT_TIER3_SCROLL"),
+  expectDomBypass: parseOptionalBooleanEnv("PHASE2_EXPECT_DOM_BYPASS"),
   expectLowConfidenceEscalation: parseOptionalBooleanEnv(
     "PHASE2_EXPECT_LOW_CONFIDENCE_ESCALATION"
   )
@@ -324,6 +325,44 @@ function validateLoopResult(loopResult, scenario) {
     }
   }
 
+  const historyByStep = new Map(
+    loopResult.history.map((record) => [Number(record?.step), record])
+  );
+  const axDeficientEscalations = loopResult.escalations.filter(
+    (event) => event?.reason === "AX_DEFICIENT"
+  );
+  for (const [index, escalation] of axDeficientEscalations.entries()) {
+    const record = historyByStep.get(Number(escalation.step));
+    if (!record) {
+      throw new Error(
+        `[${scenario.name}] AX_DEFICIENT escalation[${index}] missing matching history step=${String(escalation.step)}.`
+      );
+    }
+
+    if (!record.axDeficientDetected) {
+      throw new Error(
+        `[${scenario.name}] AX_DEFICIENT escalation[${index}] step=${record.step} did not mark axDeficientDetected=true.`
+      );
+    }
+
+    const signals = record.axDeficiencySignals;
+    if (!signals || typeof signals !== "object") {
+      throw new Error(
+        `[${scenario.name}] AX_DEFICIENT escalation[${index}] step=${record.step} missing axDeficiencySignals.`
+      );
+    }
+    if (!signals.isLoadComplete) {
+      throw new Error(
+        `[${scenario.name}] AX_DEFICIENT escalation[${index}] step=${record.step} violated load-complete gate.`
+      );
+    }
+    if (!signals.hasSignificantVisualContent) {
+      throw new Error(
+        `[${scenario.name}] AX_DEFICIENT escalation[${index}] step=${record.step} violated significant-visual-content gate.`
+      );
+    }
+  }
+
   const lowConfidenceEscalationCount = loopResult.escalations.filter(
     (event) => event.reason === "LOW_CONFIDENCE"
   ).length;
@@ -347,6 +386,126 @@ function validateLoopResult(loopResult, scenario) {
     throw new Error(
       `[${scenario.name}] tierUsage.unsafeActionEscalations does not match escalation events (${loopResult.tierUsage.unsafeActionEscalations} !== ${unsafeActionEscalationCount}).`
     );
+  }
+  const axDeficientPageLogs = Array.isArray(loopResult.axDeficientPages) ? loopResult.axDeficientPages : [];
+  const axDeficientDetections = Number(loopResult.tierUsage.axDeficientDetections ?? 0);
+  if (axDeficientPageLogs.length !== axDeficientDetections) {
+    throw new Error(
+      `[${scenario.name}] axDeficientPages count does not match tierUsage.axDeficientDetections (${axDeficientPageLogs.length} !== ${axDeficientDetections}).`
+    );
+  }
+
+  const tier3History = loopResult.history.filter((record) => record?.resolvedTier === "TIER_3_SCROLL");
+  const tier3ScrollCount = Number(loopResult.tierUsage.tier3Scrolls ?? 0);
+  if (tier3History.length !== tier3ScrollCount) {
+    throw new Error(
+      `[${scenario.name}] TIER_3_SCROLL history count does not match tierUsage.tier3Scrolls (${tier3History.length} !== ${tier3ScrollCount}).`
+    );
+  }
+  for (const [index, record] of tier3History.entries()) {
+    if (record?.action?.action !== "SCROLL") {
+      throw new Error(
+        `[${scenario.name}] TIER_3_SCROLL history[${index}] must execute SCROLL action.`
+      );
+    }
+    if (!record?.targetMightBeBelowFold) {
+      throw new Error(
+        `[${scenario.name}] TIER_3_SCROLL history[${index}] violated below-fold heuristic (targetMightBeBelowFold=false).`
+      );
+    }
+    const scrollPosition = record?.scrollPosition;
+    if (!scrollPosition || typeof scrollPosition !== "object") {
+      throw new Error(
+        `[${scenario.name}] TIER_3_SCROLL history[${index}] missing scrollPosition snapshot.`
+      );
+    }
+  }
+  const maxObservedScrollCount = loopResult.history.reduce((maxValue, record) => {
+    const count = Number(record?.scrollCount ?? 0);
+    return Number.isFinite(count) ? Math.max(maxValue, count) : maxValue;
+  }, 0);
+  const configuredMaxScrollSteps = Number(scenario.maxScrollSteps ?? 8);
+  if (maxObservedScrollCount > configuredMaxScrollSteps) {
+    throw new Error(
+      `[${scenario.name}] observed scrollCount exceeds configured maxScrollSteps (${maxObservedScrollCount} > ${configuredMaxScrollSteps}).`
+    );
+  }
+
+  for (const [index, record] of loopResult.history.entries()) {
+    if (!record || typeof record !== "object") {
+      throw new Error(`[${scenario.name}] history[${index}] is invalid.`);
+    }
+
+    if (index === 0) {
+      if (!record.axTreeRefetched || record.axTreeRefetchReason !== "INITIAL") {
+        throw new Error(
+          `[${scenario.name}] history[0] must refetch AX tree with refetchReason=INITIAL.`
+        );
+      }
+    } else {
+      const previous = loopResult.history[index - 1];
+      const expectedRefetchReason =
+        previous?.execution?.navigationObserved ||
+        previous?.urlAfterAction !== previous?.urlAtPerception
+          ? "NAVIGATION"
+          : previous?.action?.action === "SCROLL"
+            ? "SCROLL_ACTION"
+            : previous?.postActionSignificantDomMutationObserved
+              ? "SIGNIFICANT_DOM_MUTATION"
+              : "NONE";
+
+      if (expectedRefetchReason === "NONE") {
+        if (record.axTreeRefetched) {
+          throw new Error(
+            `[${scenario.name}] history[${index}] unexpectedly refetched AX tree without trigger.`
+          );
+        }
+      } else {
+        if (!record.axTreeRefetched) {
+          throw new Error(
+            `[${scenario.name}] history[${index}] missed AX tree refetch for reason=${expectedRefetchReason}.`
+          );
+        }
+        if (record.axTreeRefetchReason !== expectedRefetchReason) {
+          throw new Error(
+            `[${scenario.name}] history[${index}] refetch reason mismatch. expected=${expectedRefetchReason} actual=${record.axTreeRefetchReason}`
+          );
+        }
+      }
+    }
+
+    const mutationSummary = record.postActionMutationSummary;
+    const significantMutation = Boolean(record.postActionSignificantDomMutationObserved);
+    if (significantMutation) {
+      if (!mutationSummary || !mutationSummary.significantMutationObserved) {
+        throw new Error(
+          `[${scenario.name}] history[${index}] significant mutation flag missing supporting summary.`
+        );
+      }
+    }
+  }
+
+  const domBypassHistoryCount = loopResult.history.filter((record) => record?.domBypassUsed).length;
+  const domBypassUsage = Number(loopResult.tierUsage.domBypassResolutions ?? 0);
+  if (domBypassHistoryCount !== domBypassUsage) {
+    throw new Error(
+      `[${scenario.name}] domBypassResolutions does not match history domBypassUsed count (${domBypassUsage} !== ${domBypassHistoryCount}).`
+    );
+  }
+  for (const [index, record] of loopResult.history.entries()) {
+    if (!record?.domBypassUsed) {
+      continue;
+    }
+    if (!record.domExtractionAttempted) {
+      throw new Error(
+        `[${scenario.name}] history[${index}] domBypassUsed=true but domExtractionAttempted=false.`
+      );
+    }
+    if (record.resolvedTier !== "TIER_1_AX") {
+      throw new Error(
+        `[${scenario.name}] history[${index}] domBypassUsed=true must resolve without Tier 2 vision.`
+      );
+    }
   }
 
   const expectations = {
@@ -382,6 +541,12 @@ function validateLoopResult(loopResult, scenario) {
     expectations.expectLowConfidenceEscalation,
     lowConfidenceEscalationCount > 0,
     "expectLowConfidenceEscalation",
+    scenario.name
+  );
+  assertOptionalExpectation(
+    expectations.expectDomBypass,
+    domBypassHistoryCount > 0,
+    "expectDomBypass",
     scenario.name
   );
 }
@@ -447,9 +612,11 @@ function summarizeSuite(scenarioRuns) {
     lowConfidenceEscalations: 0,
     noProgressEscalations: 0,
     unsafeActionEscalations: 0,
+    domBypassResolutions: 0,
     resolvedAtTier1: 0,
     resolvedAtTier2: 0,
-    estimatedCostUsd: 0
+    estimatedCostUsd: 0,
+    estimatedVisionCostAvoidedUsd: 0
   };
 
   for (const run of scenarioRuns) {
@@ -461,12 +628,16 @@ function summarizeSuite(scenarioRuns) {
     totals.lowConfidenceEscalations += Number(usage.lowConfidenceEscalations ?? 0);
     totals.noProgressEscalations += Number(usage.noProgressEscalations ?? 0);
     totals.unsafeActionEscalations += Number(usage.unsafeActionEscalations ?? 0);
+    totals.domBypassResolutions += Number(usage.domBypassResolutions ?? 0);
     totals.resolvedAtTier1 += Number(usage.resolvedAtTier1 ?? 0);
     totals.resolvedAtTier2 += Number(usage.resolvedAtTier2 ?? 0);
     totals.estimatedCostUsd += Number(usage.estimatedCostUsd ?? 0);
+    totals.estimatedVisionCostAvoidedUsd += Number(usage.estimatedVisionCostAvoidedUsd ?? 0);
   }
 
   totals.estimatedCostUsd = Math.round(totals.estimatedCostUsd * 1_000_000) / 1_000_000;
+  totals.estimatedVisionCostAvoidedUsd =
+    Math.round(totals.estimatedVisionCostAvoidedUsd * 1_000_000) / 1_000_000;
 
   return totals;
 }

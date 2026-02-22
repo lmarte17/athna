@@ -1,10 +1,16 @@
 import type {
+  AXDeficiencySignals,
   ActionExecutionResult,
   AgentActionInput,
+  DomInteractiveElement,
+  DomMutationSummary,
+  ExtractDomInteractiveElementsResult,
   GhostTabCdpClient,
-  InteractiveElementIndexResult
+  InteractiveElementIndexResult,
+  ScrollPositionSnapshot
 } from "../cdp/client.js";
 import { encodeNormalizedAXTreeForNavigator } from "../ax-tree/toon-runtime.js";
+import type { ToonEncodingResult } from "../ax-tree/toon-runtime.js";
 import type {
   NavigatorActionDecision,
   NavigatorEngine,
@@ -19,12 +25,42 @@ const DEFAULT_AX_DEFICIENT_INTERACTIVE_THRESHOLD = 5;
 const DEFAULT_SCROLL_STEP_PX = 800;
 const DEFAULT_MAX_SCROLL_STEPS = 8;
 const DEFAULT_MAX_NO_PROGRESS_STEPS = 6;
+const DEFAULT_BELOW_FOLD_MARGIN_RATIO = 0.11;
 const ESTIMATED_TIER1_CALL_COST_USD = 0.00015;
 const ESTIMATED_TIER2_CALL_COST_USD = 0.003;
+const DOM_BYPASS_MIN_SCORE = 2;
+const DOM_BYPASS_MIN_SCORE_GAP = 1;
+const INTENT_STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "at",
+  "by",
+  "for",
+  "from",
+  "if",
+  "in",
+  "into",
+  "is",
+  "of",
+  "on",
+  "or",
+  "please",
+  "the",
+  "to",
+  "with"
+]);
 
 export type LoopState = "LOADING" | "PERCEIVING" | "INFERRING" | "ACTING" | "COMPLETE" | "FAILED";
 export type ResolvedPerceptionTier = NavigatorInferenceTier | "TIER_3_SCROLL";
 type EscalationTargetTier = NavigatorInferenceTier | "TIER_3_SCROLL";
+type AXTreeRefetchReason =
+  | "INITIAL"
+  | "URL_CHANGED"
+  | "NAVIGATION"
+  | "SIGNIFICANT_DOM_MUTATION"
+  | "SCROLL_ACTION"
+  | "NONE";
 
 export interface PerceptionActionTaskInput {
   intent: string;
@@ -50,14 +86,40 @@ export interface LoopStepRecord {
   resolvedTier: ResolvedPerceptionTier;
   escalationReason: NavigatorEscalationReason | null;
   axDeficientDetected: boolean;
+  axDeficiencySignals: AXDeficiencySignals;
+  axTreeRefetched: boolean;
+  axTreeRefetchReason: AXTreeRefetchReason;
+  scrollPosition: ScrollPositionSnapshot;
+  targetMightBeBelowFold: boolean;
   scrollCount: number;
   noProgressStreak: number;
+  postActionSignificantDomMutationObserved: boolean;
+  postActionMutationSummary: DomMutationSummary | null;
+  domExtractionAttempted: boolean;
+  domExtractionElementCount: number;
+  domBypassUsed: boolean;
+  domBypassMatchedText: string | null;
   interactiveElementCount: number;
   normalizedNodeCount: number;
   normalizedCharCount: number;
   navigatorNormalizedTreeCharCount: number;
   navigatorObservationCharCount: number;
   usedToonEncoding: boolean;
+  timestamp: string;
+}
+
+export interface AXDeficientPageLog {
+  step: number;
+  urlAtPerception: string;
+  interactiveElementCount: number;
+  threshold: number;
+  readyState: string;
+  isLoadComplete: boolean;
+  hasSignificantVisualContent: boolean;
+  visibleElementCount: number;
+  textCharCount: number;
+  mediaElementCount: number;
+  domInteractiveCandidateCount: number;
   timestamp: string;
 }
 
@@ -82,9 +144,11 @@ export interface TierUsageMetrics {
   lowConfidenceEscalations: number;
   noProgressEscalations: number;
   unsafeActionEscalations: number;
+  domBypassResolutions: number;
   resolvedAtTier1: number;
   resolvedAtTier2: number;
   estimatedCostUsd: number;
+  estimatedVisionCostAvoidedUsd: number;
 }
 
 export interface PerceptionActionTaskResult {
@@ -95,6 +159,7 @@ export interface PerceptionActionTaskResult {
   stepsTaken: number;
   history: LoopStepRecord[];
   escalations: EscalationEvent[];
+  axDeficientPages: AXDeficientPageLog[];
   tierUsage: TierUsageMetrics;
   finalAction: NavigatorActionDecision | null;
   finalExecution: ActionExecutionResult | null;
@@ -170,11 +235,18 @@ class PerceptionActionLoop {
 
     const history: LoopStepRecord[] = [];
     const escalations: EscalationEvent[] = [];
+    const axDeficientPages: AXDeficientPageLog[] = [];
     const previousActions: NavigatorActionDecision[] = [];
     const previousObservations: string[] = [];
     const tierUsage = createInitialTierUsageMetrics();
     let scrollCount = 0;
     let noProgressStreak = 0;
+    let pendingAXTreeRefetchReason: AXTreeRefetchReason = "INITIAL";
+    let cachedPerception: {
+      url: string;
+      indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
+      treeEncoding: ToonEncodingResult;
+    } | null = null;
 
     this.logger(`[loop] state=LOADING intent="${input.intent}" startUrl=${input.startUrl}`);
     await this.options.cdpClient.navigate(input.startUrl);
@@ -186,11 +258,44 @@ class PerceptionActionLoop {
     for (let step = 1; step <= maxSteps; step += 1) {
       const urlAtPerception = currentUrl;
       this.logger(`[loop][step ${step}] state=PERCEIVING url=${urlAtPerception}`);
-      const indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
-        includeBoundingBoxes: true,
-        charBudget: 8_000
+      const urlChangedSinceLastPerception =
+        cachedPerception !== null && cachedPerception.url !== urlAtPerception;
+      let axTreeRefetchReason = pendingAXTreeRefetchReason;
+      if (axTreeRefetchReason === "NONE" && urlChangedSinceLastPerception) {
+        axTreeRefetchReason = "URL_CHANGED";
+      }
+      const shouldRefetchAXTree = cachedPerception === null || axTreeRefetchReason !== "NONE";
+
+      let indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
+      let treeEncoding: ToonEncodingResult;
+      if (shouldRefetchAXTree) {
+        indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
+          includeBoundingBoxes: true,
+          charBudget: 8_000
+        });
+        treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
+        cachedPerception = {
+          url: urlAtPerception,
+          indexResult,
+          treeEncoding
+        };
+        pendingAXTreeRefetchReason = "NONE";
+      } else if (cachedPerception) {
+        indexResult = cachedPerception.indexResult;
+        treeEncoding = cachedPerception.treeEncoding;
+      } else {
+        throw new Error("Perception cache invariant violated.");
+      }
+
+      const axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
+      const scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
+      const belowFoldMarginPx = Math.max(24, Math.round(scrollStepPx * DEFAULT_BELOW_FOLD_MARGIN_RATIO));
+      const targetMightBeBelowFold = isTargetLikelyBelowFold(scrollPosition, belowFoldMarginPx);
+      const axDeficiencyEvaluation = evaluateAXDeficiency({
+        interactiveElementCount: indexResult.elementCount,
+        threshold: axDeficientInteractiveThreshold,
+        signals: axDeficiencySignals
       });
-      const treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
       const observation = {
         currentUrl: urlAtPerception,
         interactiveElementIndex: indexResult.elements,
@@ -200,13 +305,17 @@ class PerceptionActionLoop {
       };
       const tier1ObservationCharCount = JSON.stringify(observation).length;
       const tiersAttempted: NavigatorInferenceTier[] = [];
-      const axDeficientDetected = indexResult.elementCount < axDeficientInteractiveThreshold;
+      const axDeficientDetected = axDeficiencyEvaluation.detected;
       const shouldBypassTier1ForNoProgress = noProgressStreak > 0 && !axDeficientDetected;
       let escalationReason: NavigatorEscalationReason | null = null;
       let inferredAction: NavigatorActionDecision | null = null;
       let tier2ObservationCharCount = 0;
       let resolvedTier: ResolvedPerceptionTier = "TIER_1_AX";
       let tier2EscalationEvent: EscalationEvent | null = null;
+      let domExtractionAttempted = false;
+      let domExtractionElementCount = 0;
+      let domBypassUsed = false;
+      let domBypassMatchedText: string | null = null;
 
       if (shouldBypassTier1ForNoProgress) {
         escalationReason = "NO_PROGRESS";
@@ -230,7 +339,7 @@ class PerceptionActionLoop {
         tiersAttempted.push("TIER_1_AX");
         tierUsage.tier1Calls += 1;
         this.logger(
-          `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding}`
+          `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
         );
         const tier1Action = await this.options.navigatorEngine.decideNextAction({
           intent: input.intent,
@@ -267,6 +376,15 @@ class PerceptionActionLoop {
           );
         }
       } else {
+        axDeficientPages.push(
+          createAXDeficientPageLog({
+            step,
+            urlAtPerception,
+            interactiveElementCount: indexResult.elementCount,
+            threshold: axDeficientInteractiveThreshold,
+            signals: axDeficiencySignals
+          })
+        );
         escalationReason = "AX_DEFICIENT";
         tierUsage.axDeficientDetections += 1;
         tier2EscalationEvent = createEscalationEvent({
@@ -282,8 +400,67 @@ class PerceptionActionLoop {
         });
         escalations.push(tier2EscalationEvent);
         this.logger(
-          `[loop][step ${step}] escalation=AX_DEFICIENT elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} url=${urlAtPerception}`
+          `[loop][step ${step}] escalation=AX_DEFICIENT elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
         );
+      }
+
+      if (!axDeficientDetected && axDeficiencyEvaluation.lowInteractiveCount) {
+        this.logger(
+          `[loop][step ${step}] ax-deficient-check=SKIPPED reason=${axDeficiencyEvaluation.skipReason} elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
+        );
+      }
+
+      if (!inferredAction) {
+        const shouldAbortNoProgressViewportRecapture =
+          escalationReason === "NO_PROGRESS" &&
+          noProgressStreak >= 2 &&
+          !targetMightBeBelowFold;
+        if (shouldAbortNoProgressViewportRecapture) {
+          inferredAction = {
+            action: "FAILED",
+            target: null,
+            text: `Stopped after ${noProgressStreak} no-progress steps at scrollY=${Math.round(scrollPosition.scrollY)} on ${urlAtPerception}.`,
+            confidence: 1,
+            reasoning:
+              "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
+          };
+          resolvedTier = "TIER_2_VISION";
+          if (tier2EscalationEvent) {
+            tier2EscalationEvent.resolvedTier = "TIER_2_VISION";
+            tier2EscalationEvent.resolvedConfidence = inferredAction.confidence;
+          }
+          this.logger(
+            `[loop][step ${step}] state=FAILED reason=NO_BELOW_FOLD_CONTENT url=${urlAtPerception} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight}`
+          );
+        }
+      }
+
+      if (!inferredAction) {
+        domExtractionAttempted = true;
+        const domExtractionResult = await this.options.cdpClient.extractDomInteractiveElements({
+          maxElements: 140
+        });
+        domExtractionElementCount = domExtractionResult.elementCount;
+        const domBypassCandidate = resolveDomBypassAction({
+          intent: input.intent,
+          domExtraction: domExtractionResult
+        });
+
+        if (domBypassCandidate) {
+          inferredAction = domBypassCandidate.action;
+          domBypassUsed = true;
+          domBypassMatchedText = domBypassCandidate.matchedText;
+          resolvedTier = "TIER_1_AX";
+          tierUsage.domBypassResolutions += 1;
+          tierUsage.resolvedAtTier1 += 1;
+          if (tier2EscalationEvent) {
+            tier2EscalationEvent.resolvedTier = "TIER_1_AX";
+            tier2EscalationEvent.resolvedConfidence = domBypassCandidate.action.confidence;
+          }
+          this.logger(
+            `[loop][step ${step}] state=INFERRING tier=DOM_BYPASS url=${urlAtPerception} domElements=${domExtractionResult.elementCount} matched="${domBypassCandidate.matchedText}" score=${domBypassCandidate.score}`
+          );
+        }
       }
 
       if (!inferredAction) {
@@ -314,7 +491,7 @@ class PerceptionActionLoop {
         }).length;
 
         this.logger(
-          `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"}`
+          `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
         );
         inferredAction = await this.options.navigatorEngine.decideNextAction({
           intent: input.intent,
@@ -340,7 +517,8 @@ class PerceptionActionLoop {
           action: inferredAction,
           confidenceThreshold,
           noProgressStreak,
-          escalationReason
+          escalationReason,
+          targetMightBeBelowFold
         })
       ) {
         const tier3Escalation: EscalationEvent = createEscalationEvent({
@@ -413,6 +591,16 @@ class PerceptionActionLoop {
       })
         ? noProgressStreak + 1
         : 0;
+      const nextAXTreeRefetchReason = determineAXTreeRefetchReason({
+        action: actionToExecute,
+        execution,
+        urlAtPerception,
+        urlAfterAction: currentUrl
+      });
+      pendingAXTreeRefetchReason = nextAXTreeRefetchReason;
+      if (nextAXTreeRefetchReason !== "NONE") {
+        cachedPerception = null;
+      }
 
       history.push(
         createStepRecord({
@@ -428,8 +616,19 @@ class PerceptionActionLoop {
           resolvedTier,
           escalationReason,
           axDeficientDetected,
+          axDeficiencySignals,
+          axTreeRefetched: shouldRefetchAXTree,
+          axTreeRefetchReason,
+          scrollPosition,
+          targetMightBeBelowFold,
           scrollCount,
           noProgressStreak,
+          postActionSignificantDomMutationObserved: execution.significantDomMutationObserved,
+          postActionMutationSummary: execution.domMutationSummary,
+          domExtractionAttempted,
+          domExtractionElementCount,
+          domBypassUsed,
+          domBypassMatchedText,
           indexResult,
           navigatorNormalizedTreeCharCount: treeEncoding.encodedCharCount,
           navigatorObservationCharCount: observationCharCount,
@@ -439,7 +638,7 @@ class PerceptionActionLoop {
 
       previousActions.push(actionToExecute);
       previousObservations.push(
-        `step=${step} tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} nav=${execution.navigationObserved} dom=${execution.domMutationObserved} url=${currentUrl}`
+        `step=${step} tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} nav=${execution.navigationObserved} dom=${execution.domMutationObserved} sigDom=${execution.significantDomMutationObserved} url=${currentUrl}`
       );
 
       if (actionToExecute.action === "DONE" || execution.status === "done") {
@@ -452,6 +651,7 @@ class PerceptionActionLoop {
           stepsTaken: step,
           history,
           escalations,
+          axDeficientPages,
           tierUsage: finalizeTierUsageMetrics(tierUsage),
           finalAction: actionToExecute,
           finalExecution: execution
@@ -468,6 +668,7 @@ class PerceptionActionLoop {
           stepsTaken: step,
           history,
           escalations,
+          axDeficientPages,
           tierUsage: finalizeTierUsageMetrics(tierUsage),
           finalAction: actionToExecute,
           finalExecution: execution
@@ -495,6 +696,7 @@ class PerceptionActionLoop {
           stepsTaken: step,
           history,
           escalations,
+          axDeficientPages,
           tierUsage: finalizeTierUsageMetrics(tierUsage),
           finalAction: loopGuardFailure,
           finalExecution: execution
@@ -511,6 +713,7 @@ class PerceptionActionLoop {
       stepsTaken: maxSteps,
       history,
       escalations,
+      axDeficientPages,
       tierUsage: finalizeTierUsageMetrics(tierUsage),
       finalAction,
       finalExecution
@@ -541,8 +744,19 @@ function createStepRecord(input: {
   resolvedTier: ResolvedPerceptionTier;
   escalationReason: NavigatorEscalationReason | null;
   axDeficientDetected: boolean;
+  axDeficiencySignals: AXDeficiencySignals;
+  axTreeRefetched: boolean;
+  axTreeRefetchReason: AXTreeRefetchReason;
+  scrollPosition: ScrollPositionSnapshot;
+  targetMightBeBelowFold: boolean;
   scrollCount: number;
   noProgressStreak: number;
+  postActionSignificantDomMutationObserved: boolean;
+  postActionMutationSummary: DomMutationSummary | null;
+  domExtractionAttempted: boolean;
+  domExtractionElementCount: number;
+  domBypassUsed: boolean;
+  domBypassMatchedText: string | null;
   indexResult: InteractiveElementIndexResult;
   navigatorNormalizedTreeCharCount: number;
   navigatorObservationCharCount: number;
@@ -561,8 +775,19 @@ function createStepRecord(input: {
     resolvedTier: input.resolvedTier,
     escalationReason: input.escalationReason,
     axDeficientDetected: input.axDeficientDetected,
+    axDeficiencySignals: input.axDeficiencySignals,
+    axTreeRefetched: input.axTreeRefetched,
+    axTreeRefetchReason: input.axTreeRefetchReason,
+    scrollPosition: input.scrollPosition,
+    targetMightBeBelowFold: input.targetMightBeBelowFold,
     scrollCount: input.scrollCount,
     noProgressStreak: input.noProgressStreak,
+    postActionSignificantDomMutationObserved: input.postActionSignificantDomMutationObserved,
+    postActionMutationSummary: input.postActionMutationSummary,
+    domExtractionAttempted: input.domExtractionAttempted,
+    domExtractionElementCount: input.domExtractionElementCount,
+    domBypassUsed: input.domBypassUsed,
+    domBypassMatchedText: input.domBypassMatchedText,
     interactiveElementCount: input.indexResult.elementCount,
     normalizedNodeCount: input.indexResult.normalizedNodeCount,
     normalizedCharCount: input.indexResult.normalizedCharCount,
@@ -573,12 +798,195 @@ function createStepRecord(input: {
   };
 }
 
+function evaluateAXDeficiency(input: {
+  interactiveElementCount: number;
+  threshold: number;
+  signals: AXDeficiencySignals;
+}): {
+  detected: boolean;
+  lowInteractiveCount: boolean;
+  skipReason: "INTERACTIVE_COUNT_OK" | "LOAD_NOT_COMPLETE" | "INSUFFICIENT_VISUAL_CONTENT" | null;
+} {
+  const lowInteractiveCount = input.interactiveElementCount < input.threshold;
+  if (!lowInteractiveCount) {
+    return {
+      detected: false,
+      lowInteractiveCount: false,
+      skipReason: "INTERACTIVE_COUNT_OK"
+    };
+  }
+
+  if (!input.signals.isLoadComplete) {
+    return {
+      detected: false,
+      lowInteractiveCount: true,
+      skipReason: "LOAD_NOT_COMPLETE"
+    };
+  }
+
+  if (!input.signals.hasSignificantVisualContent) {
+    return {
+      detected: false,
+      lowInteractiveCount: true,
+      skipReason: "INSUFFICIENT_VISUAL_CONTENT"
+    };
+  }
+
+  return {
+    detected: true,
+    lowInteractiveCount: true,
+    skipReason: null
+  };
+}
+
+function createAXDeficientPageLog(input: {
+  step: number;
+  urlAtPerception: string;
+  interactiveElementCount: number;
+  threshold: number;
+  signals: AXDeficiencySignals;
+}): AXDeficientPageLog {
+  return {
+    step: input.step,
+    urlAtPerception: input.urlAtPerception,
+    interactiveElementCount: input.interactiveElementCount,
+    threshold: input.threshold,
+    readyState: input.signals.readyState,
+    isLoadComplete: input.signals.isLoadComplete,
+    hasSignificantVisualContent: input.signals.hasSignificantVisualContent,
+    visibleElementCount: input.signals.visibleElementCount,
+    textCharCount: input.signals.textCharCount,
+    mediaElementCount: input.signals.mediaElementCount,
+    domInteractiveCandidateCount: input.signals.domInteractiveCandidateCount,
+    timestamp: new Date().toISOString()
+  };
+}
+
+function isTargetLikelyBelowFold(
+  scrollPosition: ScrollPositionSnapshot,
+  belowFoldMarginPx: number
+): boolean {
+  return scrollPosition.remainingScrollPx > Math.max(0, Math.round(belowFoldMarginPx));
+}
+
+function resolveDomBypassAction(input: {
+  intent: string;
+  domExtraction: ExtractDomInteractiveElementsResult;
+}): { action: NavigatorActionDecision; matchedText: string; score: number } | null {
+  const intentTokens = tokenizeIntent(input.intent);
+  if (intentTokens.length === 0 || input.domExtraction.elements.length === 0) {
+    return null;
+  }
+
+  const scored = input.domExtraction.elements
+    .map((element) => {
+      const text = normalizeText(element.text);
+      const roleHint = normalizeText(element.role ?? "");
+      const hrefHint = normalizeText(element.href ?? "");
+      const combined = `${text} ${roleHint} ${hrefHint}`.trim();
+      const tokenMatches = intentTokens.filter((token) => combined.includes(token)).length;
+      let score = tokenMatches;
+
+      if ((element.tag === "a" || element.role === "link") && intentTokens.includes("link")) {
+        score += 1;
+      }
+      if (
+        (element.tag === "input" || element.tag === "textarea" || element.role === "textbox") &&
+        intentTokens.some((token) => token === "search" || token === "find")
+      ) {
+        score += 1;
+      }
+
+      return {
+        element,
+        score
+      };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  if (scored.length === 0) {
+    return null;
+  }
+
+  const best = scored[0];
+  const second = scored[1];
+  if (best.score < DOM_BYPASS_MIN_SCORE) {
+    return null;
+  }
+  if (second && best.score - second.score < DOM_BYPASS_MIN_SCORE_GAP) {
+    return null;
+  }
+
+  const box = best.element.boundingBox;
+  if (!box || box.width <= 0 || box.height <= 0) {
+    return null;
+  }
+
+  return {
+    action: {
+      action: "CLICK",
+      target: {
+        x: round3(box.x + box.width / 2),
+        y: round3(box.y + box.height / 2)
+      },
+      text: null,
+      confidence: 0.9,
+      reasoning:
+        "DOM extraction bypass selected a single high-confidence interactive target without requiring a screenshot."
+    },
+    matchedText: best.element.text || best.element.href || best.element.tag,
+    score: best.score
+  };
+}
+
+function tokenizeIntent(intent: string): string[] {
+  return normalizeText(intent)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3 && !INTENT_STOP_WORDS.has(token));
+}
+
+function normalizeText(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function round3(value: number): number {
+  return Math.round(value * 1_000) / 1_000;
+}
+
+function determineAXTreeRefetchReason(input: {
+  action: NavigatorActionDecision;
+  execution: ActionExecutionResult;
+  urlAtPerception: string;
+  urlAfterAction: string;
+}): AXTreeRefetchReason {
+  if (input.execution.navigationObserved || input.urlAfterAction !== input.urlAtPerception) {
+    return "NAVIGATION";
+  }
+
+  if (input.action.action === "SCROLL") {
+    return "SCROLL_ACTION";
+  }
+
+  if (input.execution.significantDomMutationObserved) {
+    return "SIGNIFICANT_DOM_MUTATION";
+  }
+
+  return "NONE";
+}
+
 function shouldTriggerTier3Scroll(input: {
   action: NavigatorActionDecision;
   confidenceThreshold: number;
   noProgressStreak: number;
   escalationReason: NavigatorEscalationReason | null;
+  targetMightBeBelowFold: boolean;
 }): boolean {
+  if (!input.targetMightBeBelowFold) {
+    return false;
+  }
+
   if (input.action.action === "SCROLL" || input.action.action === "FAILED") {
     return true;
   }
@@ -604,9 +1012,11 @@ function createInitialTierUsageMetrics(): TierUsageMetrics {
     lowConfidenceEscalations: 0,
     noProgressEscalations: 0,
     unsafeActionEscalations: 0,
+    domBypassResolutions: 0,
     resolvedAtTier1: 0,
     resolvedAtTier2: 0,
-    estimatedCostUsd: 0
+    estimatedCostUsd: 0,
+    estimatedVisionCostAvoidedUsd: 0
   };
 }
 
@@ -675,7 +1085,8 @@ function finalizeTierUsageMetrics(metrics: TierUsageMetrics): TierUsageMetrics {
     estimatedCostUsd: round6(
       metrics.tier1Calls * ESTIMATED_TIER1_CALL_COST_USD +
         metrics.tier2Calls * ESTIMATED_TIER2_CALL_COST_USD
-    )
+    ),
+    estimatedVisionCostAvoidedUsd: round6(metrics.domBypassResolutions * ESTIMATED_TIER2_CALL_COST_USD)
   };
 }
 

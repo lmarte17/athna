@@ -141,6 +141,56 @@ export interface ExtractInteractiveElementIndexResult extends InteractiveElement
   normalizedAXTree: ExtractNormalizedAXTreeResult;
 }
 
+export interface AXDeficiencySignals {
+  readyState: string;
+  isLoadComplete: boolean;
+  hasSignificantVisualContent: boolean;
+  visibleElementCount: number;
+  textCharCount: number;
+  mediaElementCount: number;
+  domInteractiveCandidateCount: number;
+}
+
+export interface ScrollPositionSnapshot {
+  scrollY: number;
+  viewportHeight: number;
+  documentHeight: number;
+  maxScrollY: number;
+  remainingScrollPx: number;
+  atTop: boolean;
+  atBottom: boolean;
+}
+
+export interface DomInteractiveElement {
+  tag: string;
+  role: string | null;
+  type: string | null;
+  text: string;
+  href: string | null;
+  inputValue: string | null;
+  computedStyle: {
+    display: string;
+    visibility: string;
+    opacity: number;
+    pointerEvents: string;
+    cursor: string;
+  };
+  boundingBox: BoundingBox;
+  isVisible: boolean;
+  isInteractive: boolean;
+}
+
+export interface ExtractDomInteractiveElementsOptions {
+  maxElements?: number;
+}
+
+export interface ExtractDomInteractiveElementsResult {
+  elements: DomInteractiveElement[];
+  elementCount: number;
+  json: string;
+  jsonCharCount: number;
+}
+
 export type AgentActionType = (typeof AGENT_ACTION_TYPES)[number];
 
 export interface AgentActionTarget {
@@ -160,12 +210,23 @@ export interface ExecuteActionOptions {
   settleTimeoutMs?: number;
 }
 
+export interface DomMutationSummary {
+  mutationObserved: boolean;
+  significantMutationObserved: boolean;
+  addedOrRemovedNodeCount: number;
+  interactiveRoleMutationCount: number;
+  childListMutationCount: number;
+  attributeMutationCount: number;
+}
+
 export interface ActionExecutionResult {
   status: "acted" | "done" | "failed";
   action: AgentActionType;
   currentUrl: string;
   navigationObserved: boolean;
   domMutationObserved: boolean;
+  significantDomMutationObserved: boolean;
+  domMutationSummary: DomMutationSummary | null;
   extractedData: unknown;
   message: string | null;
 }
@@ -184,6 +245,11 @@ export interface GhostTabCdpClient {
   extractInteractiveElementIndex(
     options?: ExtractInteractiveElementIndexOptions
   ): Promise<ExtractInteractiveElementIndexResult>;
+  extractDomInteractiveElements(
+    options?: ExtractDomInteractiveElementsOptions
+  ): Promise<ExtractDomInteractiveElementsResult>;
+  getAXDeficiencySignals(): Promise<AXDeficiencySignals>;
+  getScrollPositionSnapshot(): Promise<ScrollPositionSnapshot>;
   executeAction(action: AgentActionInput, options?: ExecuteActionOptions): Promise<ActionExecutionResult>;
   getCurrentUrl(): Promise<string>;
   captureScreenshot(options?: CaptureScreenshotOptions): Promise<CaptureScreenshotResult>;
@@ -206,6 +272,10 @@ interface ResolvedCaptureScreenshotOptions {
   scrollStepPx: number;
   maxScrollSteps: number;
   scrollSettleMs: number;
+}
+
+interface ResolvedExtractDomInteractiveElementsOptions {
+  maxElements: number;
 }
 
 interface DocumentMetrics {
@@ -303,6 +373,245 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     };
   }
 
+  async extractDomInteractiveElements(
+    options: ExtractDomInteractiveElementsOptions = {}
+  ): Promise<ExtractDomInteractiveElementsResult> {
+    const resolvedOptions = resolveExtractDomInteractiveElementsOptions(options);
+    const elements = await evaluateJsonExpression<DomInteractiveElement[]>(
+      this.cdpSession,
+      `(() => {
+        const maxElements = ${resolvedOptions.maxElements};
+        const interactiveSelector = [
+          "button",
+          "a[href]",
+          "input",
+          "select",
+          "textarea",
+          "[role='button']",
+          "[role='link']",
+          "[role='textbox']",
+          "[role='combobox']",
+          "[role='checkbox']",
+          "[role='radio']",
+          "[role='menuitem']",
+          "[role='tab']",
+          "[role='searchbox']",
+          "[role='spinbutton']",
+          "[role='slider']",
+          "[role='switch']",
+          "[tabindex]"
+        ].join(",");
+        const matches = Array.from(document.querySelectorAll(interactiveSelector));
+        const unique = [];
+        const seen = new Set();
+
+        const isVisible = (element) => {
+          if (!(element instanceof Element)) return false;
+          const style = window.getComputedStyle(element);
+          if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") === 0) {
+            return false;
+          }
+          const rect = element.getBoundingClientRect();
+          if (rect.width < 2 || rect.height < 2) return false;
+          const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+          const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+          if (rect.bottom < 0 || rect.right < 0 || rect.top > vh || rect.left > vw) {
+            return false;
+          }
+          return true;
+        };
+
+        const readText = (element) => {
+          const direct = (element.innerText || element.textContent || "").replace(/\\s+/g, " ").trim();
+          if (direct.length > 0) return direct.slice(0, 180);
+
+          const aria = (
+            element.getAttribute("aria-label") ||
+            element.getAttribute("title") ||
+            element.getAttribute("placeholder") ||
+            element.getAttribute("name") ||
+            ""
+          ).replace(/\\s+/g, " ").trim();
+          if (aria.length > 0) return aria.slice(0, 180);
+
+          if (element instanceof HTMLInputElement) {
+            return (element.value || "").replace(/\\s+/g, " ").trim().slice(0, 180);
+          }
+          return "";
+        };
+
+        const readInputValue = (element) => {
+          if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) {
+            return (element.value || "").replace(/\\s+/g, " ").trim().slice(0, 180);
+          }
+          return null;
+        };
+
+        for (const element of matches) {
+          if (!(element instanceof HTMLElement)) {
+            continue;
+          }
+          if (!isVisible(element)) {
+            continue;
+          }
+          if (seen.has(element)) {
+            continue;
+          }
+          seen.add(element);
+          unique.push(element);
+          if (unique.length >= maxElements) {
+            break;
+          }
+        }
+
+        return unique.map((element) => {
+          const rect = element.getBoundingClientRect();
+          const scrollX = window.scrollX || window.pageXOffset || 0;
+          const scrollY = window.scrollY || window.pageYOffset || 0;
+          const style = window.getComputedStyle(element);
+          const opacity = Number.parseFloat(style.opacity || "1");
+          return {
+            tag: element.tagName.toLowerCase(),
+            role: element.getAttribute("role"),
+            type: element instanceof HTMLInputElement ? element.type || null : null,
+            text: readText(element),
+            href: element instanceof HTMLAnchorElement ? element.href || null : null,
+            inputValue: readInputValue(element),
+            computedStyle: {
+              display: style.display,
+              visibility: style.visibility,
+              opacity: Number.isFinite(opacity) ? opacity : 1,
+              pointerEvents: style.pointerEvents,
+              cursor: style.cursor
+            },
+            boundingBox: {
+              x: Math.round((rect.left + scrollX) * 1000) / 1000,
+              y: Math.round((rect.top + scrollY) * 1000) / 1000,
+              width: Math.round(rect.width * 1000) / 1000,
+              height: Math.round(rect.height * 1000) / 1000
+            },
+            isVisible: true,
+            isInteractive: true
+          };
+        });
+      })();`
+    );
+    const json = JSON.stringify(elements);
+
+    return {
+      elements,
+      elementCount: elements.length,
+      json,
+      jsonCharCount: json.length
+    };
+  }
+
+  async getAXDeficiencySignals(): Promise<AXDeficiencySignals> {
+    return evaluateJsonExpression<AXDeficiencySignals>(
+      this.cdpSession,
+      `(() => {
+        const root = document.body || document.documentElement;
+        const readyState = document.readyState || "loading";
+        const isLoadComplete = readyState === "complete";
+
+        const text = root ? (root.innerText || root.textContent || "") : "";
+        const textCharCount = text.replace(/\\s+/g, " ").trim().length;
+
+        const mediaElementCount = document.querySelectorAll("img, canvas, svg, video, iframe").length;
+
+        const domInteractiveCandidateCount = document.querySelectorAll(
+          "button, a[href], input, select, textarea, [role='button'], [role='link'], [role='textbox'], [tabindex]"
+        ).length;
+
+        const candidates = root ? Array.from(root.querySelectorAll("*")).slice(0, 2000) : [];
+        let visibleElementCount = 0;
+        const viewportHeight = window.innerHeight || 0;
+        const viewportWidth = window.innerWidth || 0;
+
+        for (const element of candidates) {
+          if (!(element instanceof Element)) {
+            continue;
+          }
+
+          const style = window.getComputedStyle(element);
+          if (
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            Number(style.opacity || "1") === 0
+          ) {
+            continue;
+          }
+
+          const rect = element.getBoundingClientRect();
+          if (rect.width < 2 || rect.height < 2) {
+            continue;
+          }
+          if (
+            rect.bottom < 0 ||
+            rect.right < 0 ||
+            rect.top > viewportHeight ||
+            rect.left > viewportWidth
+          ) {
+            continue;
+          }
+
+          visibleElementCount += 1;
+        }
+
+        const hasSignificantVisualContent =
+          isLoadComplete &&
+          (
+            visibleElementCount >= 4 ||
+            textCharCount >= 40 ||
+            mediaElementCount >= 1 ||
+            domInteractiveCandidateCount >= 6
+          );
+
+        return {
+          readyState,
+          isLoadComplete,
+          hasSignificantVisualContent,
+          visibleElementCount,
+          textCharCount,
+          mediaElementCount,
+          domInteractiveCandidateCount
+        };
+      })();`
+    );
+  }
+
+  async getScrollPositionSnapshot(): Promise<ScrollPositionSnapshot> {
+    return evaluateJsonExpression<ScrollPositionSnapshot>(
+      this.cdpSession,
+      `(() => {
+        const body = document.body;
+        const html = document.documentElement;
+        const viewportHeight = window.innerHeight || (html ? html.clientHeight : 0);
+        const documentHeight = Math.max(
+          viewportHeight,
+          body ? body.scrollHeight : 0,
+          body ? body.offsetHeight : 0,
+          html ? html.scrollHeight : 0,
+          html ? html.offsetHeight : 0
+        );
+        const scrollY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+        const maxScrollY = Math.max(0, documentHeight - viewportHeight);
+        const remainingScrollPx = Math.max(0, maxScrollY - scrollY);
+        const atBottom = remainingScrollPx <= 2;
+
+        return {
+          scrollY,
+          viewportHeight,
+          documentHeight,
+          maxScrollY,
+          remainingScrollPx,
+          atTop: scrollY <= 2,
+          atBottom
+        };
+      })();`
+    );
+  }
+
   async executeAction(
     actionInput: AgentActionInput,
     options: ExecuteActionOptions = {}
@@ -324,6 +633,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: settle.navigationObserved,
           domMutationObserved: settle.domMutationObserved,
+          significantDomMutationObserved: settle.significantDomMutationObserved,
+          domMutationSummary: settle.domMutationSummary,
           extractedData: null,
           message: null
         };
@@ -341,6 +652,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: settle.navigationObserved,
           domMutationObserved: settle.domMutationObserved,
+          significantDomMutationObserved: settle.significantDomMutationObserved,
+          domMutationSummary: settle.domMutationSummary,
           extractedData: null,
           message: null
         };
@@ -355,6 +668,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: settle.navigationObserved,
           domMutationObserved: settle.domMutationObserved,
+          significantDomMutationObserved: settle.significantDomMutationObserved,
+          domMutationSummary: settle.domMutationSummary,
           extractedData: null,
           message: null
         };
@@ -369,6 +684,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: settle.navigationObserved,
           domMutationObserved: settle.domMutationObserved,
+          significantDomMutationObserved: settle.significantDomMutationObserved,
+          domMutationSummary: settle.domMutationSummary,
           extractedData: null,
           message: `Waited ${waitMs}ms`
         };
@@ -382,6 +699,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: settle.navigationObserved,
           domMutationObserved: settle.domMutationObserved,
+          significantDomMutationObserved: settle.significantDomMutationObserved,
+          domMutationSummary: settle.domMutationSummary,
           extractedData: extractionResult,
           message: null
         };
@@ -393,6 +712,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: false,
           domMutationObserved: false,
+          significantDomMutationObserved: false,
+          domMutationSummary: null,
           extractedData: null,
           message: action.text
         };
@@ -403,6 +724,8 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: false,
           domMutationObserved: false,
+          significantDomMutationObserved: false,
+          domMutationSummary: null,
           extractedData: null,
           message: action.text
         };
@@ -792,6 +1115,19 @@ function resolveCaptureScreenshotOptions(
   };
 }
 
+function resolveExtractDomInteractiveElementsOptions(
+  options: ExtractDomInteractiveElementsOptions
+): ResolvedExtractDomInteractiveElementsOptions {
+  const maxElements = options.maxElements ?? 120;
+  if (!Number.isFinite(maxElements) || maxElements <= 0) {
+    throw new Error(`maxElements must be > 0. Received: ${String(options.maxElements)}`);
+  }
+
+  return {
+    maxElements: Math.min(500, Math.floor(maxElements))
+  };
+}
+
 function resolveExtractNormalizedAXTreeOptions(
   options: ExtractNormalizedAXTreeOptions
 ): ResolvedExtractNormalizedAXTreeOptions {
@@ -962,79 +1298,184 @@ async function waitForDOMContentLoaded(cdpSession: CDPSession, timeoutMs = 10_00
 async function waitForNavigationOrDomMutation(
   cdpSession: CDPSession,
   timeoutMs: number
-): Promise<{ navigationObserved: boolean; domMutationObserved: boolean }> {
+): Promise<{
+  navigationObserved: boolean;
+  domMutationObserved: boolean;
+  significantDomMutationObserved: boolean;
+  domMutationSummary: DomMutationSummary | null;
+}> {
   return new Promise((resolve) => {
     let settled = false;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
 
-    const finish = (result: { navigationObserved: boolean; domMutationObserved: boolean }): void => {
+    const finish = (result: {
+      navigationObserved: boolean;
+      domMutationObserved: boolean;
+      significantDomMutationObserved: boolean;
+      domMutationSummary: DomMutationSummary | null;
+    }): void => {
       if (settled) {
         return;
       }
       settled = true;
       cdpSession.off("Page.loadEventFired", onLoadEvent);
-      if (timeout) {
-        clearTimeout(timeout);
-      }
       resolve(result);
     };
 
     const onLoadEvent = (): void => {
       finish({
         navigationObserved: true,
-        domMutationObserved: false
+        domMutationObserved: false,
+        significantDomMutationObserved: false,
+        domMutationSummary: null
       });
     };
 
     cdpSession.on("Page.loadEventFired", onLoadEvent);
 
     void waitForDomMutationSignal(cdpSession, timeoutMs)
-      .then((mutationObserved) => {
+      .then((mutationSummary) => {
         finish({
           navigationObserved: false,
-          domMutationObserved: mutationObserved
+          domMutationObserved: mutationSummary.mutationObserved,
+          significantDomMutationObserved: mutationSummary.significantMutationObserved,
+          domMutationSummary: mutationSummary
         });
       })
       .catch(() => {
         finish({
           navigationObserved: false,
-          domMutationObserved: false
+          domMutationObserved: false,
+          significantDomMutationObserved: false,
+          domMutationSummary: null
         });
       });
-
-    timeout = setTimeout(() => {
-      finish({
-        navigationObserved: false,
-        domMutationObserved: false
-      });
-    }, timeoutMs + 25);
   });
 }
 
 async function waitForDomMutationSignal(
   cdpSession: CDPSession,
   timeoutMs: number
-): Promise<boolean> {
-  const signal = await evaluateJsonExpression<string>(
+): Promise<DomMutationSummary> {
+  const mutationSummary = await evaluateJsonExpression<DomMutationSummary>(
     cdpSession,
     `(() => new Promise((resolve) => {
       const root = document.documentElement || document.body;
       if (!root) {
-        resolve("no-root");
+        resolve({
+          mutationObserved: false,
+          significantMutationObserved: false,
+          addedOrRemovedNodeCount: 0,
+          interactiveRoleMutationCount: 0,
+          childListMutationCount: 0,
+          attributeMutationCount: 0
+        });
         return;
       }
 
+      const interactiveSelector = [
+        "button",
+        "a[href]",
+        "input",
+        "select",
+        "textarea",
+        "[role='button']",
+        "[role='link']",
+        "[role='textbox']",
+        "[role='combobox']",
+        "[role='checkbox']",
+        "[role='radio']",
+        "[role='menuitem']",
+        "[role='tab']",
+        "[role='searchbox']",
+        "[role='spinbutton']",
+        "[role='slider']",
+        "[role='switch']"
+      ].join(",");
+
       let settled = false;
-      const finish = (value) => {
+      let addedOrRemovedNodeCount = 0;
+      let interactiveRoleMutationCount = 0;
+      let childListMutationCount = 0;
+      let attributeMutationCount = 0;
+
+      const hasInteractiveRole = (node) => {
+        if (!(node instanceof Element)) {
+          return false;
+        }
+        return node.matches(interactiveSelector);
+      };
+
+      const nodeContainsInteractiveRole = (node) => {
+        if (!(node instanceof Element)) {
+          return false;
+        }
+        if (hasInteractiveRole(node)) {
+          return true;
+        }
+        return Boolean(node.querySelector(interactiveSelector));
+      };
+
+      const isSignificant = () =>
+        addedOrRemovedNodeCount >= 3 || interactiveRoleMutationCount > 0;
+
+      const finish = () => {
         if (settled) return;
         settled = true;
         observer.disconnect();
-        resolve(value);
+        resolve({
+          mutationObserved:
+            childListMutationCount > 0 || attributeMutationCount > 0,
+          significantMutationObserved: isSignificant(),
+          addedOrRemovedNodeCount,
+          interactiveRoleMutationCount,
+          childListMutationCount,
+          attributeMutationCount
+        });
       };
 
       const observer = new MutationObserver((mutations) => {
-        if (mutations && mutations.length > 0) {
-          finish("dom-mutation");
+        if (!mutations || mutations.length === 0) {
+          return;
+        }
+
+        for (const mutation of mutations) {
+          if (mutation.type === "childList") {
+            childListMutationCount += 1;
+            addedOrRemovedNodeCount += mutation.addedNodes.length + mutation.removedNodes.length;
+
+            if (nodeContainsInteractiveRole(mutation.target)) {
+              interactiveRoleMutationCount += 1;
+              continue;
+            }
+
+            const allNodes = [
+              ...Array.from(mutation.addedNodes),
+              ...Array.from(mutation.removedNodes)
+            ];
+            if (allNodes.some((node) => nodeContainsInteractiveRole(node))) {
+              interactiveRoleMutationCount += 1;
+            }
+            continue;
+          }
+
+          if (mutation.type === "attributes") {
+            attributeMutationCount += 1;
+            const target = mutation.target;
+            const attributeName = (mutation.attributeName || "").toLowerCase();
+            const interactiveAttribute =
+              attributeName === "role" ||
+              attributeName === "tabindex" ||
+              attributeName === "href" ||
+              attributeName.startsWith("aria-") ||
+              attributeName === "disabled";
+            if (interactiveAttribute || hasInteractiveRole(target)) {
+              interactiveRoleMutationCount += 1;
+            }
+          }
+        }
+
+        if (isSignificant()) {
+          finish();
         }
       });
 
@@ -1042,14 +1483,27 @@ async function waitForDomMutationSignal(
         subtree: true,
         childList: true,
         attributes: true,
-        characterData: true
+        attributeFilter: [
+          "role",
+          "tabindex",
+          "href",
+          "disabled",
+          "aria-label",
+          "aria-labelledby",
+          "aria-describedby",
+          "aria-hidden",
+          "aria-expanded",
+          "aria-controls",
+          "aria-selected",
+          "aria-checked"
+        ]
       });
 
-      setTimeout(() => finish("timeout"), ${Math.max(1, timeoutMs)});
+      setTimeout(() => finish(), ${Math.max(1, timeoutMs)});
     }))();`
   );
 
-  return signal === "dom-mutation";
+  return mutationSummary;
 }
 
 async function normalizeAXNodes(

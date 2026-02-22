@@ -1,4 +1,5 @@
 export {
+  type AXDeficiencySignals,
   type ActionExecutionResult,
   type AgentActionInput,
   type AgentActionTarget,
@@ -10,7 +11,11 @@ export {
   type CaptureScreenshotResult,
   type CaptureJpegOptions,
   type ConnectToGhostTabCdpOptions,
+  type DomInteractiveElement,
+  type DomMutationSummary,
   type ExecuteActionOptions,
+  type ExtractDomInteractiveElementsOptions,
+  type ExtractDomInteractiveElementsResult,
   type ExtractInteractiveElementIndexOptions,
   type ExtractInteractiveElementIndexResult,
   type ExtractNormalizedAXTreeOptions,
@@ -19,6 +24,7 @@ export {
   type InteractiveElementIndexEntry,
   type InteractiveElementIndexResult,
   type NormalizedAXNode,
+  type ScrollPositionSnapshot,
   type ScreenshotClipRegion,
   type ScreenshotMode,
   type GhostTabCdpClient
@@ -40,6 +46,7 @@ export {
 } from "./navigator/engine.js";
 
 export {
+  type AXDeficientPageLog,
   createPerceptionActionLoop,
   type EscalationEvent,
   type LoopState,
