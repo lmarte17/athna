@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type {
   AXDeficiencySignals,
   ActionExecutionResult,
@@ -35,6 +37,12 @@ import {
   type NavigatorContextWindowMetrics
 } from "../navigator/context-window.js";
 import {
+  createNavigatorObservationCacheManager,
+  createObservationDecisionCacheKey,
+  DEFAULT_NAVIGATOR_OBSERVATION_CACHE_TTL_MS,
+  type NavigatorObservationCacheMetrics
+} from "../navigator/observation-cache.js";
+import {
   createGhostTabTaskErrorDetail,
   createGhostTabTaskStateMachine,
   type GhostTabStateTransitionEvent,
@@ -51,6 +59,7 @@ const DEFAULT_MAX_SCROLL_STEPS = 8;
 const DEFAULT_MAX_NO_PROGRESS_STEPS = 6;
 const DEFAULT_MAX_SUBTASK_RETRIES = 2;
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 30_000;
+const DEFAULT_OBSERVATION_CACHE_TTL_MS = DEFAULT_NAVIGATOR_OBSERVATION_CACHE_TTL_MS;
 const DEFAULT_BELOW_FOLD_MARGIN_RATIO = 0.11;
 const ESTIMATED_TIER1_CALL_COST_USD = 0.00015;
 const ESTIMATED_TIER2_CALL_COST_USD = 0.003;
@@ -101,6 +110,7 @@ export interface PerceptionActionTaskInput {
   maxNoProgressSteps?: number;
   maxSubtaskRetries?: number;
   navigationTimeoutMs?: number;
+  observationCacheTtlMs?: number;
 }
 
 export interface TaskCheckpointArtifact {
@@ -203,6 +213,11 @@ export interface LoopStepRecord {
   contextTotalPairCount: number;
   contextSummaryIncluded: boolean;
   contextSummaryCharCount: number;
+  observationCachePerceptionHit: boolean;
+  observationCachePerceptionAgeMs: number | null;
+  observationCacheDecisionHit: boolean;
+  observationCacheDecisionKey: string | null;
+  observationCacheScreenshotHit: boolean;
   promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
   timestamp: string;
@@ -274,6 +289,7 @@ export interface PerceptionActionTaskResult {
   axDeficientPages: AXDeficientPageLog[];
   tierUsage: TierUsageMetrics;
   contextWindow: NavigatorContextWindowMetrics;
+  observationCache: NavigatorObservationCacheMetrics;
   finalAction: NavigatorActionDecision | null;
   finalExecution: ActionExecutionResult | null;
   errorDetail: GhostTabTaskErrorDetail | null;
@@ -304,6 +320,7 @@ export interface PerceptionActionLoopOptions {
   maxNoProgressSteps?: number;
   maxSubtaskRetries?: number;
   navigationTimeoutMs?: number;
+  observationCacheTtlMs?: number;
   onStateTransition?: (event: GhostTabStateTransitionEvent) => void;
   onSubtaskStatus?: (event: SubtaskStatusEvent) => void;
   onStructuredError?: (event: StructuredErrorEvent) => void;
@@ -320,6 +337,7 @@ class PerceptionActionLoop {
   private readonly maxNoProgressSteps: number;
   private readonly maxSubtaskRetries: number;
   private readonly navigationTimeoutMs: number;
+  private readonly observationCacheTtlMs: number;
   private readonly logger: (line: string) => void;
 
   constructor(private readonly options: PerceptionActionLoopOptions) {
@@ -332,6 +350,7 @@ class PerceptionActionLoop {
     this.maxNoProgressSteps = options.maxNoProgressSteps ?? DEFAULT_MAX_NO_PROGRESS_STEPS;
     this.maxSubtaskRetries = options.maxSubtaskRetries ?? DEFAULT_MAX_SUBTASK_RETRIES;
     this.navigationTimeoutMs = options.navigationTimeoutMs ?? DEFAULT_NAVIGATION_TIMEOUT_MS;
+    this.observationCacheTtlMs = options.observationCacheTtlMs ?? DEFAULT_OBSERVATION_CACHE_TTL_MS;
     this.logger = options.logger ?? ((line: string) => console.info(line));
   }
 
@@ -359,6 +378,7 @@ class PerceptionActionLoop {
     const maxNoProgressSteps = input.maxNoProgressSteps ?? this.maxNoProgressSteps;
     const maxSubtaskRetries = input.maxSubtaskRetries ?? this.maxSubtaskRetries;
     const navigationTimeoutMs = input.navigationTimeoutMs ?? this.navigationTimeoutMs;
+    const observationCacheTtlMs = input.observationCacheTtlMs ?? this.observationCacheTtlMs;
 
     if (maxSteps <= 0) {
       throw new Error("maxSteps must be greater than zero.");
@@ -383,6 +403,9 @@ class PerceptionActionLoop {
     }
     if (!Number.isFinite(navigationTimeoutMs) || navigationTimeoutMs <= 0) {
       throw new Error("navigationTimeoutMs must be greater than zero.");
+    }
+    if (!Number.isFinite(observationCacheTtlMs) || observationCacheTtlMs <= 0) {
+      throw new Error("observationCacheTtlMs must be greater than zero.");
     }
 
     const stateMachine =
@@ -426,15 +449,14 @@ class PerceptionActionLoop {
     const escalations: EscalationEvent[] = [];
     const axDeficientPages: AXDeficientPageLog[] = [];
     const contextWindow = createNavigatorContextWindowManager();
+    const observationCache = createNavigatorObservationCacheManager({
+      ttlMs: observationCacheTtlMs
+    });
     const tierUsage = createInitialTierUsageMetrics();
     let scrollCount = 0;
     let noProgressStreak = 0;
     let pendingAXTreeRefetchReason: AXTreeRefetchReason = "INITIAL";
-    let cachedPerception: {
-      url: string;
-      indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
-      treeEncoding: ToonEncodingResult;
-    } | null = null;
+    let lastPerceptionUrl: string | null = null;
     let currentUrl = input.startUrl;
     let finalAction: NavigatorActionDecision | null = null;
     let finalExecution: ActionExecutionResult | null = null;
@@ -784,6 +806,7 @@ class PerceptionActionLoop {
         axDeficientPages,
         tierUsage: finalizeTierUsageMetrics(tierUsage),
         contextWindow: contextWindow.getMetrics(),
+        observationCache: observationCache.getMetrics(),
         finalAction: params.finalAction,
         finalExecution: params.finalExecution,
         errorDetail: params.errorDetail,
@@ -906,40 +929,59 @@ class PerceptionActionLoop {
         lastStep = step;
         const urlAtPerception = currentUrl;
         this.logger(`[loop][step ${step}] state=PERCEIVING url=${urlAtPerception}`);
+        const perceptionLookupNowMs = Date.now();
+        observationCache.pruneExpired(perceptionLookupNowMs);
         const urlChangedSinceLastPerception =
-          cachedPerception !== null && cachedPerception.url !== urlAtPerception;
+          lastPerceptionUrl !== null && lastPerceptionUrl !== urlAtPerception;
         let axTreeRefetchReason = pendingAXTreeRefetchReason;
         if (axTreeRefetchReason === "NONE" && urlChangedSinceLastPerception) {
           axTreeRefetchReason = "URL_CHANGED";
         }
-        const shouldRefetchAXTree = cachedPerception === null || axTreeRefetchReason !== "NONE";
+        const cachedPerceptionData =
+          axTreeRefetchReason === "NONE"
+            ? observationCache.getPerception(urlAtPerception, perceptionLookupNowMs)
+            : null;
+        const shouldRefetchAXTree = cachedPerceptionData === null;
+        let observationCachePerceptionHit = false;
+        let observationCachePerceptionAgeMs: number | null = null;
+        let observationCacheDecisionHit = false;
+        let observationCacheDecisionKey: string | null = null;
+        let observationCacheScreenshotHit = false;
 
         let indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
         let treeEncoding: ToonEncodingResult;
         let axDeficiencySignals: AXDeficiencySignals;
         let scrollPosition: ScrollPositionSnapshot;
         try {
-          if (shouldRefetchAXTree) {
+          if (!shouldRefetchAXTree && cachedPerceptionData) {
+            indexResult = cachedPerceptionData.indexResult;
+            treeEncoding = cachedPerceptionData.treeEncoding;
+            axDeficiencySignals = cachedPerceptionData.axDeficiencySignals;
+            scrollPosition = cachedPerceptionData.scrollPosition;
+            observationCachePerceptionHit = true;
+            observationCachePerceptionAgeMs = cachedPerceptionData.ageMs;
+          } else {
             indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
               includeBoundingBoxes: true,
               charBudget: 8_000
             });
             treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
-            cachedPerception = {
-              url: urlAtPerception,
-              indexResult,
-              treeEncoding
-            };
+            axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
+            scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
+            observationCache.setPerception(
+              urlAtPerception,
+              {
+                indexResult,
+                treeEncoding,
+                axDeficiencySignals,
+                scrollPosition,
+                axTreeHash: computeAXTreeHash(indexResult.normalizedAXTree.json)
+              },
+              perceptionLookupNowMs
+            );
             pendingAXTreeRefetchReason = "NONE";
-          } else if (cachedPerception) {
-            indexResult = cachedPerception.indexResult;
-            treeEncoding = cachedPerception.treeEncoding;
-          } else {
-            throw new Error("Perception cache invariant violated.");
           }
-
-          axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
-          scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
+          lastPerceptionUrl = urlAtPerception;
         } catch (error) {
           const perceptionErrorDetail = createGhostTabTaskErrorDetail({
             error,
@@ -1072,41 +1114,65 @@ class PerceptionActionLoop {
           );
         } else if (!axDeficientDetected) {
           tiersAttempted.push("TIER_1_AX");
-          tierUsage.tier1Calls += 1;
-          this.logger(
-            `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
-          );
-          const tier1PromptBudget = estimateNavigatorPromptBudget({
-            intent: input.intent,
-            observation,
-            tier: "TIER_1_AX"
-          });
-          tier1PromptCharCount = tier1PromptBudget.promptCharCount;
-          tier1EstimatedPromptTokens = tier1PromptBudget.estimatedPromptTokens;
-          const tier1TokenAlert = contextWindow.recordPromptBudget({
-            step,
+          const tier1DecisionCacheKey = createObservationDecisionCacheKey({
             tier: "TIER_1_AX",
-            promptCharCount: tier1PromptBudget.promptCharCount,
-            estimatedPromptTokens: tier1PromptBudget.estimatedPromptTokens,
-            threshold: tier1PromptBudget.alertThreshold
+            escalationReason: null
           });
-          if (tier1TokenAlert) {
-            promptTokenAlertTriggered = true;
-            this.logger(
-              `[loop][step ${step}] context-window-alert tier=TIER_1_AX promptTokens=${tier1PromptBudget.estimatedPromptTokens} threshold=${tier1PromptBudget.alertThreshold} url=${urlAtPerception}`
-            );
+          observationCacheDecisionKey = tier1DecisionCacheKey;
+          const tier1CachedDecision = observationCache.getDecision(
+            urlAtPerception,
+            tier1DecisionCacheKey,
+            Date.now()
+          );
+          observationCacheDecisionHit = tier1CachedDecision !== null;
+          this.logger(
+            `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} cacheHit=${observationCacheDecisionHit}`
+          );
+          let tier1Action: NavigatorActionDecision;
+          if (tier1CachedDecision) {
+            tier1Action = tier1CachedDecision.decision;
+          } else {
+            tierUsage.tier1Calls += 1;
+            const tier1PromptBudget = estimateNavigatorPromptBudget({
+              intent: input.intent,
+              observation,
+              tier: "TIER_1_AX"
+            });
+            tier1PromptCharCount = tier1PromptBudget.promptCharCount;
+            tier1EstimatedPromptTokens = tier1PromptBudget.estimatedPromptTokens;
+            const tier1TokenAlert = contextWindow.recordPromptBudget({
+              step,
+              tier: "TIER_1_AX",
+              promptCharCount: tier1PromptBudget.promptCharCount,
+              estimatedPromptTokens: tier1PromptBudget.estimatedPromptTokens,
+              threshold: tier1PromptBudget.alertThreshold
+            });
+            if (tier1TokenAlert) {
+              promptTokenAlertTriggered = true;
+              this.logger(
+                `[loop][step ${step}] context-window-alert tier=TIER_1_AX promptTokens=${tier1PromptBudget.estimatedPromptTokens} threshold=${tier1PromptBudget.alertThreshold} url=${urlAtPerception}`
+              );
+            }
+            tier1Action = await this.options.navigatorEngine.decideNextAction({
+              intent: input.intent,
+              observation,
+              tier: "TIER_1_AX"
+            });
           }
-          const tier1Action = await this.options.navigatorEngine.decideNextAction({
-            intent: input.intent,
-            observation,
-            tier: "TIER_1_AX"
-          });
           const isUnsafeTier1Action = tier1Action.action === "FAILED";
 
           if (!isUnsafeTier1Action && tier1Action.confidence >= confidenceThreshold) {
             inferredAction = tier1Action;
             resolvedTier = "TIER_1_AX";
             tierUsage.resolvedAtTier1 += 1;
+            if (!tier1CachedDecision) {
+              observationCache.setDecision(
+                urlAtPerception,
+                tier1DecisionCacheKey,
+                tier1Action,
+                Date.now()
+              );
+            }
           } else {
             escalationReason = isUnsafeTier1Action ? "UNSAFE_ACTION" : "LOW_CONFIDENCE";
             if (escalationReason === "LOW_CONFIDENCE") {
@@ -1220,61 +1286,101 @@ class PerceptionActionLoop {
 
         if (!inferredAction) {
           tiersAttempted.push("TIER_2_VISION");
-          tierUsage.tier2Calls += 1;
-
-          const screenshot = await this.options.cdpClient.captureScreenshot({
-            mode: "viewport"
+          const tier2DecisionCacheKey = createObservationDecisionCacheKey({
+            tier: "TIER_2_VISION",
+            escalationReason
           });
-          const tier2Observation = {
-            ...observation,
-            screenshot: {
-              base64: screenshot.base64,
-              mimeType: screenshot.mimeType,
-              width: screenshot.width,
-              height: screenshot.height,
-              mode: screenshot.mode
-            }
-          };
-          tier2ObservationCharCount = JSON.stringify({
-            ...observation,
-            screenshot: {
-              mimeType: screenshot.mimeType,
-              width: screenshot.width,
-              height: screenshot.height,
-              mode: screenshot.mode
-            }
-          }).length;
-
-          this.logger(
-            `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
+          observationCacheDecisionKey = tier2DecisionCacheKey;
+          const tier2CachedDecision = observationCache.getDecision(
+            urlAtPerception,
+            tier2DecisionCacheKey,
+            Date.now()
           );
-          const tier2PromptBudget = estimateNavigatorPromptBudget({
-            intent: input.intent,
-            observation: tier2Observation,
-            tier: "TIER_2_VISION",
-            escalationReason
-          });
-          tier2PromptCharCount = tier2PromptBudget.promptCharCount;
-          tier2EstimatedPromptTokens = tier2PromptBudget.estimatedPromptTokens;
-          const tier2TokenAlert = contextWindow.recordPromptBudget({
-            step,
-            tier: "TIER_2_VISION",
-            promptCharCount: tier2PromptBudget.promptCharCount,
-            estimatedPromptTokens: tier2PromptBudget.estimatedPromptTokens,
-            threshold: tier2PromptBudget.alertThreshold
-          });
-          if (tier2TokenAlert) {
-            promptTokenAlertTriggered = true;
+          observationCacheDecisionHit = tier2CachedDecision !== null;
+          if (tier2CachedDecision) {
+            inferredAction = tier2CachedDecision.decision;
             this.logger(
-              `[loop][step ${step}] context-window-alert tier=TIER_2_VISION promptTokens=${tier2PromptBudget.estimatedPromptTokens} threshold=${tier2PromptBudget.alertThreshold} url=${urlAtPerception}`
+              `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} cacheHit=true reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
             );
+          } else {
+            tierUsage.tier2Calls += 1;
+            const cachedScreenshot = observationCache.getTier2Screenshot(urlAtPerception, Date.now());
+            observationCacheScreenshotHit = cachedScreenshot !== null;
+            let screenshotPayload: {
+              base64: string;
+              mimeType: string;
+              width: number;
+              height: number;
+              mode?: string;
+            };
+            if (cachedScreenshot) {
+              screenshotPayload = cachedScreenshot.screenshot;
+            } else {
+              const screenshot = await this.options.cdpClient.captureScreenshot({
+                mode: "viewport"
+              });
+              screenshotPayload = {
+                base64: screenshot.base64,
+                mimeType: screenshot.mimeType,
+                width: screenshot.width,
+                height: screenshot.height,
+                mode: screenshot.mode
+              };
+              observationCache.setTier2Screenshot(urlAtPerception, screenshotPayload, Date.now());
+            }
+            const tier2Observation = {
+              ...observation,
+              screenshot: screenshotPayload
+            };
+            tier2ObservationCharCount = JSON.stringify({
+              ...observation,
+              screenshot: {
+                mimeType: screenshotPayload.mimeType,
+                width: screenshotPayload.width,
+                height: screenshotPayload.height,
+                mode: screenshotPayload.mode
+              }
+            }).length;
+
+            this.logger(
+              `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} screenshotCacheHit=${observationCacheScreenshotHit}`
+            );
+            const tier2PromptBudget = estimateNavigatorPromptBudget({
+              intent: input.intent,
+              observation: tier2Observation,
+              tier: "TIER_2_VISION",
+              escalationReason
+            });
+            tier2PromptCharCount = tier2PromptBudget.promptCharCount;
+            tier2EstimatedPromptTokens = tier2PromptBudget.estimatedPromptTokens;
+            const tier2TokenAlert = contextWindow.recordPromptBudget({
+              step,
+              tier: "TIER_2_VISION",
+              promptCharCount: tier2PromptBudget.promptCharCount,
+              estimatedPromptTokens: tier2PromptBudget.estimatedPromptTokens,
+              threshold: tier2PromptBudget.alertThreshold
+            });
+            if (tier2TokenAlert) {
+              promptTokenAlertTriggered = true;
+              this.logger(
+                `[loop][step ${step}] context-window-alert tier=TIER_2_VISION promptTokens=${tier2PromptBudget.estimatedPromptTokens} threshold=${tier2PromptBudget.alertThreshold} url=${urlAtPerception}`
+              );
+            }
+            inferredAction = await this.options.navigatorEngine.decideNextAction({
+              intent: input.intent,
+              observation: tier2Observation,
+              tier: "TIER_2_VISION",
+              escalationReason
+            });
+            if (inferredAction) {
+              observationCache.setDecision(
+                urlAtPerception,
+                tier2DecisionCacheKey,
+                inferredAction,
+                Date.now()
+              );
+            }
           }
-          inferredAction = await this.options.navigatorEngine.decideNextAction({
-            intent: input.intent,
-            observation: tier2Observation,
-            tier: "TIER_2_VISION",
-            escalationReason
-          });
           resolvedTier = "TIER_2_VISION";
           if (tier2EscalationEvent) {
             tier2EscalationEvent.resolvedTier = "TIER_2_VISION";
@@ -1430,7 +1536,10 @@ class PerceptionActionLoop {
         });
         pendingAXTreeRefetchReason = nextAXTreeRefetchReason;
         if (nextAXTreeRefetchReason !== "NONE") {
-          cachedPerception = null;
+          observationCache.invalidate(urlAtPerception);
+          if (currentUrl !== urlAtPerception) {
+            observationCache.invalidate(currentUrl);
+          }
         }
 
         if (activeSubtask) {
@@ -1492,6 +1601,11 @@ class PerceptionActionLoop {
             totalSubtasks: subtasks.length,
             checkpoint,
             contextSnapshot,
+            observationCachePerceptionHit,
+            observationCachePerceptionAgeMs,
+            observationCacheDecisionHit,
+            observationCacheDecisionKey,
+            observationCacheScreenshotHit,
             promptTokenAlertTriggered,
             usedToonEncoding: treeEncoding.usedToonEncoding
           })
@@ -1547,7 +1661,8 @@ class PerceptionActionLoop {
             );
             noProgressStreak = 0;
             pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
-            cachedPerception = null;
+            observationCache.invalidate(urlAtPerception);
+            observationCache.invalidate(currentUrl);
             transitionState("PERCEIVING", {
               step: step + 1,
               url: currentUrl,
@@ -1597,7 +1712,8 @@ class PerceptionActionLoop {
             );
             noProgressStreak = 0;
             pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
-            cachedPerception = null;
+            observationCache.invalidate(urlAtPerception);
+            observationCache.invalidate(currentUrl);
             transitionState("PERCEIVING", {
               step: step + 1,
               url: currentUrl,
@@ -1800,6 +1916,11 @@ function createStepRecord(input: {
   totalSubtasks: number;
   checkpoint: TaskCheckpointState;
   contextSnapshot: NavigatorContextSnapshot;
+  observationCachePerceptionHit: boolean;
+  observationCachePerceptionAgeMs: number | null;
+  observationCacheDecisionHit: boolean;
+  observationCacheDecisionKey: string | null;
+  observationCacheScreenshotHit: boolean;
   promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
 }): LoopStepRecord {
@@ -1853,6 +1974,11 @@ function createStepRecord(input: {
     contextTotalPairCount: input.contextSnapshot.totalPairCount,
     contextSummaryIncluded: input.contextSnapshot.historySummary !== null,
     contextSummaryCharCount: input.contextSnapshot.summaryCharCount,
+    observationCachePerceptionHit: input.observationCachePerceptionHit,
+    observationCachePerceptionAgeMs: input.observationCachePerceptionAgeMs,
+    observationCacheDecisionHit: input.observationCacheDecisionHit,
+    observationCacheDecisionKey: input.observationCacheDecisionKey,
+    observationCacheScreenshotHit: input.observationCacheScreenshotHit,
     promptTokenAlertTriggered: input.promptTokenAlertTriggered,
     usedToonEncoding: input.usedToonEncoding,
     timestamp: new Date().toISOString()
@@ -1971,6 +2097,10 @@ function evaluateSubtaskVerification(input: {
       };
     }
   }
+}
+
+function computeAXTreeHash(json: string): string {
+  return createHash("sha256").update(json).digest("hex");
 }
 
 function buildNavigationStructuredErrorDetail(input: {

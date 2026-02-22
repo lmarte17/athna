@@ -14,6 +14,7 @@
     "context-window:smoke": "npm run build && node --env-file=../.env scripts/context-window-smoke.mjs",
     "decomposition:smoke": "npm run build && node --env-file=../.env scripts/decomposition-checkpointing-smoke.mjs",
     "structured-error:smoke": "npm run build && node --env-file=../.env scripts/structured-error-objects-smoke.mjs",
+    "observation-cache:smoke": "npm run build && node --env-file=../.env scripts/observation-cache-smoke.mjs",
     "context:smoke": "npm run build && node scripts/browser-context-isolation-smoke.mjs",
     "pool:smoke": "npm run build && node scripts/ghost-tab-pool-smoke.mjs",
     "state:smoke": "npm run build && node scripts/ghost-tab-state-machine-smoke.mjs",

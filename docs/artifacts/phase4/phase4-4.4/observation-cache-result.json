@@ -1,0 +1,73 @@
+{
+  "ok": true,
+  "phase": "4.4",
+  "summary": {
+    "scenarioCount": 2,
+    "scenarios": [
+      {
+        "name": "within-task-cache-reuse",
+        "status": "MAX_STEPS",
+        "stepsTaken": 6,
+        "summary": {
+          "intent": "Click the Continue button three times before finishing the task.",
+          "status": "MAX_STEPS",
+          "stepsTaken": 6,
+          "navigatorCallCount": 1,
+          "perceptionCacheHits": 5,
+          "decisionCacheHits": 5,
+          "screenshotCacheHits": 0,
+          "cacheReuseWithoutRefetch": 5,
+          "observationCacheMetrics": {
+            "ttlMs": 60000,
+            "perceptionHits": 5,
+            "perceptionMisses": 0,
+            "decisionHits": 5,
+            "decisionMisses": 1,
+            "screenshotHits": 0,
+            "screenshotMisses": 1,
+            "entriesWritten": 1,
+            "expiredEntries": 0,
+            "invalidations": 0,
+            "finalEntryCount": 1
+          }
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.4/scenarios/within-task-cache-reuse-observation-cache-result.json"
+      },
+      {
+        "name": "task-session-cache-reset",
+        "status": "MAX_STEPS",
+        "stepsTaken": 3,
+        "summary": {
+          "intent": "Click the Continue button three times before finishing the task.",
+          "status": "MAX_STEPS",
+          "stepsTaken": 3,
+          "navigatorCallCount": 1,
+          "firstStepPerceptionCacheHit": false,
+          "firstStepDecisionCacheHit": false,
+          "observationCacheMetrics": {
+            "ttlMs": 60000,
+            "perceptionHits": 2,
+            "perceptionMisses": 0,
+            "decisionHits": 2,
+            "decisionMisses": 1,
+            "screenshotHits": 0,
+            "screenshotMisses": 1,
+            "entriesWritten": 1,
+            "expiredEntries": 0,
+            "invalidations": 0,
+            "finalEntryCount": 1
+          }
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.4/scenarios/task-session-cache-reset-observation-cache-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "remoteDebuggingPort": 9333,
+    "headful": true,
+    "localServerPort": 54094,
+    "startUrl": "http://127.0.0.1:54094/cache-flow",
+    "selectedIntent": "Click the Continue button three times before finishing the task.",
+    "observationCacheTtlMs": 60000
+  }
+}

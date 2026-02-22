@@ -79,6 +79,19 @@ export {
 } from "./navigator/context-window.js";
 
 export {
+  createNavigatorObservationCacheManager,
+  createObservationDecisionCacheKey,
+  DEFAULT_NAVIGATOR_OBSERVATION_CACHE_TTL_MS,
+  type CachedDecisionLookupResult,
+  type CachedPerceptionData,
+  type CachedPerceptionLookupResult,
+  type CachedScreenshotLookupResult,
+  type NavigatorObservationCacheManager,
+  type NavigatorObservationCacheMetrics,
+  type NavigatorObservationCacheOptions
+} from "./navigator/observation-cache.js";
+
+export {
   type AXDeficientPageLog,
   createPerceptionActionLoop,
   type EscalationEvent,
