@@ -1,12 +1,14 @@
 {
-  "status": "MAX_STEPS",
+  "status": "FAILED",
   "intent": "open the Privacy link in the page footer",
   "startUrl": "https://developer.mozilla.org/en-US/",
-  "finalUrl": "https://developer.mozilla.org/en-US/",
-  "stepsTaken": 6,
+  "finalUrl": "https://www.mozilla.org/en-US/privacy/websites/",
+  "stepsTaken": 5,
   "history": [
     {
       "step": 1,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "urlAfterAction": "https://developer.mozilla.org/en-US/",
       "state": "ACTING",
       "currentUrl": "https://developer.mozilla.org/en-US/",
       "inferredAction": {
@@ -14,7 +16,7 @@
         "target": null,
         "text": "800",
         "confidence": 1,
-        "reasoning": "The target link \"Website Privacy Notice\" is in the footer, which is not visible in the current viewport. I need to scroll down to find it."
+        "reasoning": "The Privacy link is in the footer, which is outside the current viewport. I need to scroll down to reach it."
       },
       "action": {
         "action": "SCROLL",
@@ -29,6 +31,15 @@
         "currentUrl": "https://developer.mozilla.org/en-US/",
         "navigationObserved": false,
         "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
         "extractedData": null,
         "message": null
       },
@@ -38,17 +49,54 @@
       "resolvedTier": "TIER_3_SCROLL",
       "escalationReason": "RETRY_AFTER_SCROLL",
       "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 179,
+        "textCharCount": 5113,
+        "mediaElementCount": 6,
+        "domInteractiveCandidateCount": 170
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "INITIAL",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 2884,
+        "maxScrollY": 1984,
+        "remainingScrollPx": 1984,
+        "atTop": true,
+        "atBottom": false
+      },
+      "targetMightBeBelowFold": true,
       "scrollCount": 1,
+      "noProgressStreak": 1,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 22,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
       "interactiveElementCount": 35,
       "normalizedNodeCount": 35,
-      "normalizedCharCount": 7788,
-      "navigatorNormalizedTreeCharCount": 3654,
-      "navigatorObservationCharCount": 8660,
+      "normalizedCharCount": 7786,
+      "navigatorNormalizedTreeCharCount": 3652,
+      "navigatorObservationCharCount": 8656,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:54:44.723Z"
+      "timestamp": "2026-02-22T05:21:04.943Z"
     },
     {
       "step": 2,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "urlAfterAction": "https://developer.mozilla.org/en-US/",
       "state": "ACTING",
       "currentUrl": "https://developer.mozilla.org/en-US/",
       "inferredAction": {
@@ -56,7 +104,7 @@
         "target": null,
         "text": "800",
         "confidence": 1,
-        "reasoning": "The 'Privacy' link is not visible in the current viewport. I need to scroll down to find it in the footer."
+        "reasoning": "The intent is to open the 'Privacy' link in the footer. The footer is not yet fully visible in the current viewport, so I need to scroll down further to find the link."
       },
       "action": {
         "action": "SCROLL",
@@ -71,6 +119,15 @@
         "currentUrl": "https://developer.mozilla.org/en-US/",
         "navigationObserved": false,
         "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
         "extractedData": null,
         "message": null
       },
@@ -80,181 +137,68 @@
       "resolvedTier": "TIER_3_SCROLL",
       "escalationReason": "RETRY_AFTER_SCROLL",
       "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 108,
+        "textCharCount": 5113,
+        "mediaElementCount": 6,
+        "domInteractiveCandidateCount": 170
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "SCROLL_ACTION",
+      "scrollPosition": {
+        "scrollY": 800,
+        "viewportHeight": 900,
+        "documentHeight": 3284,
+        "maxScrollY": 2384,
+        "remainingScrollPx": 1584,
+        "atTop": false,
+        "atBottom": false
+      },
+      "targetMightBeBelowFold": true,
       "scrollCount": 2,
+      "noProgressStreak": 2,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 29,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
       "interactiveElementCount": 32,
       "normalizedNodeCount": 32,
-      "normalizedCharCount": 7951,
-      "navigatorNormalizedTreeCharCount": 4217,
-      "navigatorObservationCharCount": 9097,
+      "normalizedCharCount": 7936,
+      "navigatorNormalizedTreeCharCount": 4203,
+      "navigatorObservationCharCount": 9093,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:55:06.828Z"
+      "timestamp": "2026-02-22T05:21:30.341Z"
     },
     {
       "step": 3,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "urlAfterAction": "https://developer.mozilla.org/en-US/",
       "state": "ACTING",
       "currentUrl": "https://developer.mozilla.org/en-US/",
       "inferredAction": {
-        "action": "CLICK",
-        "target": {
-          "x": 205,
-          "y": 880
-        },
+        "action": "FAILED",
+        "target": null,
         "text": null,
-        "confidence": 0.8,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
-      },
-      "action": {
-        "action": "CLICK",
-        "target": {
-          "x": 205,
-          "y": 880
-        },
-        "text": null,
-        "confidence": 0.8,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
-      },
-      "execution": {
-        "status": "acted",
-        "action": "CLICK",
-        "currentUrl": "https://developer.mozilla.org/en-US/",
-        "navigationObserved": false,
-        "domMutationObserved": false,
-        "extractedData": null,
-        "message": null
-      },
-      "tiersAttempted": [
-        "TIER_2_VISION"
-      ],
-      "resolvedTier": "TIER_2_VISION",
-      "escalationReason": "AX_DEFICIENT",
-      "axDeficientDetected": true,
-      "scrollCount": 2,
-      "interactiveElementCount": 32,
-      "normalizedNodeCount": 32,
-      "normalizedCharCount": 7955,
-      "navigatorNormalizedTreeCharCount": 4217,
-      "navigatorObservationCharCount": 9386,
-      "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:55:22.180Z"
-    },
-    {
-      "step": 4,
-      "state": "ACTING",
-      "currentUrl": "https://developer.mozilla.org/en-US/",
-      "inferredAction": {
-        "action": "CLICK",
-        "target": {
-          "x": 205,
-          "y": 880
-        },
-        "text": null,
-        "confidence": 0.8,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
-      },
-      "action": {
-        "action": "CLICK",
-        "target": {
-          "x": 205,
-          "y": 880
-        },
-        "text": null,
-        "confidence": 0.8,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click."
-      },
-      "execution": {
-        "status": "acted",
-        "action": "CLICK",
-        "currentUrl": "https://developer.mozilla.org/en-US/",
-        "navigationObserved": false,
-        "domMutationObserved": false,
-        "extractedData": null,
-        "message": null
-      },
-      "tiersAttempted": [
-        "TIER_2_VISION"
-      ],
-      "resolvedTier": "TIER_2_VISION",
-      "escalationReason": "AX_DEFICIENT",
-      "axDeficientDetected": true,
-      "scrollCount": 2,
-      "interactiveElementCount": 32,
-      "normalizedNodeCount": 32,
-      "normalizedCharCount": 7955,
-      "navigatorNormalizedTreeCharCount": 4217,
-      "navigatorObservationCharCount": 9887,
-      "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:55:31.045Z"
-    },
-    {
-      "step": 5,
-      "state": "ACTING",
-      "currentUrl": "https://developer.mozilla.org/en-US/",
-      "inferredAction": {
-        "action": "CLICK",
-        "target": {
-          "x": 215,
-          "y": 880
-        },
-        "text": null,
-        "confidence": 0.8,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click. Previous attempts at (205, 880) did not succeed, so I'm trying slightly different coordinates near the center of the link text."
-      },
-      "action": {
-        "action": "CLICK",
-        "target": {
-          "x": 215,
-          "y": 880
-        },
-        "text": null,
-        "confidence": 0.8,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click. Previous attempts at (205, 880) did not succeed, so I'm trying slightly different coordinates near the center of the link text."
-      },
-      "execution": {
-        "status": "acted",
-        "action": "CLICK",
-        "currentUrl": "https://developer.mozilla.org/en-US/",
-        "navigationObserved": false,
-        "domMutationObserved": false,
-        "extractedData": null,
-        "message": null
-      },
-      "tiersAttempted": [
-        "TIER_2_VISION"
-      ],
-      "resolvedTier": "TIER_2_VISION",
-      "escalationReason": "AX_DEFICIENT",
-      "axDeficientDetected": true,
-      "scrollCount": 2,
-      "interactiveElementCount": 32,
-      "normalizedNodeCount": 32,
-      "normalizedCharCount": 7955,
-      "navigatorNormalizedTreeCharCount": 4217,
-      "navigatorObservationCharCount": 10388,
-      "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:56:02.845Z"
-    },
-    {
-      "step": 6,
-      "state": "ACTING",
-      "currentUrl": "https://developer.mozilla.org/en-US/",
-      "inferredAction": {
-        "action": "CLICK",
-        "target": {
-          "x": 160,
-          "y": 880
-        },
-        "text": null,
-        "confidence": 0.7,
-        "reasoning": "The user wants to click the 'Privacy' link in the footer. The link 'Website Privacy Notice' is visible in the screenshot in the footer area, but it is not present in the provided accessibility tree elements. I am estimating the coordinates of the link from the screenshot to perform the click. Previous attempts at (205, 880) and (215, 880) did not succeed, so I'm trying slightly different coordinates further to the left, closer to the Mozilla logo."
+        "confidence": 1,
+        "reasoning": "The 'Privacy' link was not found in the page footer, either visually or in the accessibility tree."
       },
       "action": {
         "action": "SCROLL",
-        "target": {
-          "x": 160,
-          "y": 880
-        },
+        "target": null,
         "text": "800",
-        "confidence": 0.7,
+        "confidence": 1,
         "reasoning": "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
       },
       "execution": {
@@ -263,6 +207,15 @@
         "currentUrl": "https://developer.mozilla.org/en-US/",
         "navigationObserved": false,
         "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
         "extractedData": null,
         "message": null
       },
@@ -272,43 +225,419 @@
       "resolvedTier": "TIER_3_SCROLL",
       "escalationReason": "RETRY_AFTER_SCROLL",
       "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 118,
+        "textCharCount": 5113,
+        "mediaElementCount": 6,
+        "domInteractiveCandidateCount": 170
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "SCROLL_ACTION",
+      "scrollPosition": {
+        "scrollY": 1600,
+        "viewportHeight": 900,
+        "documentHeight": 3284,
+        "maxScrollY": 2384,
+        "remainingScrollPx": 784,
+        "atTop": false,
+        "atBottom": false
+      },
+      "targetMightBeBelowFold": true,
       "scrollCount": 3,
+      "noProgressStreak": 3,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 32,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
       "interactiveElementCount": 32,
       "normalizedNodeCount": 32,
-      "normalizedCharCount": 7955,
-      "navigatorNormalizedTreeCharCount": 4217,
-      "navigatorObservationCharCount": 11017,
+      "normalizedCharCount": 7937,
+      "navigatorNormalizedTreeCharCount": 4203,
+      "navigatorObservationCharCount": 9392,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:56:36.310Z"
+      "timestamp": "2026-02-22T05:22:43.253Z"
+    },
+    {
+      "step": 4,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "urlAfterAction": "https://www.mozilla.org/en-US/privacy/websites/",
+      "state": "ACTING",
+      "currentUrl": "https://www.mozilla.org/en-US/privacy/websites/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 235,
+          "y": 795
+        },
+        "text": null,
+        "confidence": 0.9,
+        "reasoning": "The AX tree is deficient and does not contain the 'Website Privacy Notice' link, which is clearly visible in the screenshot in the page footer. I am using visual information from the screenshot to estimate the coordinates of the link and click on it."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 235,
+          "y": 795
+        },
+        "text": null,
+        "confidence": 0.9,
+        "reasoning": "The AX tree is deficient and does not contain the 'Website Privacy Notice' link, which is clearly visible in the screenshot in the page footer. I am using visual information from the screenshot to estimate the coordinates of the link and click on it."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://www.mozilla.org/en-US/privacy/websites/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 142,
+        "textCharCount": 5113,
+        "mediaElementCount": 6,
+        "domInteractiveCandidateCount": 170
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "SCROLL_ACTION",
+      "scrollPosition": {
+        "scrollY": 2383.5,
+        "viewportHeight": 900,
+        "documentHeight": 3284,
+        "maxScrollY": 2384,
+        "remainingScrollPx": 0.5,
+        "atTop": false,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
+      "scrollCount": 3,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 44,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7941,
+      "navigatorNormalizedTreeCharCount": 4203,
+      "navigatorObservationCharCount": 9694,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-22T05:23:01.735Z"
+    },
+    {
+      "step": 5,
+      "urlAtPerception": "https://www.mozilla.org/en-US/privacy/websites/",
+      "urlAfterAction": "https://www.mozilla.org/en-US/privacy/websites/",
+      "state": "FAILED",
+      "currentUrl": "https://www.mozilla.org/en-US/privacy/websites/",
+      "inferredAction": {
+        "action": "SCROLL",
+        "target": null,
+        "text": "800",
+        "confidence": 1,
+        "reasoning": "The user wants to click a link in the footer, but the footer is not visible in the current viewport. The AX tree contains elements with large Y coordinates (e.g., > 1200), indicating they are below the fold. I need to scroll down to see the footer and find the 'Privacy' link."
+      },
+      "action": {
+        "action": "FAILED",
+        "target": null,
+        "text": "Tiered perception aborted after 3 scroll steps at https://www.mozilla.org/en-US/privacy/websites/.",
+        "confidence": 1,
+        "reasoning": "Tier 2 still could not locate a reliable target after maximum scroll retries."
+      },
+      "execution": {
+        "status": "failed",
+        "action": "FAILED",
+        "currentUrl": "https://www.mozilla.org/en-US/privacy/websites/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": null,
+        "extractedData": null,
+        "message": "Tiered perception aborted after 3 scroll steps at https://www.mozilla.org/en-US/privacy/websites/."
+      },
+      "tiersAttempted": [
+        "TIER_1_AX",
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "RETRY_AFTER_SCROLL",
+      "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "interactive",
+        "isLoadComplete": false,
+        "hasSignificantVisualContent": false,
+        "visibleElementCount": 56,
+        "textCharCount": 3080,
+        "mediaElementCount": 15,
+        "domInteractiveCandidateCount": 112
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "NAVIGATION",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 1892,
+        "maxScrollY": 992,
+        "remainingScrollPx": 992,
+        "atTop": true,
+        "atBottom": false
+      },
+      "targetMightBeBelowFold": true,
+      "scrollCount": 3,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": null,
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 16,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7828,
+      "navigatorNormalizedTreeCharCount": 4120,
+      "navigatorObservationCharCount": 10584,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-22T05:23:46.610Z"
+    }
+  ],
+  "escalations": [
+    {
+      "step": 1,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:20:56.082Z"
+    },
+    {
+      "step": 1,
+      "reason": "RETRY_AFTER_SCROLL",
+      "fromTier": "TIER_2_VISION",
+      "toTier": "TIER_3_SCROLL",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": 1,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_3_SCROLL",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:21:02.430Z"
+    },
+    {
+      "step": 2,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:21:05.001Z"
+    },
+    {
+      "step": 2,
+      "reason": "RETRY_AFTER_SCROLL",
+      "fromTier": "TIER_2_VISION",
+      "toTier": "TIER_3_SCROLL",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": 1,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_3_SCROLL",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:21:27.831Z"
+    },
+    {
+      "step": 3,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:21:30.437Z"
+    },
+    {
+      "step": 3,
+      "reason": "RETRY_AFTER_SCROLL",
+      "fromTier": "TIER_2_VISION",
+      "toTier": "TIER_3_SCROLL",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": 1,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_3_SCROLL",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:22:40.743Z"
+    },
+    {
+      "step": 4,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 0.9,
+      "timestamp": "2026-02-22T05:22:43.318Z"
+    },
+    {
+      "step": 5,
+      "reason": "UNSAFE_ACTION",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://www.mozilla.org/en-US/privacy/websites/",
+      "triggerConfidence": 1,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:23:25.171Z"
+    },
+    {
+      "step": 5,
+      "reason": "RETRY_AFTER_SCROLL",
+      "fromTier": "TIER_2_VISION",
+      "toTier": "TIER_3_SCROLL",
+      "urlAtEscalation": "https://www.mozilla.org/en-US/privacy/websites/",
+      "triggerConfidence": 1,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T05:23:46.608Z"
+    }
+  ],
+  "axDeficientPages": [
+    {
+      "step": 1,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "interactiveElementCount": 35,
+      "threshold": 10000,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 179,
+      "textCharCount": 5113,
+      "mediaElementCount": 6,
+      "domInteractiveCandidateCount": 170,
+      "timestamp": "2026-02-22T05:20:56.082Z"
+    },
+    {
+      "step": 2,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "interactiveElementCount": 32,
+      "threshold": 10000,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 108,
+      "textCharCount": 5113,
+      "mediaElementCount": 6,
+      "domInteractiveCandidateCount": 170,
+      "timestamp": "2026-02-22T05:21:05.001Z"
+    },
+    {
+      "step": 3,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "interactiveElementCount": 32,
+      "threshold": 10000,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 118,
+      "textCharCount": 5113,
+      "mediaElementCount": 6,
+      "domInteractiveCandidateCount": 170,
+      "timestamp": "2026-02-22T05:21:30.437Z"
+    },
+    {
+      "step": 4,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "interactiveElementCount": 32,
+      "threshold": 10000,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 142,
+      "textCharCount": 5113,
+      "mediaElementCount": 6,
+      "domInteractiveCandidateCount": 170,
+      "timestamp": "2026-02-22T05:22:43.318Z"
     }
   ],
   "tierUsage": {
-    "tier1Calls": 0,
-    "tier2Calls": 6,
+    "tier1Calls": 1,
+    "tier2Calls": 5,
     "tier3Scrolls": 3,
-    "axDeficientDetections": 6,
+    "axDeficientDetections": 4,
+    "lowConfidenceEscalations": 0,
+    "noProgressEscalations": 0,
+    "unsafeActionEscalations": 1,
+    "domBypassResolutions": 0,
     "resolvedAtTier1": 0,
-    "resolvedAtTier2": 3,
-    "estimatedCostUsd": 0.018
+    "resolvedAtTier2": 1,
+    "estimatedCostUsd": 0.01515,
+    "estimatedVisionCostAvoidedUsd": 0
   },
   "finalAction": {
-    "action": "SCROLL",
-    "target": {
-      "x": 160,
-      "y": 880
-    },
-    "text": "800",
-    "confidence": 0.7,
-    "reasoning": "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
+    "action": "FAILED",
+    "target": null,
+    "text": "Tiered perception aborted after 3 scroll steps at https://www.mozilla.org/en-US/privacy/websites/.",
+    "confidence": 1,
+    "reasoning": "Tier 2 still could not locate a reliable target after maximum scroll retries."
   },
   "finalExecution": {
-    "status": "acted",
-    "action": "SCROLL",
-    "currentUrl": "https://developer.mozilla.org/en-US/",
+    "status": "failed",
+    "action": "FAILED",
+    "currentUrl": "https://www.mozilla.org/en-US/privacy/websites/",
     "navigationObserved": false,
     "domMutationObserved": false,
+    "significantDomMutationObserved": false,
+    "domMutationSummary": null,
     "extractedData": null,
-    "message": null
+    "message": "Tiered perception aborted after 3 scroll steps at https://www.mozilla.org/en-US/privacy/websites/."
   },
   "runConfig": {
     "suiteName": "complex",

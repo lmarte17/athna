@@ -54,7 +54,10 @@ async function waitForWebSocketEndpoint(versionEndpoint, timeoutMs) {
 }
 
 function startElectronCdpHost(remoteDebuggingPort) {
-  return spawn("npm", ["run", "cdp:host", "-w", "@ghost-browser/electron"], {
+  const runHeadfulGhostTab = process.env.GHOST_HEADFUL === "true";
+  const scriptName = runHeadfulGhostTab ? "cdp:host:headful" : "cdp:host";
+
+  return spawn("npm", ["run", scriptName, "-w", "@ghost-browser/electron"], {
     cwd: repositoryRoot,
     env: {
       ...process.env,

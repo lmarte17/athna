@@ -4,32 +4,88 @@
   "suiteName": "complex",
   "runLabel": "complex-suite",
   "summary": {
-    "scenarioCount": 1,
+    "scenarioCount": 3,
     "suiteTierUsage": {
-      "tier1Calls": 0,
-      "tier2Calls": 6,
+      "tier1Calls": 5,
+      "tier2Calls": 7,
       "tier3Scrolls": 3,
       "axDeficientDetections": 6,
-      "resolvedAtTier1": 0,
+      "lowConfidenceEscalations": 0,
+      "noProgressEscalations": 0,
+      "unsafeActionEscalations": 1,
+      "domBypassResolutions": 0,
+      "resolvedAtTier1": 4,
       "resolvedAtTier2": 3,
-      "estimatedCostUsd": 0.018
+      "estimatedCostUsd": 0.02175,
+      "estimatedVisionCostAvoidedUsd": 0
     },
     "scenarios": [
+      {
+        "name": "baseline-google-tier1",
+        "intent": "search for mechanical keyboards",
+        "startUrl": "https://www.google.com/",
+        "status": "DONE",
+        "stepsTaken": 4,
+        "finalUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
+        "tierUsage": {
+          "tier1Calls": 4,
+          "tier2Calls": 0,
+          "tier3Scrolls": 0,
+          "axDeficientDetections": 0,
+          "lowConfidenceEscalations": 0,
+          "noProgressEscalations": 0,
+          "unsafeActionEscalations": 0,
+          "domBypassResolutions": 0,
+          "resolvedAtTier1": 4,
+          "resolvedAtTier2": 0,
+          "estimatedCostUsd": 0.0006,
+          "estimatedVisionCostAvoidedUsd": 0
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase2/phase2-2.1/scenarios/baseline-google-tier1-tiered-perception-result.json"
+      },
+      {
+        "name": "ax-deficient-webgl-tier2",
+        "intent": "identify any visible interactive control or if unavailable report failure",
+        "startUrl": "https://webglsamples.org/aquarium/aquarium.html",
+        "status": "DONE",
+        "stepsTaken": 2,
+        "finalUrl": "https://get.webgl.org/troubleshooting/",
+        "tierUsage": {
+          "tier1Calls": 0,
+          "tier2Calls": 2,
+          "tier3Scrolls": 0,
+          "axDeficientDetections": 2,
+          "lowConfidenceEscalations": 0,
+          "noProgressEscalations": 0,
+          "unsafeActionEscalations": 0,
+          "domBypassResolutions": 0,
+          "resolvedAtTier1": 0,
+          "resolvedAtTier2": 2,
+          "estimatedCostUsd": 0.006,
+          "estimatedVisionCostAvoidedUsd": 0
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase2/phase2-2.1/scenarios/ax-deficient-webgl-tier2-tiered-perception-result.json"
+      },
       {
         "name": "below-fold-footer-scroll-tier3",
         "intent": "open the Privacy link in the page footer",
         "startUrl": "https://developer.mozilla.org/en-US/",
-        "status": "MAX_STEPS",
-        "stepsTaken": 6,
-        "finalUrl": "https://developer.mozilla.org/en-US/",
+        "status": "FAILED",
+        "stepsTaken": 5,
+        "finalUrl": "https://www.mozilla.org/en-US/privacy/websites/",
         "tierUsage": {
-          "tier1Calls": 0,
-          "tier2Calls": 6,
+          "tier1Calls": 1,
+          "tier2Calls": 5,
           "tier3Scrolls": 3,
-          "axDeficientDetections": 6,
+          "axDeficientDetections": 4,
+          "lowConfidenceEscalations": 0,
+          "noProgressEscalations": 0,
+          "unsafeActionEscalations": 1,
+          "domBypassResolutions": 0,
           "resolvedAtTier1": 0,
-          "resolvedAtTier2": 3,
-          "estimatedCostUsd": 0.018
+          "resolvedAtTier2": 1,
+          "estimatedCostUsd": 0.01515,
+          "estimatedVisionCostAvoidedUsd": 0
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase2/phase2-2.1/scenarios/below-fold-footer-scroll-tier3-tiered-perception-result.json"
       }
@@ -37,6 +93,26 @@
   },
   "runConfig": {
     "scenarios": [
+      {
+        "name": "baseline-google-tier1",
+        "intent": "search for mechanical keyboards",
+        "startUrl": "https://www.google.com/",
+        "maxSteps": 20,
+        "expectations": {
+          "expectTier1": true
+        }
+      },
+      {
+        "name": "ax-deficient-webgl-tier2",
+        "intent": "identify any visible interactive control or if unavailable report failure",
+        "startUrl": "https://webglsamples.org/aquarium/aquarium.html",
+        "maxSteps": 4,
+        "axDeficientInteractiveThreshold": 20,
+        "expectations": {
+          "expectTier2": true,
+          "expectAxDeficient": true
+        }
+      },
       {
         "name": "below-fold-footer-scroll-tier3",
         "intent": "open the Privacy link in the page footer",

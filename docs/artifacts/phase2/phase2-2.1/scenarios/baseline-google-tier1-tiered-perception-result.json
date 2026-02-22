@@ -2,39 +2,50 @@
   "status": "DONE",
   "intent": "search for mechanical keyboards",
   "startUrl": "https://www.google.com/",
-  "finalUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=c98a3653945aa401&source=hp&ei=uzWaaZ30NKfY5NoPxoTCkA8&iflsig=AFdpzrgAAAAAaZpDyyy30Y3NYTDtNXoGu1ZaCNDoUkIM&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIiDZQ5CJYzyRwAXgAkAEAmAE_oAGBA6oBATi4AQHIAQD4AQGYAgmgApIDqAIKwgITEAAYgAQYQxi0AhjnBhiKBRjqAsICFhAuGIAEGEMYtAIY5QQY5wYYigUY6gLCAhAQLhiABBjRAxhDGMcBGIoFwgIIEAAYgAQYsQOYAwTxBVM1sfXMfmgEkgcBOaAH_S-yBwE4uAeOA8IHBTIuNi4xyAcMgAgA&sclient=gws-wiz",
+  "finalUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
   "stepsTaken": 4,
   "history": [
     {
       "step": 1,
+      "urlAtPerception": "https://www.google.com/",
+      "urlAfterAction": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
       "state": "ACTING",
-      "currentUrl": "https://www.google.com/",
+      "currentUrl": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
       "inferredAction": {
         "action": "CLICK",
         "target": {
-          "x": 568,
+          "x": 567,
           "y": 405
         },
         "text": null,
         "confidence": 1,
-        "reasoning": "Initial step for search intent, clicking on the main search input field."
+        "reasoning": "Initial step for search intent, clicking on the main Google search input field."
       },
       "action": {
         "action": "CLICK",
         "target": {
-          "x": 568,
+          "x": 567,
           "y": 405
         },
         "text": null,
         "confidence": 1,
-        "reasoning": "Initial step for search intent, clicking on the main search input field."
+        "reasoning": "Initial step for search intent, clicking on the main Google search input field."
       },
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "https://www.google.com/",
+        "currentUrl": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
         "navigationObserved": false,
         "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
         "extractedData": null,
         "message": null
       },
@@ -44,45 +55,85 @@
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
       "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 106,
+        "textCharCount": 225,
+        "mediaElementCount": 37,
+        "domInteractiveCandidateCount": 64
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "INITIAL",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 900,
+        "maxScrollY": 0,
+        "remainingScrollPx": 0,
+        "atTop": true,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
       "scrollCount": 0,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": false,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
       "interactiveElementCount": 22,
       "normalizedNodeCount": 22,
-      "normalizedCharCount": 5244,
-      "navigatorNormalizedTreeCharCount": 2693,
-      "navigatorObservationCharCount": 5653,
+      "normalizedCharCount": 5221,
+      "navigatorNormalizedTreeCharCount": 2670,
+      "navigatorObservationCharCount": 5645,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:46:24.411Z"
+      "timestamp": "2026-02-22T05:20:39.728Z"
     },
     {
       "step": 2,
+      "urlAtPerception": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
+      "urlAfterAction": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
       "state": "ACTING",
-      "currentUrl": "https://www.google.com/",
+      "currentUrl": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
       "inferredAction": {
         "action": "TYPE",
-        "target": {
-          "x": 568,
-          "y": 405
-        },
+        "target": null,
         "text": "mechanical keyboards",
         "confidence": 1,
-        "reasoning": "The search input is focused after the previous CLICK action; typing the search query into the focused input field."
+        "reasoning": "The search input field is already clicked and focused from the previous step. Now typing the search query into the focused input."
       },
       "action": {
         "action": "TYPE",
-        "target": {
-          "x": 568,
-          "y": 405
-        },
+        "target": null,
         "text": "mechanical keyboards",
         "confidence": 1,
-        "reasoning": "The search input is focused after the previous CLICK action; typing the search query into the focused input field."
+        "reasoning": "The search input field is already clicked and focused from the previous step. Now typing the search query into the focused input."
       },
       "execution": {
         "status": "acted",
         "action": "TYPE",
-        "currentUrl": "https://www.google.com/",
+        "currentUrl": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
         "navigationObserved": false,
         "domMutationObserved": true,
+        "significantDomMutationObserved": true,
+        "domMutationSummary": {
+          "mutationObserved": true,
+          "significantMutationObserved": true,
+          "addedOrRemovedNodeCount": 40,
+          "interactiveRoleMutationCount": 30,
+          "childListMutationCount": 30,
+          "attributeMutationCount": 30
+        },
         "extractedData": null,
         "message": null
       },
@@ -92,19 +143,56 @@
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
       "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 190,
+        "textCharCount": 539,
+        "mediaElementCount": 77,
+        "domInteractiveCandidateCount": 84
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "NAVIGATION",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 900,
+        "maxScrollY": 0,
+        "remainingScrollPx": 0,
+        "atTop": true,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
       "scrollCount": 0,
-      "interactiveElementCount": 25,
-      "normalizedNodeCount": 25,
-      "normalizedCharCount": 5824,
-      "navigatorNormalizedTreeCharCount": 2877,
-      "navigatorObservationCharCount": 6513,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": true,
+      "postActionMutationSummary": {
+        "mutationObserved": true,
+        "significantMutationObserved": true,
+        "addedOrRemovedNodeCount": 40,
+        "interactiveRoleMutationCount": 30,
+        "childListMutationCount": 30,
+        "attributeMutationCount": 30
+      },
+      "domExtractionAttempted": false,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 26,
+      "normalizedNodeCount": 26,
+      "normalizedCharCount": 5970,
+      "navigatorNormalizedTreeCharCount": 2903,
+      "navigatorObservationCharCount": 6757,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:46:26.615Z"
+      "timestamp": "2026-02-22T05:20:41.628Z"
     },
     {
       "step": 3,
+      "urlAtPerception": "https://www.google.com/?zx=1771737634556&no_sw_cr=1",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
       "state": "ACTING",
-      "currentUrl": "https://www.google.com/",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -113,7 +201,7 @@
         },
         "text": null,
         "confidence": 1,
-        "reasoning": "The search query 'mechanical keyboards' has been typed. Clicking the 'Google Search' button to submit the query."
+        "reasoning": "The search query 'mechanical keyboards' has been typed. Clicking on the 'Google Search' button to submit the query."
       },
       "action": {
         "action": "CLICK",
@@ -123,14 +211,16 @@
         },
         "text": null,
         "confidence": 1,
-        "reasoning": "The search query 'mechanical keyboards' has been typed. Clicking the 'Google Search' button to submit the query."
+        "reasoning": "The search query 'mechanical keyboards' has been typed. Clicking on the 'Google Search' button to submit the query."
       },
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "https://www.google.com/",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
         "navigationObserved": false,
-        "domMutationObserved": true,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": null,
         "extractedData": null,
         "message": null
       },
@@ -140,39 +230,71 @@
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
       "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 194,
+        "textCharCount": 547,
+        "mediaElementCount": 77,
+        "domInteractiveCandidateCount": 84
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "SIGNIFICANT_DOM_MUTATION",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 900,
+        "maxScrollY": 0,
+        "remainingScrollPx": 0,
+        "atTop": true,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
       "scrollCount": 0,
-      "interactiveElementCount": 24,
-      "normalizedNodeCount": 24,
-      "normalizedCharCount": 5661,
-      "navigatorNormalizedTreeCharCount": 2838,
-      "navigatorObservationCharCount": 6671,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": null,
+      "domExtractionAttempted": false,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 25,
+      "normalizedNodeCount": 25,
+      "normalizedCharCount": 5807,
+      "navigatorNormalizedTreeCharCount": 2864,
+      "navigatorObservationCharCount": 6957,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:46:28.834Z"
+      "timestamp": "2026-02-22T05:20:43.253Z"
     },
     {
       "step": 4,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
       "state": "ACTING",
-      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=c98a3653945aa401&source=hp&ei=uzWaaZ30NKfY5NoPxoTCkA8&iflsig=AFdpzrgAAAAAaZpDyyy30Y3NYTDtNXoGu1ZaCNDoUkIM&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIiDZQ5CJYzyRwAXgAkAEAmAE_oAGBA6oBATi4AQHIAQD4AQGYAgmgApIDqAIKwgITEAAYgAQYQxi0AhjnBhiKBRjqAsICFhAuGIAEGEMYtAIY5QQY5wYYigUY6gLCAhAQLhiABBjRAxhDGMcBGIoFwgIIEAAYgAQYsQOYAwTxBVM1sfXMfmgEkgcBOaAH_S-yBwE4uAeOA8IHBTIuNi4xyAcMgAgA&sclient=gws-wiz",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
       "inferredAction": {
         "action": "DONE",
         "target": null,
         "text": null,
         "confidence": 1,
-        "reasoning": "The search for 'mechanical keyboards' has been successfully completed and the search results are displayed on the current page."
+        "reasoning": "The search for 'mechanical keyboards' has already been performed and the results are displayed on the current page."
       },
       "action": {
         "action": "DONE",
         "target": null,
         "text": null,
         "confidence": 1,
-        "reasoning": "The search for 'mechanical keyboards' has been successfully completed and the search results are displayed on the current page."
+        "reasoning": "The search for 'mechanical keyboards' has already been performed and the results are displayed on the current page."
       },
       "execution": {
         "status": "done",
         "action": "DONE",
-        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=c98a3653945aa401&source=hp&ei=uzWaaZ30NKfY5NoPxoTCkA8&iflsig=AFdpzrgAAAAAaZpDyyy30Y3NYTDtNXoGu1ZaCNDoUkIM&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIiDZQ5CJYzyRwAXgAkAEAmAE_oAGBA6oBATi4AQHIAQD4AQGYAgmgApIDqAIKwgITEAAYgAQYQxi0AhjnBhiKBRjqAsICFhAuGIAEGEMYtAIY5QQY5wYYigUY6gLCAhAQLhiABBjRAxhDGMcBGIoFwgIIEAAYgAQYsQOYAwTxBVM1sfXMfmgEkgcBOaAH_S-yBwE4uAeOA8IHBTIuNi4xyAcMgAgA&sclient=gws-wiz",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
         "navigationObserved": false,
         "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": null,
         "extractedData": null,
         "message": null
       },
@@ -182,38 +304,75 @@
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
       "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 471,
+        "textCharCount": 6876,
+        "mediaElementCount": 692,
+        "domInteractiveCandidateCount": 664
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "NAVIGATION",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 4223,
+        "maxScrollY": 3323,
+        "remainingScrollPx": 3323,
+        "atTop": true,
+        "atBottom": false
+      },
+      "targetMightBeBelowFold": true,
       "scrollCount": 0,
-      "interactiveElementCount": 23,
-      "normalizedNodeCount": 23,
-      "normalizedCharCount": 7747,
-      "navigatorNormalizedTreeCharCount": 5207,
-      "navigatorObservationCharCount": 9067,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": null,
+      "domExtractionAttempted": false,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 25,
+      "normalizedNodeCount": 25,
+      "normalizedCharCount": 7945,
+      "navigatorNormalizedTreeCharCount": 5168,
+      "navigatorObservationCharCount": 10511,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-21T22:46:31.791Z"
+      "timestamp": "2026-02-22T05:20:45.437Z"
     }
   ],
+  "escalations": [],
+  "axDeficientPages": [],
   "tierUsage": {
     "tier1Calls": 4,
     "tier2Calls": 0,
     "tier3Scrolls": 0,
     "axDeficientDetections": 0,
+    "lowConfidenceEscalations": 0,
+    "noProgressEscalations": 0,
+    "unsafeActionEscalations": 0,
+    "domBypassResolutions": 0,
     "resolvedAtTier1": 4,
     "resolvedAtTier2": 0,
-    "estimatedCostUsd": 0.0006
+    "estimatedCostUsd": 0.0006,
+    "estimatedVisionCostAvoidedUsd": 0
   },
   "finalAction": {
     "action": "DONE",
     "target": null,
     "text": null,
     "confidence": 1,
-    "reasoning": "The search for 'mechanical keyboards' has been successfully completed and the search results are displayed on the current page."
+    "reasoning": "The search for 'mechanical keyboards' has already been performed and the results are displayed on the current page."
   },
   "finalExecution": {
     "status": "done",
     "action": "DONE",
-    "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=c98a3653945aa401&source=hp&ei=uzWaaZ30NKfY5NoPxoTCkA8&iflsig=AFdpzrgAAAAAaZpDyyy30Y3NYTDtNXoGu1ZaCNDoUkIM&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIiDZQ5CJYzyRwAXgAkAEAmAE_oAGBA6oBATi4AQHIAQD4AQGYAgmgApIDqAIKwgITEAAYgAQYQxi0AhjnBhiKBRjqAsICFhAuGIAEGEMYtAIY5QQY5wYYigUY6gLCAhAQLhiABBjRAxhDGMcBGIoFwgIIEAAYgAQYsQOYAwTxBVM1sfXMfmgEkgcBOaAH_S-yBwE4uAeOA8IHBTIuNi4xyAcMgAgA&sclient=gws-wiz",
+    "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=16a400784e907287&source=hp&ei=IpKaafnrDu6e5NoPw8XGsAk&iflsig=AFdpzrgAAAAAaZqgMg5yctZXkk12Wz5PQxfcj8RrbpNX&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyCBAAGIAEGLEDMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESNEuUIYhWK4icAF4AJABAJgBKKABggOqAQIxMbgBAcgBAPgBAZgCDKAClAOoAgrCAgoQABgDGOoCGI8BwgIKEC4YAxjqAhiPAcICCxAAGIAEGLEDGMkDwgILEAAYgAQYkgMYigXCAgUQLhiABMICCBAuGIAEGLEDmAMD8QVIxLb_ikM_v5IHAjEyoAfxRrIHAjExuAeRA8IHAzguNMgHDIAIAA&sclient=gws-wiz",
     "navigationObserved": false,
     "domMutationObserved": false,
+    "significantDomMutationObserved": false,
+    "domMutationSummary": null,
     "extractedData": null,
     "message": null
   },
@@ -228,9 +387,7 @@
         "expectTier1": true
       }
     },
-    "globalOverrides": {
-      "taskMaxSteps": 20
-    },
+    "globalOverrides": {},
     "globalExpectations": {}
   }
 }
