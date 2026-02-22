@@ -39,10 +39,12 @@ Use environment variables with the smoke command to force/validate paths:
 - `PHASE2_AX_DEFICIENT_THRESHOLD`
 - `PHASE2_SCROLL_STEP_PX`
 - `PHASE2_MAX_SCROLL_STEPS`
+- `PHASE2_MAX_NO_PROGRESS_STEPS`
 - `PHASE2_EXPECT_TIER1`
 - `PHASE2_EXPECT_TIER2`
 - `PHASE2_EXPECT_AX_DEFICIENT`
 - `PHASE2_EXPECT_TIER3_SCROLL`
+- `PHASE2_EXPECT_LOW_CONFIDENCE_ESCALATION`
 - `PHASE2_SCENARIO`
 
 ## Artifacts
@@ -51,6 +53,13 @@ Use environment variables with the smoke command to force/validate paths:
   - `docs/artifacts/phase2/phase2-2.1/<suite>-tiered-perception-result.json`
 - Per-scenario detail:
   - `docs/artifacts/phase2/phase2-2.1/scenarios/<scenario>-tiered-perception-result.json`
+
+Each scenario payload includes:
+
+- `tierUsage.lowConfidenceEscalations`
+- `tierUsage.noProgressEscalations`
+- `tierUsage.unsafeActionEscalations`
+- `escalations[]` with escalation reason, source/target tier, URL, and confidence metadata
 
 ## Notes For Next Steps
 

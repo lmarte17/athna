@@ -1,0 +1,673 @@
+{
+  "status": "DONE",
+  "intent": "search for mechanical keyboards",
+  "startUrl": "https://www.google.com/",
+  "finalUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+  "stepsTaken": 13,
+  "history": [
+    {
+      "step": 1,
+      "urlAtPerception": "https://www.google.com/",
+      "urlAfterAction": "https://www.google.com/",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 347,
+          "y": 391
+        },
+        "text": null,
+        "confidence": 1,
+        "reasoning": "Initial step to search. Clicking on the main Google search input field (nodeId 25) which is already focused."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 347,
+          "y": 391
+        },
+        "text": null,
+        "confidence": 1,
+        "reasoning": "Initial step to search. Clicking on the main Google search input field (nodeId 25) which is already focused."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://www.google.com/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 22,
+      "normalizedNodeCount": 22,
+      "normalizedCharCount": 5244,
+      "navigatorNormalizedTreeCharCount": 2693,
+      "navigatorObservationCharCount": 5653,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:07.165Z"
+    },
+    {
+      "step": 2,
+      "urlAtPerception": "https://www.google.com/",
+      "urlAfterAction": "https://www.google.com/",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": null,
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The search input field (nodeId 25) is already focused after the previous CLICK action. Proceeding to type the search query into it."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": null,
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The search input field (nodeId 25) is already focused after the previous CLICK action. Proceeding to type the search query into it."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/",
+        "navigationObserved": false,
+        "domMutationObserved": true,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 25,
+      "normalizedNodeCount": 25,
+      "normalizedCharCount": 5824,
+      "navigatorNormalizedTreeCharCount": 2877,
+      "navigatorObservationCharCount": 6549,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:08.635Z"
+    },
+    {
+      "step": 3,
+      "urlAtPerception": "https://www.google.com/",
+      "urlAfterAction": "https://www.google.com/",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 517,
+          "y": 458
+        },
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The search query 'mechanical keyboards' has been typed. Clicking the 'Google Search' button (nodeId 314) to submit the query."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 517,
+          "y": 458
+        },
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The search query 'mechanical keyboards' has been typed. Clicking the 'Google Search' button (nodeId 314) to submit the query."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://www.google.com/",
+        "navigationObserved": false,
+        "domMutationObserved": true,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 24,
+      "normalizedNodeCount": 24,
+      "normalizedCharCount": 5661,
+      "navigatorNormalizedTreeCharCount": 2838,
+      "navigatorObservationCharCount": 6711,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:11.251Z"
+    },
+    {
+      "step": 4,
+      "urlAtPerception": "https://www.google.com/",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 53
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent to 'search for mechanical keyboards'. Retyping the precise query into the focused search bar."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 53
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent to 'search for mechanical keyboards'. Retyping the precise query into the focused search bar."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": true,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7813,
+      "navigatorNormalizedTreeCharCount": 5273,
+      "navigatorObservationCharCount": 9186,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:15.681Z"
+    },
+    {
+      "step": 5,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 19
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not match the user's intent. Typing 'mechanical keyboards' into the search bar."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 19
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not match the user's intent. Typing 'mechanical keyboards' into the search bar."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7843,
+      "navigatorNormalizedTreeCharCount": 5272,
+      "navigatorObservationCharCount": 10901,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:33.018Z"
+    },
+    {
+      "step": 6,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": null,
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent. The search bar is already focused, so retyping the precise query 'mechanical keyboards' directly."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": null,
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent. The search bar is already focused, so retyping the precise query 'mechanical keyboards' directly."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7844,
+      "navigatorNormalizedTreeCharCount": 5271,
+      "navigatorObservationCharCount": 11907,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:37.586Z"
+    },
+    {
+      "step": 7,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 37
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent to 'search for mechanical keyboards'. Retyping the precise query into the search bar."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 37
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent to 'search for mechanical keyboards'. Retyping the precise query into the search bar."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7844,
+      "navigatorNormalizedTreeCharCount": 5271,
+      "navigatorObservationCharCount": 12659,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:45.882Z"
+    },
+    {
+      "step": 8,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 37
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not match the user's intent to search for 'mechanical keyboards'. Retyping the precise query into the search bar."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 37
+        },
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not match the user's intent to search for 'mechanical keyboards'. Retyping the precise query into the search bar."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7844,
+      "navigatorNormalizedTreeCharCount": 5271,
+      "navigatorObservationCharCount": 13385,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:10:58.665Z"
+    },
+    {
+      "step": 9,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 37
+        },
+        "text": "mechanical keyboards",
+        "confidence": 0.9,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent to 'search for mechanical keyboards'. Retyping the precise query into the search bar to correct it."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": {
+          "x": 508,
+          "y": 37
+        },
+        "text": "mechanical keyboards",
+        "confidence": 0.9,
+        "reasoning": "The current search query 'mechanical keyboards reddit' in the search bar (nodeId 1425) does not exactly match the user's intent to 'search for mechanical keyboards'. Retyping the precise query into the search bar to correct it."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7844,
+      "navigatorNormalizedTreeCharCount": 5271,
+      "navigatorObservationCharCount": 14112,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:11:14.926Z"
+    },
+    {
+      "step": 10,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 781,
+          "y": 10.95
+        },
+        "text": null,
+        "confidence": 0.9,
+        "reasoning": "Previous TYPE actions failed to update the search bar's value from 'mechanical keyboards reddit' to 'mechanical keyboards'. Clicking the 'Clear' button will remove the incorrect query, preparing the input for the correct search term."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 781,
+          "y": 10.95
+        },
+        "text": null,
+        "confidence": 0.9,
+        "reasoning": "Previous TYPE actions failed to update the search bar's value from 'mechanical keyboards reddit' to 'mechanical keyboards'. Clicking the 'Clear' button will remove the incorrect query, preparing the input for the correct search term."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7844,
+      "navigatorNormalizedTreeCharCount": 5271,
+      "navigatorObservationCharCount": 14121,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:11:37.924Z"
+    },
+    {
+      "step": 11,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": null,
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query in the URL and implied in the search bar ('mechanical keyboards reddit') does not match the user's intent. The search bar is focused, so retyping the precise query 'mechanical keyboards' directly."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": null,
+        "text": "mechanical keyboards",
+        "confidence": 1,
+        "reasoning": "The current search query in the URL and implied in the search bar ('mechanical keyboards reddit') does not match the user's intent. The search bar is focused, so retyping the precise query 'mechanical keyboards' directly."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+        "navigationObserved": false,
+        "domMutationObserved": true,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 23,
+      "normalizedNodeCount": 23,
+      "normalizedCharCount": 7881,
+      "navigatorNormalizedTreeCharCount": 5285,
+      "navigatorObservationCharCount": 14203,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:11:40.681Z"
+    },
+    {
+      "step": 12,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards+reddit&sca_esv=e7ea7fcadb9fac2e&source=hp&ei=SjuaaYq-Kpu05NoP3eei0Qk&iflsig=AFdpzrgAAAAAaZpJWgsQ3jvK3ztO2QD-IUfxCOiUJNiU&oq=mechanical+keyboards&gs_lp=Egdnd3Mtd2l6IhRtZWNoYW5pY2FsIGtleWJvYXJkcyoCCAAyChAAGIAEGEMYigUyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIwjNQuh1Yhx9wAXgAkAEAmAE_oAHLA6oBAjEwuAEByAEA-AEBmAILoALkA6gCCsICExAAGIAEGEMYtAIY5wYYigUY6gLCAhYQLhiABBhDGLQCGOUEGOcGGIoFGOoCwgIREC4YgAQYsQMYxwEYjgUYrwHCAg4QABiABBixAxiDARiKBcICCBAAGIAEGLEDwgILEAAYgAQYsQMYyQPCAgsQABiABBiSAxiKBZgDBfEFc_cvdFGVtQaSBwIxMaAHvkKyBwIxMLgH3gPCBwUyLjguMcgHEYAIAA&sclient=gws-wiz",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 906,
+          "y": 10.95
+        },
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The search bar correctly contains 'mechanical keyboards'. Clicking the 'Search' button will submit the query."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 906,
+          "y": 10.95
+        },
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The search bar correctly contains 'mechanical keyboards'. Clicking the 'Search' button will submit the query."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 22,
+      "normalizedNodeCount": 22,
+      "normalizedCharCount": 7714,
+      "navigatorNormalizedTreeCharCount": 5242,
+      "navigatorObservationCharCount": 14030,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:11:43.179Z"
+    },
+    {
+      "step": 13,
+      "urlAtPerception": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+      "urlAfterAction": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+      "state": "ACTING",
+      "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+      "inferredAction": {
+        "action": "DONE",
+        "target": null,
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The search for 'mechanical keyboards' has been successfully completed, and the results are displayed on the current page."
+      },
+      "action": {
+        "action": "DONE",
+        "target": null,
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The search for 'mechanical keyboards' has been successfully completed, and the results are displayed on the current page."
+      },
+      "execution": {
+        "status": "done",
+        "action": "DONE",
+        "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "scrollCount": 0,
+      "interactiveElementCount": 24,
+      "normalizedNodeCount": 24,
+      "normalizedCharCount": 7920,
+      "navigatorNormalizedTreeCharCount": 5255,
+      "navigatorObservationCharCount": 14195,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-21T23:11:46.341Z"
+    }
+  ],
+  "escalations": [],
+  "tierUsage": {
+    "tier1Calls": 13,
+    "tier2Calls": 0,
+    "tier3Scrolls": 0,
+    "axDeficientDetections": 0,
+    "lowConfidenceEscalations": 0,
+    "resolvedAtTier1": 13,
+    "resolvedAtTier2": 0,
+    "estimatedCostUsd": 0.00195
+  },
+  "finalAction": {
+    "action": "DONE",
+    "target": null,
+    "text": null,
+    "confidence": 1,
+    "reasoning": "The search for 'mechanical keyboards' has been successfully completed, and the results are displayed on the current page."
+  },
+  "finalExecution": {
+    "status": "done",
+    "action": "DONE",
+    "currentUrl": "https://www.google.com/search?q=mechanical+keyboards&sca_esv=e7ea7fcadb9fac2e&ei=UzuaafOaEKbi5NoPwqTRuAw&biw=1280&bih=900&ved=0ahUKEwizkO2d2uuSAxUmMVkFHUJSFMcQ4dUDCBM&oq=mechanical+keyboards&gs_lp=Egxnd3Mtd2l6LXNlcnAiFG1lY2hhbmljYWwga2V5Ym9hcmRzMgoQABiABBhDGIoFMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAESJ88UPMnWJ4ocAF4AZABAJgBfqAB7gOqAQMwLjS4AQzIAQD4AQGYAgWgAv4DqAIUwgIWEAAYgAQYQxi0AhjnBhiKBRjqAtgBAcICGRAuGIAEGEMYtAIY5QQY5wYYigUY6gLYAQHCAhAQABgDGLQCGOoCGI8B2AECwgIQEC4YAxi0AhjqAhiPAdgBAsICCBAAGIAEGLEDmAMH8QVg6TaEtwTNMboGBAgBGAe6BgYIAhABGAqSBwMxLjSgB4YXsgcDMC40uAf3A8IHBTAuNC4xyAcNgAgA&sclient=gws-wiz-serp",
+    "navigationObserved": false,
+    "domMutationObserved": false,
+    "extractedData": null,
+    "message": null
+  },
+  "runConfig": {
+    "suiteName": "baseline",
+    "scenario": {
+      "name": "default",
+      "intent": "search for mechanical keyboards",
+      "startUrl": "https://www.google.com/",
+      "maxSteps": 20
+    },
+    "globalOverrides": {},
+    "globalExpectations": {}
+  }
+}

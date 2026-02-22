@@ -41,6 +41,7 @@ export {
 
 export {
   createPerceptionActionLoop,
+  type EscalationEvent,
   type LoopState,
   type LoopStepRecord,
   type PerceptionActionLoopOptions,

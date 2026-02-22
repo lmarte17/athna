@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "phase": "2.1",
+  "suiteName": "baseline",
+  "runLabel": "baseline-suite",
+  "summary": {
+    "scenarioCount": 1,
+    "suiteTierUsage": {
+      "tier1Calls": 2,
+      "tier2Calls": 6,
+      "tier3Scrolls": 4,
+      "axDeficientDetections": 1,
+      "lowConfidenceEscalations": 0,
+      "noProgressEscalations": 5,
+      "unsafeActionEscalations": 0,
+      "resolvedAtTier1": 2,
+      "resolvedAtTier2": 2,
+      "estimatedCostUsd": 0.0183
+    },
+    "scenarios": [
+      {
+        "name": "challenge1",
+        "intent": "complete challenge 1 on this website, then return DONE",
+        "startUrl": "https://serene-frangipane-7fd25b.netlify.app/",
+        "status": "FAILED",
+        "stepsTaken": 8,
+        "finalUrl": "https://serene-frangipane-7fd25b.netlify.app/step1?version=2",
+        "tierUsage": {
+          "tier1Calls": 2,
+          "tier2Calls": 6,
+          "tier3Scrolls": 4,
+          "axDeficientDetections": 1,
+          "lowConfidenceEscalations": 0,
+          "noProgressEscalations": 5,
+          "unsafeActionEscalations": 0,
+          "resolvedAtTier1": 2,
+          "resolvedAtTier2": 2,
+          "estimatedCostUsd": 0.0183
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase2/phase2-2.1/scenarios/challenge1-tiered-perception-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "scenarios": [
+      {
+        "name": "challenge1",
+        "intent": "complete challenge 1 on this website, then return DONE",
+        "startUrl": "https://serene-frangipane-7fd25b.netlify.app/",
+        "maxSteps": 24,
+        "maxNoProgressSteps": 6
+      }
+    ],
+    "globalOverrides": {
+      "taskMaxSteps": 24,
+      "maxNoProgressSteps": 6
+    },
+    "globalExpectations": {}
+  }
+}

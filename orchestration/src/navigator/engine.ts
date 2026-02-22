@@ -28,7 +28,12 @@ export interface NavigatorActionDecision {
 }
 
 export type NavigatorInferenceTier = "TIER_1_AX" | "TIER_2_VISION";
-export type NavigatorEscalationReason = "LOW_CONFIDENCE" | "AX_DEFICIENT" | "RETRY_AFTER_SCROLL";
+export type NavigatorEscalationReason =
+  | "LOW_CONFIDENCE"
+  | "AX_DEFICIENT"
+  | "RETRY_AFTER_SCROLL"
+  | "NO_PROGRESS"
+  | "UNSAFE_ACTION";
 
 export interface NavigatorScreenshotInput {
   base64: string;
@@ -84,6 +89,7 @@ class GeminiTieredNavigatorEngine implements NavigatorEngine {
     if (tier === "TIER_2_VISION" && !input.observation.screenshot) {
       throw new Error("Tier 2 vision inference requires a screenshot payload.");
     }
+    const challengeMode = shouldUseChallengeMode(input);
 
     const userPayload = buildNavigatorUserPayload(input, tier);
     let previousRawResponse: string | null = null;
@@ -93,7 +99,7 @@ class GeminiTieredNavigatorEngine implements NavigatorEngine {
       const response = await this.clientContext.ai.models.generateContent({
         model: tier === "TIER_2_VISION" ? this.proModel : this.flashModel,
         contents: buildNavigatorContents(
-          buildNavigatorPrompt(userPayload, previousRawResponse, attempt),
+          buildNavigatorPrompt(userPayload, previousRawResponse, attempt, challengeMode),
           input.observation.screenshot
         ),
         config: {
@@ -181,7 +187,8 @@ function buildNavigatorUserPayload(
 function buildNavigatorPrompt(
   payload: Record<string, unknown>,
   previousRawResponse: string | null,
-  attempt: number
+  attempt: number,
+  challengeMode: boolean
 ): string {
   const correctionSection =
     attempt === 0
@@ -209,12 +216,49 @@ function buildNavigatorPrompt(
     "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
     "- Keep reasoning concise.",
     "- Return valid JSON only, no markdown.",
+    challengeMode
+      ? "Challenge-mode constraints: expect decoy popups/buttons; follow explicit step instructions; avoid fake navigation."
+      : "",
+    challengeMode
+      ? "Treat popups and marketing banners as decoys by default; attempt at most one dismissal per popup, then move on."
+      : "",
+    challengeMode
+      ? "When a page requests a code, prioritize revealing/retrieving the code and submitting it before using any next-step navigation."
+      : "",
+    challengeMode
+      ? "Avoid repeating the same click on an unchanged page; switch strategy (close blocker, reveal code, focus code input, submit)."
+      : "",
+    challengeMode
+      ? "If popup-close attempts do not change state, ignore popups and directly target instruction-linked controls (Reveal Code, code input, Submit)."
+      : "",
     correctionSection,
     "Context payload:",
     JSON.stringify(payload)
   ]
     .filter((line) => line.length > 0)
     .join("\n");
+}
+
+function shouldUseChallengeMode(input: NavigatorDecisionRequest): boolean {
+  if (!isChallengeModeEnabledByEnv()) {
+    return false;
+  }
+
+  const intent = input.intent.toLowerCase();
+  const currentUrl = String(input.observation.currentUrl ?? "").toLowerCase();
+  return (
+    intent.includes("challenge") ||
+    currentUrl.includes("serene-frangipane-7fd25b.netlify.app")
+  );
+}
+
+function isChallengeModeEnabledByEnv(): boolean {
+  const raw = process.env.NAVIGATOR_CHALLENGE_MODE;
+  if (!raw) {
+    return false;
+  }
+
+  return ["1", "true", "yes", "on"].includes(raw.trim().toLowerCase());
 }
 
 function parseAndValidateNavigatorAction(rawText: string): NavigatorActionDecision {

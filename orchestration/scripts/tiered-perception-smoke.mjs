@@ -7,6 +7,7 @@ const DEFAULT_REMOTE_DEBUGGING_PORT = 9333;
 const DEFAULT_TASK_INTENT = "search for mechanical keyboards";
 const DEFAULT_TASK_START_URL = "https://www.google.com/";
 const DEFAULT_TASK_MAX_STEPS = 20;
+const DEFAULT_CONFIDENCE_THRESHOLD = 0.75;
 const POLL_INTERVAL_MS = 250;
 const STARTUP_TIMEOUT_MS = 20_000;
 const MILESTONE = "2.1";
@@ -22,7 +23,7 @@ const CUSTOM_TASK_INTENT = process.env.PHASE2_TASK_INTENT;
 const CUSTOM_TASK_START_URL = process.env.PHASE2_TASK_START_URL;
 const CUSTOM_SCENARIO_NAME = process.env.PHASE2_SCENARIO;
 
-/** @typedef {{ expectTier1?: boolean, expectTier2?: boolean, expectAxDeficient?: boolean, expectTier3Scroll?: boolean }} ScenarioExpectations */
+/** @typedef {{ expectTier1?: boolean, expectTier2?: boolean, expectAxDeficient?: boolean, expectTier3Scroll?: boolean, expectLowConfidenceEscalation?: boolean }} ScenarioExpectations */
 
 /**
  * @typedef {Object} ScenarioConfig
@@ -34,6 +35,7 @@ const CUSTOM_SCENARIO_NAME = process.env.PHASE2_SCENARIO;
  * @property {number=} axDeficientInteractiveThreshold
  * @property {number=} scrollStepPx
  * @property {number=} maxScrollSteps
+ * @property {number=} maxNoProgressSteps
  * @property {ScenarioExpectations=} expectations
  */
 
@@ -94,14 +96,18 @@ const globalOverrides = {
   confidenceThreshold: parseOptionalNumberEnv("PHASE2_CONFIDENCE_THRESHOLD"),
   axDeficientInteractiveThreshold: parseOptionalIntegerEnv("PHASE2_AX_DEFICIENT_THRESHOLD"),
   scrollStepPx: parseOptionalIntegerEnv("PHASE2_SCROLL_STEP_PX"),
-  maxScrollSteps: parseOptionalIntegerEnv("PHASE2_MAX_SCROLL_STEPS")
+  maxScrollSteps: parseOptionalIntegerEnv("PHASE2_MAX_SCROLL_STEPS"),
+  maxNoProgressSteps: parseOptionalIntegerEnv("PHASE2_MAX_NO_PROGRESS_STEPS")
 };
 
 const globalExpectations = {
   expectTier1: parseOptionalBooleanEnv("PHASE2_EXPECT_TIER1"),
   expectTier2: parseOptionalBooleanEnv("PHASE2_EXPECT_TIER2"),
   expectAxDeficient: parseOptionalBooleanEnv("PHASE2_EXPECT_AX_DEFICIENT"),
-  expectTier3Scroll: parseOptionalBooleanEnv("PHASE2_EXPECT_TIER3_SCROLL")
+  expectTier3Scroll: parseOptionalBooleanEnv("PHASE2_EXPECT_TIER3_SCROLL"),
+  expectLowConfidenceEscalation: parseOptionalBooleanEnv(
+    "PHASE2_EXPECT_LOW_CONFIDENCE_ESCALATION"
+  )
 };
 
 function sleep(ms) {
@@ -268,6 +274,80 @@ function validateLoopResult(loopResult, scenario) {
   if (!loopResult.tierUsage || typeof loopResult.tierUsage !== "object") {
     throw new Error(`[${scenario.name}] tierUsage metrics are missing.`);
   }
+  if (!Array.isArray(loopResult.escalations)) {
+    throw new Error(`[${scenario.name}] escalation events are missing.`);
+  }
+
+  const confidenceThreshold = scenario.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
+  for (const [index, record] of loopResult.history.entries()) {
+    if (record?.resolvedTier !== "TIER_1_AX") {
+      continue;
+    }
+
+    const confidence = Number(record?.action?.confidence);
+    if (!Number.isFinite(confidence)) {
+      throw new Error(
+        `[${scenario.name}] history[${index}] missing numeric action confidence for TIER_1_AX.`
+      );
+    }
+
+    if (confidence < confidenceThreshold) {
+      throw new Error(
+        `[${scenario.name}] confidence-threshold policy violated at step=${record.step}. Tier 1 action confidence ${confidence.toFixed(2)} < threshold ${confidenceThreshold.toFixed(2)}`
+      );
+    }
+  }
+
+  for (const [index, escalation] of loopResult.escalations.entries()) {
+    if (!escalation || typeof escalation !== "object") {
+      throw new Error(`[${scenario.name}] escalation[${index}] is invalid.`);
+    }
+    if (typeof escalation.urlAtEscalation !== "string" || escalation.urlAtEscalation.length === 0) {
+      throw new Error(`[${scenario.name}] escalation[${index}] missing urlAtEscalation.`);
+    }
+    if (typeof escalation.resolvedTier !== "string" || escalation.resolvedTier.length === 0) {
+      throw new Error(`[${scenario.name}] escalation[${index}] missing resolvedTier.`);
+    }
+    if (escalation.reason === "LOW_CONFIDENCE") {
+      const triggerConfidence = Number(escalation.triggerConfidence);
+      const threshold = Number(escalation.confidenceThreshold);
+      if (!Number.isFinite(triggerConfidence) || !Number.isFinite(threshold)) {
+        throw new Error(
+          `[${scenario.name}] escalation[${index}] LOW_CONFIDENCE missing numeric confidence metadata.`
+        );
+      }
+      if (triggerConfidence >= threshold) {
+        throw new Error(
+          `[${scenario.name}] escalation[${index}] LOW_CONFIDENCE has triggerConfidence >= threshold (${triggerConfidence.toFixed(2)} >= ${threshold.toFixed(2)}).`
+        );
+      }
+    }
+  }
+
+  const lowConfidenceEscalationCount = loopResult.escalations.filter(
+    (event) => event.reason === "LOW_CONFIDENCE"
+  ).length;
+  const noProgressEscalationCount = loopResult.escalations.filter(
+    (event) => event.reason === "NO_PROGRESS"
+  ).length;
+  const unsafeActionEscalationCount = loopResult.escalations.filter(
+    (event) => event.reason === "UNSAFE_ACTION"
+  ).length;
+  if (Number(loopResult.tierUsage.lowConfidenceEscalations ?? 0) !== lowConfidenceEscalationCount) {
+    throw new Error(
+      `[${scenario.name}] tierUsage.lowConfidenceEscalations does not match escalation events (${loopResult.tierUsage.lowConfidenceEscalations} !== ${lowConfidenceEscalationCount}).`
+    );
+  }
+  if (Number(loopResult.tierUsage.noProgressEscalations ?? 0) !== noProgressEscalationCount) {
+    throw new Error(
+      `[${scenario.name}] tierUsage.noProgressEscalations does not match escalation events (${loopResult.tierUsage.noProgressEscalations} !== ${noProgressEscalationCount}).`
+    );
+  }
+  if (Number(loopResult.tierUsage.unsafeActionEscalations ?? 0) !== unsafeActionEscalationCount) {
+    throw new Error(
+      `[${scenario.name}] tierUsage.unsafeActionEscalations does not match escalation events (${loopResult.tierUsage.unsafeActionEscalations} !== ${unsafeActionEscalationCount}).`
+    );
+  }
 
   const expectations = {
     ...scenario.expectations,
@@ -298,6 +378,12 @@ function validateLoopResult(loopResult, scenario) {
     "expectTier3Scroll",
     scenario.name
   );
+  assertOptionalExpectation(
+    expectations.expectLowConfidenceEscalation,
+    lowConfidenceEscalationCount > 0,
+    "expectLowConfidenceEscalation",
+    scenario.name
+  );
 }
 
 /** @returns {ScenarioConfig[]} */
@@ -312,7 +398,8 @@ function resolveScenarios() {
         confidenceThreshold: globalOverrides.confidenceThreshold,
         axDeficientInteractiveThreshold: globalOverrides.axDeficientInteractiveThreshold,
         scrollStepPx: globalOverrides.scrollStepPx,
-        maxScrollSteps: globalOverrides.maxScrollSteps
+        maxScrollSteps: globalOverrides.maxScrollSteps,
+        maxNoProgressSteps: globalOverrides.maxNoProgressSteps
       }
     ];
   }
@@ -346,7 +433,8 @@ function mergeScenarioWithGlobalOverrides(scenario) {
     axDeficientInteractiveThreshold:
       globalOverrides.axDeficientInteractiveThreshold ?? scenario.axDeficientInteractiveThreshold,
     scrollStepPx: globalOverrides.scrollStepPx ?? scenario.scrollStepPx,
-    maxScrollSteps: globalOverrides.maxScrollSteps ?? scenario.maxScrollSteps
+    maxScrollSteps: globalOverrides.maxScrollSteps ?? scenario.maxScrollSteps,
+    maxNoProgressSteps: globalOverrides.maxNoProgressSteps ?? scenario.maxNoProgressSteps
   };
 }
 
@@ -356,6 +444,9 @@ function summarizeSuite(scenarioRuns) {
     tier2Calls: 0,
     tier3Scrolls: 0,
     axDeficientDetections: 0,
+    lowConfidenceEscalations: 0,
+    noProgressEscalations: 0,
+    unsafeActionEscalations: 0,
     resolvedAtTier1: 0,
     resolvedAtTier2: 0,
     estimatedCostUsd: 0
@@ -367,6 +458,9 @@ function summarizeSuite(scenarioRuns) {
     totals.tier2Calls += Number(usage.tier2Calls ?? 0);
     totals.tier3Scrolls += Number(usage.tier3Scrolls ?? 0);
     totals.axDeficientDetections += Number(usage.axDeficientDetections ?? 0);
+    totals.lowConfidenceEscalations += Number(usage.lowConfidenceEscalations ?? 0);
+    totals.noProgressEscalations += Number(usage.noProgressEscalations ?? 0);
+    totals.unsafeActionEscalations += Number(usage.unsafeActionEscalations ?? 0);
     totals.resolvedAtTier1 += Number(usage.resolvedAtTier1 ?? 0);
     totals.resolvedAtTier2 += Number(usage.resolvedAtTier2 ?? 0);
     totals.estimatedCostUsd += Number(usage.estimatedCostUsd ?? 0);
@@ -433,6 +527,7 @@ async function main() {
         axDeficientInteractiveThreshold: scenario.axDeficientInteractiveThreshold,
         scrollStepPx: scenario.scrollStepPx,
         maxScrollSteps: scenario.maxScrollSteps,
+        maxNoProgressSteps: scenario.maxNoProgressSteps,
         logger: (line) => console.info(`[${scenario.name}] ${line}`)
       });
 
@@ -443,7 +538,8 @@ async function main() {
         confidenceThreshold: scenario.confidenceThreshold,
         axDeficientInteractiveThreshold: scenario.axDeficientInteractiveThreshold,
         scrollStepPx: scenario.scrollStepPx,
-        maxScrollSteps: scenario.maxScrollSteps
+        maxScrollSteps: scenario.maxScrollSteps,
+        maxNoProgressSteps: scenario.maxNoProgressSteps
       });
 
       validateLoopResult(loopResult, scenario);
