@@ -1,0 +1,138 @@
+{
+  "ok": true,
+  "phase": "3.7",
+  "runConfig": {
+    "poolSize": 3,
+    "maxRetries": 2
+  },
+  "acceptance": {
+    "crashTriggersRetry": true,
+    "retrySucceedsOnFreshAttempt": true,
+    "retriesExhaustAtConfiguredLimit": true,
+    "cleanFailureAfterExhaustion": true,
+    "siblingTaskUnaffected": true
+  },
+  "tasks": {
+    "recover": {
+      "attemptsUsed": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "contextId": "ctx-1",
+          "status": "FAILED",
+          "crashDetected": true
+        },
+        {
+          "attempt": 2,
+          "contextId": "ctx-3",
+          "status": "SUCCEEDED",
+          "crashDetected": false
+        }
+      ]
+    },
+    "sibling": {
+      "attemptsUsed": 1
+    },
+    "exhaust": {
+      "attemptsUsed": 3,
+      "attempts": [
+        {
+          "attempt": 1,
+          "contextId": "ctx-2",
+          "status": "FAILED",
+          "crashDetected": true
+        },
+        {
+          "attempt": 2,
+          "contextId": "ctx-3",
+          "status": "FAILED",
+          "crashDetected": true
+        },
+        {
+          "attempt": 3,
+          "contextId": "ctx-3",
+          "status": "FAILED",
+          "crashDetected": true
+        }
+      ],
+      "error": {
+        "type": "CDP",
+        "message": "cdpSession.send: Target page, context or browser has been closed",
+        "retryable": true
+      }
+    }
+  },
+  "schedulerEvents": {
+    "recover": [
+      "STARTED",
+      "CRASH_DETECTED",
+      "RETRYING",
+      "STARTED",
+      "SUCCEEDED"
+    ],
+    "sibling": [
+      "STARTED",
+      "SUCCEEDED"
+    ],
+    "exhaust": [
+      "STARTED",
+      "CRASH_DETECTED",
+      "RETRYING",
+      "STARTED",
+      "CRASH_DETECTED",
+      "RETRYING",
+      "STARTED",
+      "CRASH_DETECTED",
+      "FAILED"
+    ]
+  },
+  "counters": {
+    "recoverCrashDetectedCount": 1,
+    "recoverRetryingCount": 1,
+    "recoverSucceededCount": 1,
+    "siblingSucceededCount": 1,
+    "exhaustCrashDetectedCount": 3,
+    "exhaustRetryingCount": 2,
+    "exhaustFailedCount": 1
+  },
+  "pool": {
+    "finalSnapshot": {
+      "minSize": 3,
+      "maxSize": 3,
+      "totalSlots": 3,
+      "cold": 1,
+      "replenishing": 1,
+      "available": 1,
+      "inUse": 0,
+      "queued": 0,
+      "slotStates": [
+        {
+          "contextId": "ctx-1",
+          "state": "REPLENISHING",
+          "lastWarmDurationMs": null
+        },
+        {
+          "contextId": "ctx-2",
+          "state": "COLD",
+          "lastWarmDurationMs": null
+        },
+        {
+          "contextId": "ctx-3",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 14
+        }
+      ]
+    },
+    "telemetry": {
+      "warmAssignmentCount": 6,
+      "queuedAssignmentCount": 0,
+      "averageWarmAssignmentWaitMs": 0,
+      "averageQueueWaitMs": 0,
+      "averageWarmDurationMs": 22.667
+    }
+  },
+  "harness": {
+    "origin": "http://127.0.0.1:53967",
+    "requestCount": 5
+  }
+}

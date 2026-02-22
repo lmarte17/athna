@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "phase": "3.6",
+  "runConfig": {
+    "poolSize": 2,
+    "memoryBudgetMb": 1,
+    "cpuBudgetPercent": 25,
+    "violationWindowMs": 3000,
+    "sampleIntervalMs": 500,
+    "cpuBurnMs": 180,
+    "enforcementMode": "KILL_TAB"
+  },
+  "acceptance": {
+    "violationFlaggedWithin10s": true,
+    "violationLatencyMs": 3017,
+    "hogTaskFailedAfterEnforcement": true,
+    "siblingTaskUnaffected": true,
+    "siblingAttemptsUsed": 1
+  },
+  "events": {
+    "hogStartedAt": "2026-02-22T16:33:09.966Z",
+    "hogViolationEvent": "RESOURCE_BUDGET_KILLED",
+    "hogFailedAt": "2026-02-22T16:33:13.060Z",
+    "siblingSucceededAt": "2026-02-22T16:33:12.480Z"
+  },
+  "pool": {
+    "finalSnapshot": {
+      "minSize": 2,
+      "maxSize": 2,
+      "totalSlots": 2,
+      "cold": 0,
+      "replenishing": 0,
+      "available": 2,
+      "inUse": 0,
+      "queued": 0,
+      "slotStates": [
+        {
+          "contextId": "ctx-1",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 39
+        },
+        {
+          "contextId": "ctx-2",
+          "state": "AVAILABLE",
+          "lastWarmDurationMs": 12
+        }
+      ]
+    },
+    "telemetry": {
+      "warmAssignmentCount": 2,
+      "queuedAssignmentCount": 0,
+      "averageWarmAssignmentWaitMs": 0,
+      "averageQueueWaitMs": 0,
+      "averageWarmDurationMs": 25.5
+    }
+  },
+  "harness": {
+    "origin": "http://127.0.0.1:53845",
+    "requestCount": 2
+  }
+}

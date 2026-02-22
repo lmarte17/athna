@@ -281,6 +281,22 @@ async function main() {
           step: 1
         }
       }
+    }),
+    indexModule.createGhostTabIpcMessage({
+      type: "TASK_STATUS",
+      taskId: "task-ipc-schema",
+      contextId: "ctx-1",
+      payload: {
+        kind: "QUEUE",
+        event: "ENQUEUED",
+        priority: "BACKGROUND",
+        queueDepth: 1,
+        available: 0,
+        inUse: 1,
+        contextId: null,
+        waitMs: null,
+        wasQueued: true
+      }
     })
   ];
 

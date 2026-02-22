@@ -9,9 +9,10 @@
       "INJECT_JS",
       "INPUT_EVENT",
       "TASK_RESULT",
-      "TASK_ERROR"
+      "TASK_ERROR",
+      "TASK_STATUS"
     ],
-    "validatedFixtureCount": 7,
+    "validatedFixtureCount": 8,
     "results": [
       {
         "type": "NAVIGATE",
@@ -45,6 +46,11 @@
       },
       {
         "type": "TASK_ERROR",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "TASK_STATUS",
         "inboundOk": true,
         "outboundOk": true
       }

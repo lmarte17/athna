@@ -34,6 +34,20 @@ interface AcquireRequest {
 }
 
 export type GhostTabTaskPriority = "FOREGROUND" | "BACKGROUND";
+export type GhostTabQueueStatusEventType = "ENQUEUED" | "DISPATCHED" | "RELEASED";
+
+export interface GhostTabQueueStatusEvent {
+  eventType: GhostTabQueueStatusEventType;
+  taskId: string;
+  priority: GhostTabTaskPriority;
+  queueDepth: number;
+  available: number;
+  inUse: number;
+  contextId: string | null;
+  waitMs: number | null;
+  wasQueued: boolean;
+  timestamp: string;
+}
 
 export interface GhostTabPoolManagerOptions {
   endpointURL: string;
@@ -43,6 +57,7 @@ export interface GhostTabPoolManagerOptions {
   connectTimeoutMs?: number;
   logger?: (line: string) => void;
   onTaskStateTransition?: (event: GhostTabStateTransitionEvent) => void;
+  onQueueStatus?: (event: GhostTabQueueStatusEvent) => void;
 }
 
 export interface AcquireGhostTabOptions {
@@ -97,10 +112,14 @@ export class GhostTabPoolManager {
   private readonly logger: (line: string) => void;
   private readonly slots = new Map<string, PoolSlot>();
   private readonly availableContextIds: string[] = [];
-  private readonly waitQueue: AcquireRequest[] = [];
+  private readonly foregroundWaitQueue: AcquireRequest[] = [];
+  private readonly backgroundWaitQueue: AcquireRequest[] = [];
   private readonly activeLeases = new Map<
     string,
     {
+      taskId: string;
+      priority: GhostTabTaskPriority;
+      wasQueued: boolean;
       contextId: string;
       released: boolean;
       taskStateMachine: ReturnType<typeof createGhostTabTaskStateMachine>;
@@ -189,14 +208,10 @@ export class GhostTabPoolManager {
         reject
       };
 
-      if (request.priority === "FOREGROUND") {
-        this.waitQueue.unshift(request);
-      } else {
-        this.waitQueue.push(request);
-      }
+      this.enqueueRequest(request);
 
       this.logger(
-        `[pool] queued taskId=${taskId} priority=${priority} queueDepth=${this.waitQueue.length}`
+        `[pool] queued taskId=${taskId} priority=${priority} queueDepth=${this.getQueueDepth()}`
       );
       this.ensureReplenishLoop();
     });
@@ -218,7 +233,7 @@ export class GhostTabPoolManager {
       replenishing,
       available,
       inUse,
-      queued: this.waitQueue.length,
+      queued: this.getQueueDepth(),
       slotStates: states
         .map((slot) => ({
           contextId: slot.contextId,
@@ -245,7 +260,12 @@ export class GhostTabPoolManager {
       return;
     }
 
-    const pending = this.waitQueue.splice(0, this.waitQueue.length);
+    this.initialized = false;
+
+    const pending = [
+      ...this.foregroundWaitQueue.splice(0, this.foregroundWaitQueue.length),
+      ...this.backgroundWaitQueue.splice(0, this.backgroundWaitQueue.length)
+    ];
     for (const request of pending) {
       request.reject(new Error("GhostTabPoolManager shutting down."));
     }
@@ -269,7 +289,6 @@ export class GhostTabPoolManager {
       )
     );
 
-    this.initialized = false;
     this.replenishLoopPromise = null;
   }
 
@@ -315,6 +334,9 @@ export class GhostTabPoolManager {
       }
     });
     this.activeLeases.set(leaseId, {
+      taskId: request.taskId,
+      priority: request.priority,
+      wasQueued: request.wasQueued,
       contextId,
       released: false,
       taskStateMachine
@@ -323,6 +345,14 @@ export class GhostTabPoolManager {
     this.logger(
       `[pool] assigned taskId=${request.taskId} context=${contextId} waitMs=${waitMs} available=${this.availableContextIds.length} inUse=${this.countByState("IN_USE")}`
     );
+    this.emitQueueStatus({
+      eventType: "DISPATCHED",
+      taskId: request.taskId,
+      priority: request.priority,
+      contextId,
+      waitMs,
+      wasQueued: request.wasQueued
+    });
 
     this.ensureReplenishLoop();
 
@@ -381,6 +411,22 @@ export class GhostTabPoolManager {
       return;
     }
 
+    const crashEvent = slot.cdpClient?.getLastCrashEvent() ?? null;
+    if (crashEvent) {
+      this.emitQueueStatus({
+        eventType: "RELEASED",
+        taskId: active.taskId,
+        priority: active.priority,
+        contextId: slot.contextId,
+        waitMs: null,
+        wasQueued: active.wasQueued
+      });
+      await this.recycleCrashedSlot(slot, crashEvent.status ?? crashEvent.source);
+      this.processQueue();
+      this.ensureReplenishLoop();
+      return;
+    }
+
     slot.state = "AVAILABLE";
     if (!this.availableContextIds.includes(slot.contextId)) {
       this.availableContextIds.push(slot.contextId);
@@ -389,12 +435,44 @@ export class GhostTabPoolManager {
     this.logger(
       `[pool] released context=${slot.contextId} available=${this.availableContextIds.length} inUse=${this.countByState("IN_USE")}`
     );
+    this.emitQueueStatus({
+      eventType: "RELEASED",
+      taskId: active.taskId,
+      priority: active.priority,
+      contextId: slot.contextId,
+      waitMs: null,
+      wasQueued: active.wasQueued
+    });
 
     this.processQueue();
     this.ensureReplenishLoop();
   }
 
+  private async recycleCrashedSlot(slot: PoolSlot, reason: string): Promise<void> {
+    const staleClient = slot.cdpClient;
+    this.removeFromAvailable(slot.contextId);
+    slot.state = "COLD";
+    slot.cdpClient = null;
+    slot.lastWarmDurationMs = null;
+    await staleClient?.close().catch(() => {
+      // best-effort cleanup for crashed CDP sessions
+    });
+
+    this.logger(`[pool] crash-recovery recycling context=${slot.contextId} reason=${reason}`);
+    await this.warmSlot(slot.contextId).catch((error) => {
+      this.logger(
+        `[pool] crash-recovery warm-failed context=${slot.contextId} error=${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    });
+  }
+
   private ensureReplenishLoop(): void {
+    if (!this.initialized) {
+      return;
+    }
+
     if (this.replenishLoopPromise) {
       return;
     }
@@ -402,10 +480,15 @@ export class GhostTabPoolManager {
     this.replenishLoopPromise = (async () => {
       try {
         await this.replenishToMinimumAvailable();
-        this.processQueue();
+      } catch (error) {
+        this.logger(
+          `[pool] replenish-failed error=${error instanceof Error ? error.message : String(error)}`
+        );
       } finally {
+        this.processQueue();
         this.replenishLoopPromise = null;
         const shouldRunAgain =
+          this.initialized &&
           this.availableContextIds.length < this.minSize &&
           this.getContextIdsByState("COLD").length > 0;
         if (shouldRunAgain) {
@@ -469,12 +552,12 @@ export class GhostTabPoolManager {
   }
 
   private processQueue(): void {
-    if (this.waitQueue.length === 0 || this.availableContextIds.length === 0) {
+    if (this.getQueueDepth() === 0 || this.availableContextIds.length === 0) {
       return;
     }
 
-    while (this.waitQueue.length > 0 && this.availableContextIds.length > 0) {
-      const request = this.waitQueue.shift();
+    while (this.getQueueDepth() > 0 && this.availableContextIds.length > 0) {
+      const request = this.dequeueNextRequest();
       if (!request) {
         break;
       }
@@ -486,7 +569,7 @@ export class GhostTabPoolManager {
         wasQueued: true
       });
       if (!lease) {
-        this.waitQueue.unshift(request);
+        this.requeueFront(request);
         return;
       }
 
@@ -494,11 +577,79 @@ export class GhostTabPoolManager {
     }
   }
 
+  private enqueueRequest(request: AcquireRequest): void {
+    if (request.priority === "FOREGROUND") {
+      this.foregroundWaitQueue.push(request);
+    } else {
+      this.backgroundWaitQueue.push(request);
+    }
+
+    this.emitQueueStatus({
+      eventType: "ENQUEUED",
+      taskId: request.taskId,
+      priority: request.priority,
+      contextId: null,
+      waitMs: null,
+      wasQueued: true
+    });
+  }
+
+  private dequeueNextRequest(): AcquireRequest | undefined {
+    if (this.foregroundWaitQueue.length > 0) {
+      return this.foregroundWaitQueue.shift();
+    }
+
+    return this.backgroundWaitQueue.shift();
+  }
+
+  private requeueFront(request: AcquireRequest): void {
+    if (request.priority === "FOREGROUND") {
+      this.foregroundWaitQueue.unshift(request);
+      return;
+    }
+
+    this.backgroundWaitQueue.unshift(request);
+  }
+
+  private getQueueDepth(): number {
+    return this.foregroundWaitQueue.length + this.backgroundWaitQueue.length;
+  }
+
+  private emitQueueStatus(input: {
+    eventType: GhostTabQueueStatusEventType;
+    taskId: string;
+    priority: GhostTabTaskPriority;
+    contextId: string | null;
+    waitMs: number | null;
+    wasQueued: boolean;
+  }): void {
+    this.options.onQueueStatus?.({
+      eventType: input.eventType,
+      taskId: input.taskId,
+      priority: input.priority,
+      queueDepth: this.getQueueDepth(),
+      available: this.countByState("AVAILABLE"),
+      inUse: this.countByState("IN_USE"),
+      contextId: input.contextId,
+      waitMs: input.waitMs,
+      wasQueued: input.wasQueued,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   private getContextIdsByState(state: PoolSlotState): string[] {
     return [...this.slots.values()]
       .filter((slot) => slot.state === state)
       .map((slot) => slot.contextId)
       .sort();
+  }
+
+  private removeFromAvailable(contextId: string): void {
+    for (let index = this.availableContextIds.length - 1; index >= 0; index -= 1) {
+      if (this.availableContextIds[index] === contextId) {
+        this.availableContextIds.splice(index, 1);
+      }
+    }
   }
 
   private countByState(state: PoolSlotState): number {

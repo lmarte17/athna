@@ -233,6 +233,24 @@ export interface ActionExecutionResult {
   message: string | null;
 }
 
+export interface GhostTabResourceMetrics {
+  source: "CDP_PERFORMANCE";
+  timestamp: string;
+  timestampMs: number;
+  taskDurationSeconds: number | null;
+  scriptDurationSeconds: number | null;
+  jsHeapUsedBytes: number | null;
+  jsHeapTotalBytes: number | null;
+  nodeCount: number | null;
+}
+
+export interface GhostTabCrashEvent {
+  source: "CDP_TARGET_CRASHED" | "PAGE_CRASH";
+  timestamp: string;
+  status: string | null;
+  errorCode: number | null;
+}
+
 export interface GhostViewportSettings {
   width: number;
   height: number;
@@ -256,6 +274,10 @@ export interface GhostTabCdpClient {
   getCurrentUrl(): Promise<string>;
   captureScreenshot(options?: CaptureScreenshotOptions): Promise<CaptureScreenshotResult>;
   captureJpegBase64(options?: CaptureJpegOptions): Promise<string>;
+  sampleResourceMetrics(): Promise<GhostTabResourceMetrics>;
+  onTargetCrashed(listener: (event: GhostTabCrashEvent) => void): () => void;
+  getLastCrashEvent(): GhostTabCrashEvent | null;
+  crashRendererForTesting(): Promise<void>;
   getViewport(): GhostViewportSettings;
   closeTarget(): Promise<void>;
   close(): Promise<void>;
@@ -314,11 +336,26 @@ interface RawAXNode {
 }
 
 class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
+  private readonly crashListeners = new Set<(event: GhostTabCrashEvent) => void>();
+  private lastCrashEvent: GhostTabCrashEvent | null = null;
+
   constructor(
     private readonly browser: Browser,
     private readonly cdpSession: CDPSession,
     private readonly page: Page
-  ) {}
+  ) {
+    this.cdpSession.on("Target.targetCrashed", (event: unknown) => {
+      this.emitCrashEvent(normalizeTargetCrashEvent(event));
+    });
+    this.page.on("crash", () => {
+      this.emitCrashEvent({
+        source: "PAGE_CRASH",
+        timestamp: new Date().toISOString(),
+        status: "Renderer process crashed.",
+        errorCode: null
+      });
+    });
+  }
 
   async navigate(url: string, timeoutMs = DEFAULT_NAVIGATION_TIMEOUT_MS): Promise<void> {
     const navigationResult = await this.cdpSession.send("Page.navigate", { url });
@@ -759,6 +796,65 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     return screenshot.base64;
   }
 
+  async sampleResourceMetrics(): Promise<GhostTabResourceMetrics> {
+    const [performanceResult, heapUsageResult] = await Promise.allSettled([
+      this.cdpSession.send("Performance.getMetrics") as Promise<{
+        metrics?: Array<{ name?: string; value?: number }>;
+      }>,
+      this.cdpSession.send("Runtime.getHeapUsage") as Promise<{
+        usedSize?: number;
+        totalSize?: number;
+      }>
+    ]);
+
+    const metricValues = new Map<string, number>();
+    if (performanceResult.status === "fulfilled") {
+      for (const metric of performanceResult.value.metrics ?? []) {
+        if (typeof metric.name !== "string") {
+          continue;
+        }
+        if (typeof metric.value !== "number" || !Number.isFinite(metric.value)) {
+          continue;
+        }
+        metricValues.set(metric.name, metric.value);
+      }
+    }
+
+    const heapUsage =
+      heapUsageResult.status === "fulfilled"
+        ? {
+            usedSize: readOptionalNumber(heapUsageResult.value.usedSize),
+            totalSize: readOptionalNumber(heapUsageResult.value.totalSize)
+          }
+        : { usedSize: null, totalSize: null };
+
+    return {
+      source: "CDP_PERFORMANCE",
+      timestamp: new Date().toISOString(),
+      timestampMs: Date.now(),
+      taskDurationSeconds: readOptionalMetric(metricValues, "TaskDuration"),
+      scriptDurationSeconds: readOptionalMetric(metricValues, "ScriptDuration"),
+      jsHeapUsedBytes: readOptionalMetric(metricValues, "JSHeapUsedSize") ?? heapUsage.usedSize,
+      jsHeapTotalBytes: readOptionalMetric(metricValues, "JSHeapTotalSize") ?? heapUsage.totalSize,
+      nodeCount: readOptionalMetric(metricValues, "Nodes")
+    };
+  }
+
+  onTargetCrashed(listener: (event: GhostTabCrashEvent) => void): () => void {
+    this.crashListeners.add(listener);
+    return () => {
+      this.crashListeners.delete(listener);
+    };
+  }
+
+  getLastCrashEvent(): GhostTabCrashEvent | null {
+    return this.lastCrashEvent;
+  }
+
+  async crashRendererForTesting(): Promise<void> {
+    await this.cdpSession.send("Page.crash");
+  }
+
   getViewport(): GhostViewportSettings {
     return {
       width: DEFAULT_GHOST_VIEWPORT.width,
@@ -1059,6 +1155,66 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
       // Ignore close races when the target is already gone.
     }
   }
+
+  private emitCrashEvent(event: GhostTabCrashEvent): void {
+    this.lastCrashEvent = event;
+    for (const listener of this.crashListeners) {
+      try {
+        listener(event);
+      } catch {
+        // Ignore listener failures to avoid disrupting task execution.
+      }
+    }
+  }
+}
+
+function readOptionalMetric(metricValues: Map<string, number>, name: string): number | null {
+  const value = metricValues.get(name);
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return value;
+}
+
+function readOptionalNumber(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return value;
+}
+
+function normalizeTargetCrashEvent(raw: unknown): GhostTabCrashEvent {
+  let status: string | null = null;
+  let errorCode: number | null = null;
+
+  if (typeof raw === "object" && raw !== null) {
+    const candidate = raw as Record<string, unknown>;
+    if (typeof candidate.status === "string" && candidate.status.trim().length > 0) {
+      status = candidate.status.trim();
+    } else if (
+      typeof candidate.errorReason === "string" &&
+      candidate.errorReason.trim().length > 0
+    ) {
+      status = candidate.errorReason.trim();
+    } else if (
+      typeof candidate.reason === "string" &&
+      candidate.reason.trim().length > 0
+    ) {
+      status = candidate.reason.trim();
+    }
+
+    if (typeof candidate.errorCode === "number" && Number.isFinite(candidate.errorCode)) {
+      errorCode = candidate.errorCode;
+    }
+  }
+
+  return {
+    source: "CDP_TARGET_CRASHED",
+    timestamp: new Date().toISOString(),
+    status,
+    errorCode
+  };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -1880,6 +2036,7 @@ export async function connectToGhostTabCdp(
   await cdpSession.send("Runtime.enable");
   await cdpSession.send("DOM.enable");
   await cdpSession.send("Accessibility.enable");
+  await cdpSession.send("Performance.enable");
   await configureDefaultViewport(cdpSession);
 
   return new PlaywrightGhostTabCdpClient(browser, cdpSession, page);

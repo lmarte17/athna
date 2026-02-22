@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import type { AgentActionInput, CaptureScreenshotOptions } from "../cdp/client.js";
-import type { GhostTabTaskErrorDetail, GhostTabTaskErrorType } from "../task/state-machine.js";
+import type {
+  GhostTabTaskErrorDetail,
+  GhostTabTaskErrorType,
+  GhostTabTaskState
+} from "../task/state-machine.js";
 
 export const GHOST_TAB_IPC_SCHEMA_VERSION = 1 as const;
 
@@ -13,9 +17,30 @@ export const GHOST_TAB_IPC_REQUEST_TYPES = [
   "INPUT_EVENT"
 ] as const;
 
-export const GHOST_TAB_IPC_RESPONSE_TYPES = ["TASK_RESULT", "TASK_ERROR"] as const;
+export const GHOST_TAB_IPC_RESPONSE_TYPES = ["TASK_RESULT", "TASK_ERROR", "TASK_STATUS"] as const;
 
 const INPUT_EVENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"];
+const GHOST_TAB_TASK_PRIORITIES = ["FOREGROUND", "BACKGROUND"] as const;
+const TASK_STATUS_KINDS = ["QUEUE", "STATE", "SCHEDULER"] as const;
+const TASK_STATUS_QUEUE_EVENTS = ["ENQUEUED", "DISPATCHED", "RELEASED"] as const;
+const TASK_STATUS_SCHEDULER_EVENTS = [
+  "STARTED",
+  "SUCCEEDED",
+  "FAILED",
+  "CRASH_DETECTED",
+  "RETRYING",
+  "RESOURCE_BUDGET_EXCEEDED",
+  "RESOURCE_BUDGET_KILLED"
+] as const;
+const GHOST_TAB_TASK_STATES: readonly GhostTabTaskState[] = [
+  "IDLE",
+  "LOADING",
+  "PERCEIVING",
+  "INFERRING",
+  "ACTING",
+  "COMPLETE",
+  "FAILED"
+];
 const GHOST_TAB_TASK_ERROR_TYPES: readonly GhostTabTaskErrorType[] = [
   "NETWORK",
   "RUNTIME",
@@ -60,6 +85,47 @@ export interface TaskErrorIpcPayload {
   error: GhostTabTaskErrorDetail;
 }
 
+type GhostTabTaskPriority = (typeof GHOST_TAB_TASK_PRIORITIES)[number];
+type TaskStatusKind = (typeof TASK_STATUS_KINDS)[number];
+type TaskStatusQueueEvent = (typeof TASK_STATUS_QUEUE_EVENTS)[number];
+type TaskStatusSchedulerEvent = (typeof TASK_STATUS_SCHEDULER_EVENTS)[number];
+
+export interface QueueTaskStatusIpcPayload {
+  kind: "QUEUE";
+  event: TaskStatusQueueEvent;
+  priority: GhostTabTaskPriority;
+  queueDepth: number;
+  available: number;
+  inUse: number;
+  contextId: string | null;
+  waitMs: number | null;
+  wasQueued: boolean;
+}
+
+export interface StateTaskStatusIpcPayload {
+  kind: "STATE";
+  from: GhostTabTaskState;
+  to: GhostTabTaskState;
+  step: number | null;
+  url: string | null;
+  reason: string | null;
+}
+
+export interface SchedulerTaskStatusIpcPayload {
+  kind: "SCHEDULER";
+  event: TaskStatusSchedulerEvent;
+  priority: GhostTabTaskPriority;
+  contextId: string | null;
+  assignmentWaitMs: number;
+  durationMs: number | null;
+  error: GhostTabTaskErrorDetail | null;
+}
+
+export type TaskStatusIpcPayload =
+  | QueueTaskStatusIpcPayload
+  | StateTaskStatusIpcPayload
+  | SchedulerTaskStatusIpcPayload;
+
 export interface GhostTabIpcPayloadByType {
   NAVIGATE: NavigateIpcPayload;
   SCREENSHOT: ScreenshotIpcPayload;
@@ -68,6 +134,7 @@ export interface GhostTabIpcPayloadByType {
   INPUT_EVENT: InputEventIpcPayload;
   TASK_RESULT: TaskResultIpcPayload;
   TASK_ERROR: TaskErrorIpcPayload;
+  TASK_STATUS: TaskStatusIpcPayload;
 }
 
 export interface GhostTabIpcMessageBase<
@@ -95,6 +162,7 @@ export type GhostTabIpcInjectJsMessage = GhostTabIpcMessageByType<"INJECT_JS">;
 export type GhostTabIpcInputEventMessage = GhostTabIpcMessageByType<"INPUT_EVENT">;
 export type GhostTabIpcTaskResultMessage = GhostTabIpcMessageByType<"TASK_RESULT">;
 export type GhostTabIpcTaskErrorMessage = GhostTabIpcMessageByType<"TASK_ERROR">;
+export type GhostTabIpcTaskStatusMessage = GhostTabIpcMessageByType<"TASK_STATUS">;
 
 export type GhostTabIpcRequestMessage =
   | GhostTabIpcNavigateMessage
@@ -103,7 +171,10 @@ export type GhostTabIpcRequestMessage =
   | GhostTabIpcInjectJsMessage
   | GhostTabIpcInputEventMessage;
 
-export type GhostTabIpcResponseMessage = GhostTabIpcTaskResultMessage | GhostTabIpcTaskErrorMessage;
+export type GhostTabIpcResponseMessage =
+  | GhostTabIpcTaskResultMessage
+  | GhostTabIpcTaskErrorMessage
+  | GhostTabIpcTaskStatusMessage;
 export type GhostTabIpcMessage = GhostTabIpcRequestMessage | GhostTabIpcResponseMessage;
 
 export class GhostTabIpcValidationError extends Error {
@@ -345,40 +416,82 @@ function validatePayloadByType(
           `payload.operation must be one of: ${GHOST_TAB_IPC_REQUEST_TYPES.join(", ")}, UNKNOWN`
         );
       }
-      if (!isRecord(payload.error)) {
-        details.push("payload.error must be an object");
+      validateTaskErrorPayload(payload.error, "payload.error", details);
+      return;
+    }
+    case "TASK_STATUS": {
+      validateNonEmptyString(payload.kind, "payload.kind", details);
+      if (typeof payload.kind !== "string" || !TASK_STATUS_KINDS.includes(payload.kind as TaskStatusKind)) {
+        details.push(`payload.kind must be one of: ${TASK_STATUS_KINDS.join(", ")}`);
         return;
       }
-      const errorPayload = payload.error;
-      validateNonEmptyString(errorPayload.type, "payload.error.type", details);
-      if (
-        typeof errorPayload.type === "string" &&
-        !GHOST_TAB_TASK_ERROR_TYPES.includes(errorPayload.type as GhostTabTaskErrorType)
-      ) {
-        details.push(`payload.error.type must be one of: ${GHOST_TAB_TASK_ERROR_TYPES.join(", ")}`);
+
+      if (payload.kind === "QUEUE") {
+        validateNonEmptyString(payload.event, "payload.event", details);
+        if (
+          typeof payload.event === "string" &&
+          !TASK_STATUS_QUEUE_EVENTS.includes(payload.event as TaskStatusQueueEvent)
+        ) {
+          details.push(`payload.event must be one of: ${TASK_STATUS_QUEUE_EVENTS.join(", ")}`);
+        }
+
+        validateNonEmptyString(payload.priority, "payload.priority", details);
+        if (
+          typeof payload.priority === "string" &&
+          !GHOST_TAB_TASK_PRIORITIES.includes(payload.priority as GhostTabTaskPriority)
+        ) {
+          details.push(`payload.priority must be one of: ${GHOST_TAB_TASK_PRIORITIES.join(", ")}`);
+        }
+
+        validateNonNegativeFiniteNumber(payload.queueDepth, "payload.queueDepth", details);
+        validateNonNegativeFiniteNumber(payload.available, "payload.available", details);
+        validateNonNegativeFiniteNumber(payload.inUse, "payload.inUse", details);
+        validateNullableString(payload.contextId, "payload.contextId", details);
+        validateNullableNonNegativeFiniteNumber(payload.waitMs, "payload.waitMs", details);
+        validateOptionalBoolean(payload.wasQueued, "payload.wasQueued", details, false);
+        return;
       }
-      if (
-        errorPayload.status !== null &&
-        errorPayload.status !== undefined &&
-        (typeof errorPayload.status !== "number" || !Number.isFinite(errorPayload.status))
-      ) {
-        details.push("payload.error.status must be a finite number or null");
+
+      if (payload.kind === "STATE") {
+        validateNonEmptyString(payload.from, "payload.from", details);
+        if (typeof payload.from === "string" && !isGhostTabTaskState(payload.from)) {
+          details.push(`payload.from must be one of: ${GHOST_TAB_TASK_STATES.join(", ")}`);
+        }
+
+        validateNonEmptyString(payload.to, "payload.to", details);
+        if (typeof payload.to === "string" && !isGhostTabTaskState(payload.to)) {
+          details.push(`payload.to must be one of: ${GHOST_TAB_TASK_STATES.join(", ")}`);
+        }
+
+        validateNullableFiniteNumber(payload.step, "payload.step", details);
+        validateNullableString(payload.url, "payload.url", details);
+        validateNullableString(payload.reason, "payload.reason", details);
+        return;
       }
+
+      validateNonEmptyString(payload.event, "payload.event", details);
       if (
-        errorPayload.url !== null &&
-        errorPayload.url !== undefined &&
-        typeof errorPayload.url !== "string"
+        typeof payload.event === "string" &&
+        !TASK_STATUS_SCHEDULER_EVENTS.includes(payload.event as TaskStatusSchedulerEvent)
       ) {
-        details.push("payload.error.url must be a string or null");
+        details.push(
+          `payload.event must be one of: ${TASK_STATUS_SCHEDULER_EVENTS.join(", ")}`
+        );
       }
-      validateNonEmptyString(errorPayload.message, "payload.error.message", details);
-      validateOptionalBoolean(errorPayload.retryable, "payload.error.retryable", details, false);
+
+      validateNonEmptyString(payload.priority, "payload.priority", details);
       if (
-        errorPayload.step !== null &&
-        errorPayload.step !== undefined &&
-        (typeof errorPayload.step !== "number" || !Number.isFinite(errorPayload.step))
+        typeof payload.priority === "string" &&
+        !GHOST_TAB_TASK_PRIORITIES.includes(payload.priority as GhostTabTaskPriority)
       ) {
-        details.push("payload.error.step must be a finite number or null");
+        details.push(`payload.priority must be one of: ${GHOST_TAB_TASK_PRIORITIES.join(", ")}`);
+      }
+
+      validateNullableString(payload.contextId, "payload.contextId", details);
+      validateNonNegativeFiniteNumber(payload.assignmentWaitMs, "payload.assignmentWaitMs", details);
+      validateNullableNonNegativeFiniteNumber(payload.durationMs, "payload.durationMs", details);
+      if (payload.error !== null && payload.error !== undefined) {
+        validateTaskErrorPayload(payload.error, "payload.error", details);
       }
       return;
     }
@@ -428,10 +541,66 @@ function validateOptionalFiniteNumber(value: unknown, field: string, details: st
   }
 }
 
+function validateNullableFiniteNumber(value: unknown, field: string, details: string[]): void {
+  if (value === null || value === undefined) {
+    return;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    details.push(`${field} must be a finite number or null`);
+  }
+}
+
+function validateNullableNonNegativeFiniteNumber(
+  value: unknown,
+  field: string,
+  details: string[]
+): void {
+  if (value === null || value === undefined) {
+    return;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    details.push(`${field} must be a non-negative finite number or null`);
+  }
+}
+
 function validateRequiredFiniteNumber(value: unknown, field: string, details: string[]): void {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     details.push(`${field} must be a finite number`);
   }
+}
+
+function validateNonNegativeFiniteNumber(value: unknown, field: string, details: string[]): void {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    details.push(`${field} must be a non-negative finite number`);
+  }
+}
+
+function validateNullableString(value: unknown, field: string, details: string[]): void {
+  if (value === null || value === undefined) {
+    return;
+  }
+  if (typeof value !== "string") {
+    details.push(`${field} must be a string or null`);
+  }
+}
+
+function validateTaskErrorPayload(value: unknown, field: string, details: string[]): void {
+  if (!isRecord(value)) {
+    details.push(`${field} must be an object`);
+    return;
+  }
+  validateNonEmptyString(value.type, `${field}.type`, details);
+  if (
+    typeof value.type === "string" &&
+    !GHOST_TAB_TASK_ERROR_TYPES.includes(value.type as GhostTabTaskErrorType)
+  ) {
+    details.push(`${field}.type must be one of: ${GHOST_TAB_TASK_ERROR_TYPES.join(", ")}`);
+  }
+  validateNullableFiniteNumber(value.status, `${field}.status`, details);
+  validateNullableString(value.url, `${field}.url`, details);
+  validateNonEmptyString(value.message, `${field}.message`, details);
+  validateOptionalBoolean(value.retryable, `${field}.retryable`, details, false);
+  validateNullableFiniteNumber(value.step, `${field}.step`, details);
 }
 
 function validateOptionalQuality(value: unknown, field: string, details: string[]): void {
@@ -455,6 +624,10 @@ function isGhostTabIpcMessageType(value: string): value is GhostTabIpcMessageTyp
 
 function isGhostTabIpcRequestType(value: string): value is GhostTabIpcRequestType {
   return GHOST_TAB_IPC_REQUEST_TYPES.includes(value as GhostTabIpcRequestType);
+}
+
+function isGhostTabTaskState(value: string): value is GhostTabTaskState {
+  return GHOST_TAB_TASK_STATES.includes(value as GhostTabTaskState);
 }
 
 function resolveString(value: string | undefined): string | null {

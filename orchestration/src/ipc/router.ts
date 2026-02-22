@@ -29,7 +29,11 @@ export class GhostTabIpcRouter {
   async handleRawMessage(raw: unknown): Promise<GhostTabIpcResponseMessage> {
     try {
       const message = assertValidGhostTabIpcMessage(raw, "inbound");
-      if (message.type === "TASK_RESULT" || message.type === "TASK_ERROR") {
+      if (
+        message.type === "TASK_RESULT" ||
+        message.type === "TASK_ERROR" ||
+        message.type === "TASK_STATUS"
+      ) {
         return this.buildTaskErrorResponse({
           taskId: message.taskId,
           contextId: message.contextId,

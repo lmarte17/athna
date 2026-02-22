@@ -1,0 +1,78 @@
+{
+  "ok": true,
+  "phase": "3.5",
+  "runConfig": {
+    "poolSize": 6,
+    "taskHoldMs": 1500,
+    "queuedTaskHoldMs": 400
+  },
+  "acceptance": {
+    "concurrentSlotsTarget": 6,
+    "observedMaxConcurrentInUse": 6,
+    "seventhTaskQueued": true,
+    "priorityPreemptionVerified": true,
+    "queuedDispatchOrder": [
+      "task-8",
+      "task-7"
+    ]
+  },
+  "queueMetrics": {
+    "maxQueueDepth": 2,
+    "task7AssignmentWaitMs": 3098,
+    "task8AssignmentWaitMs": 3096,
+    "averageQueueWaitMs": 3097
+  },
+  "harness": {
+    "origin": "http://127.0.0.1:51108",
+    "requestCount": 8
+  },
+  "telemetry": {
+    "warmAssignmentCount": 6,
+    "queuedAssignmentCount": 2,
+    "averageWarmAssignmentWaitMs": 0,
+    "averageQueueWaitMs": 3097,
+    "averageWarmDurationMs": 47.5
+  },
+  "finalSnapshot": {
+    "minSize": 6,
+    "maxSize": 6,
+    "totalSlots": 6,
+    "cold": 0,
+    "replenishing": 0,
+    "available": 6,
+    "inUse": 0,
+    "queued": 0,
+    "slotStates": [
+      {
+        "contextId": "ctx-1",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 52
+      },
+      {
+        "contextId": "ctx-2",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 152
+      },
+      {
+        "contextId": "ctx-3",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 31
+      },
+      {
+        "contextId": "ctx-4",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 17
+      },
+      {
+        "contextId": "ctx-5",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 17
+      },
+      {
+        "contextId": "ctx-6",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 16
+      }
+    ]
+  }
+}

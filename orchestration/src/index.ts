@@ -20,7 +20,9 @@ export {
   type ExtractInteractiveElementIndexResult,
   type ExtractNormalizedAXTreeOptions,
   type ExtractNormalizedAXTreeResult,
+  type GhostTabCrashEvent,
   type GhostViewportSettings,
+  type GhostTabResourceMetrics,
   type InteractiveElementIndexEntry,
   type InteractiveElementIndexResult,
   type NormalizedAXNode,
@@ -100,13 +102,18 @@ export {
   type GhostTabIpcScreenshotMessage,
   type GhostTabIpcTaskErrorMessage,
   type GhostTabIpcTaskResultMessage,
+  type GhostTabIpcTaskStatusMessage,
   type GhostTabIpcValidationResult,
   type InjectJsIpcPayload,
   type InputEventIpcPayload,
   type NavigateIpcPayload,
+  type QueueTaskStatusIpcPayload,
+  type SchedulerTaskStatusIpcPayload,
   type ScreenshotIpcPayload,
+  type StateTaskStatusIpcPayload,
   type TaskErrorIpcPayload,
-  type TaskResultIpcPayload
+  type TaskResultIpcPayload,
+  type TaskStatusIpcPayload
 } from "./ipc/schema.js";
 
 export {
@@ -120,6 +127,21 @@ export {
   type AcquireGhostTabOptions,
   type GhostTabLease,
   type GhostTabPoolManagerOptions,
+  type GhostTabQueueStatusEvent,
+  type GhostTabQueueStatusEventType,
   type GhostTabPoolSnapshot,
   type GhostTabTaskPriority
 } from "./pool/manager.js";
+
+export {
+  createParallelTaskScheduler,
+  ParallelTaskExecutionError,
+  ParallelTaskScheduler,
+  type ParallelTaskAttemptResult,
+  type ParallelTaskCrashRecoveryOptions,
+  type ParallelTaskResourceBudgetOptions,
+  type ParallelTaskRunResult,
+  type ParallelTaskRunnerInput,
+  type ParallelTaskSchedulerOptions,
+  type SubmitParallelTaskInput
+} from "./scheduler/parallel-task-scheduler.js";

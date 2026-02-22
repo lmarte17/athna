@@ -18,6 +18,7 @@ npm run ipc:schema:smoke
    - `INPUT_EVENT`
    - `TASK_RESULT`
    - `TASK_ERROR`
+   - `TASK_STATUS`
 2. Both inbound and outbound boundaries validate message envelopes and payload shapes.
 3. Malformed messages are rejected with structured validation details.
 4. Request messages are routed by typed message kind (switch on `type`), not string parsing.

@@ -15,6 +15,9 @@
     "pool:smoke": "npm run build && node scripts/ghost-tab-pool-smoke.mjs",
     "state:smoke": "npm run build && node scripts/ghost-tab-state-machine-smoke.mjs",
     "ipc:schema:smoke": "npm run build && node scripts/ipc-message-schema-smoke.mjs",
+    "scheduler:smoke": "npm run build && node scripts/parallel-task-scheduling-smoke.mjs",
+    "resource:smoke": "npm run build && node scripts/resource-budgets-smoke.mjs",
+    "crash:smoke": "npm run build && node scripts/crash-recovery-smoke.mjs",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"
