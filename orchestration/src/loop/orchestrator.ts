@@ -2,7 +2,6 @@ import type {
   AXDeficiencySignals,
   ActionExecutionResult,
   AgentActionInput,
-  DomInteractiveElement,
   DomMutationSummary,
   ExtractDomInteractiveElementsResult,
   GhostTabCdpClient,
@@ -17,6 +16,14 @@ import type {
   NavigatorEscalationReason,
   NavigatorInferenceTier
 } from "../navigator/engine.js";
+import {
+  createGhostTabTaskErrorDetail,
+  createGhostTabTaskStateMachine,
+  type GhostTabStateTransitionEvent,
+  type GhostTabTaskErrorDetail,
+  type GhostTabTaskState,
+  type GhostTabTaskStateMachine
+} from "../task/state-machine.js";
 
 const DEFAULT_MAX_STEPS = 20;
 const DEFAULT_HISTORY_WINDOW = 5;
@@ -51,7 +58,7 @@ const INTENT_STOP_WORDS = new Set([
   "with"
 ]);
 
-export type LoopState = "LOADING" | "PERCEIVING" | "INFERRING" | "ACTING" | "COMPLETE" | "FAILED";
+export type LoopState = Exclude<GhostTabTaskState, "IDLE">;
 export type ResolvedPerceptionTier = NavigatorInferenceTier | "TIER_3_SCROLL";
 type EscalationTargetTier = NavigatorInferenceTier | "TIER_3_SCROLL";
 type AXTreeRefetchReason =
@@ -65,6 +72,8 @@ type AXTreeRefetchReason =
 export interface PerceptionActionTaskInput {
   intent: string;
   startUrl: string;
+  taskId?: string;
+  contextId?: string;
   maxSteps?: number;
   confidenceThreshold?: number;
   axDeficientInteractiveThreshold?: number;
@@ -152,6 +161,8 @@ export interface TierUsageMetrics {
 }
 
 export interface PerceptionActionTaskResult {
+  taskId: string;
+  contextId: string | null;
   status: "DONE" | "FAILED" | "MAX_STEPS";
   intent: string;
   startUrl: string;
@@ -163,17 +174,34 @@ export interface PerceptionActionTaskResult {
   tierUsage: TierUsageMetrics;
   finalAction: NavigatorActionDecision | null;
   finalExecution: ActionExecutionResult | null;
+  errorDetail: GhostTabTaskErrorDetail | null;
+  stateTransitions: GhostTabStateTransitionEvent[];
+}
+
+export interface PerceptionActionTaskCleanupContext {
+  taskId: string;
+  contextId: string | null;
+  finalState: "COMPLETE" | "FAILED";
+  resultStatus: PerceptionActionTaskResult["status"];
+  finalUrl: string;
+  stepsTaken: number;
+  errorDetail: GhostTabTaskErrorDetail | null;
 }
 
 export interface PerceptionActionLoopOptions {
   cdpClient: GhostTabCdpClient;
   navigatorEngine: NavigatorEngine;
+  taskId?: string;
+  contextId?: string;
+  stateMachine?: GhostTabTaskStateMachine;
   maxSteps?: number;
   confidenceThreshold?: number;
   axDeficientInteractiveThreshold?: number;
   scrollStepPx?: number;
   maxScrollSteps?: number;
   maxNoProgressSteps?: number;
+  onStateTransition?: (event: GhostTabStateTransitionEvent) => void;
+  onTaskCleanup?: (context: PerceptionActionTaskCleanupContext) => Promise<void> | void;
   logger?: (line: string) => void;
 }
 
@@ -206,6 +234,12 @@ class PerceptionActionLoop {
       throw new Error("Task startUrl is required.");
     }
 
+    const taskId =
+      resolveOptionalString(input.taskId) ??
+      resolveOptionalString(this.options.taskId) ??
+      `task-${Date.now()}`;
+    const contextId =
+      resolveOptionalString(input.contextId) ?? resolveOptionalString(this.options.contextId) ?? null;
     const maxSteps = input.maxSteps ?? this.maxSteps;
     const confidenceThreshold = input.confidenceThreshold ?? this.confidenceThreshold;
     const axDeficientInteractiveThreshold =
@@ -233,6 +267,31 @@ class PerceptionActionLoop {
       throw new Error("maxNoProgressSteps must be greater than zero.");
     }
 
+    const stateMachine =
+      this.options.stateMachine ??
+      createGhostTabTaskStateMachine({
+        taskId,
+        contextId
+      });
+    if (stateMachine.getState() !== "IDLE") {
+      throw new Error(
+        `Task ${taskId} requires initial state IDLE. Current state: ${stateMachine.getState()}`
+      );
+    }
+
+    const transitionState = (
+      to: GhostTabTaskState,
+      context: {
+        step?: number;
+        url?: string;
+        reason?: string;
+        errorDetail?: GhostTabTaskErrorDetail;
+      } = {}
+    ): void => {
+      const event = stateMachine.transition(to, context);
+      this.options.onStateTransition?.(event);
+    };
+
     const history: LoopStepRecord[] = [];
     const escalations: EscalationEvent[] = [];
     const axDeficientPages: AXDeficientPageLog[] = [];
@@ -247,477 +306,671 @@ class PerceptionActionLoop {
       indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
       treeEncoding: ToonEncodingResult;
     } | null = null;
-
-    this.logger(`[loop] state=LOADING intent="${input.intent}" startUrl=${input.startUrl}`);
-    await this.options.cdpClient.navigate(input.startUrl);
-
-    let currentUrl = await this.options.cdpClient.getCurrentUrl();
+    let currentUrl = input.startUrl;
     let finalAction: NavigatorActionDecision | null = null;
     let finalExecution: ActionExecutionResult | null = null;
-
-    for (let step = 1; step <= maxSteps; step += 1) {
-      const urlAtPerception = currentUrl;
-      this.logger(`[loop][step ${step}] state=PERCEIVING url=${urlAtPerception}`);
-      const urlChangedSinceLastPerception =
-        cachedPerception !== null && cachedPerception.url !== urlAtPerception;
-      let axTreeRefetchReason = pendingAXTreeRefetchReason;
-      if (axTreeRefetchReason === "NONE" && urlChangedSinceLastPerception) {
-        axTreeRefetchReason = "URL_CHANGED";
-      }
-      const shouldRefetchAXTree = cachedPerception === null || axTreeRefetchReason !== "NONE";
-
-      let indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
-      let treeEncoding: ToonEncodingResult;
-      if (shouldRefetchAXTree) {
-        indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
-          includeBoundingBoxes: true,
-          charBudget: 8_000
-        });
-        treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
-        cachedPerception = {
-          url: urlAtPerception,
-          indexResult,
-          treeEncoding
-        };
-        pendingAXTreeRefetchReason = "NONE";
-      } else if (cachedPerception) {
-        indexResult = cachedPerception.indexResult;
-        treeEncoding = cachedPerception.treeEncoding;
-      } else {
-        throw new Error("Perception cache invariant violated.");
-      }
-
-      const axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
-      const scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
-      const belowFoldMarginPx = Math.max(24, Math.round(scrollStepPx * DEFAULT_BELOW_FOLD_MARGIN_RATIO));
-      const targetMightBeBelowFold = isTargetLikelyBelowFold(scrollPosition, belowFoldMarginPx);
-      const axDeficiencyEvaluation = evaluateAXDeficiency({
-        interactiveElementCount: indexResult.elementCount,
-        threshold: axDeficientInteractiveThreshold,
-        signals: axDeficiencySignals
-      });
-      const observation = {
-        currentUrl: urlAtPerception,
-        interactiveElementIndex: indexResult.elements,
-        normalizedAXTree: treeEncoding.payload,
-        previousActions: previousActions.slice(-DEFAULT_HISTORY_WINDOW),
-        previousObservations: previousObservations.slice(-DEFAULT_HISTORY_WINDOW)
+    const buildTaskResult = (params: {
+      status: PerceptionActionTaskResult["status"];
+      finalUrl: string;
+      stepsTaken: number;
+      finalAction: NavigatorActionDecision | null;
+      finalExecution: ActionExecutionResult | null;
+      errorDetail: GhostTabTaskErrorDetail | null;
+    }): PerceptionActionTaskResult => {
+      return {
+        taskId,
+        contextId,
+        status: params.status,
+        intent: input.intent,
+        startUrl: input.startUrl,
+        finalUrl: params.finalUrl,
+        stepsTaken: params.stepsTaken,
+        history,
+        escalations,
+        axDeficientPages,
+        tierUsage: finalizeTierUsageMetrics(tierUsage),
+        finalAction: params.finalAction,
+        finalExecution: params.finalExecution,
+        errorDetail: params.errorDetail,
+        stateTransitions: stateMachine.getTransitionHistory()
       };
-      const tier1ObservationCharCount = JSON.stringify(observation).length;
-      const tiersAttempted: NavigatorInferenceTier[] = [];
-      const axDeficientDetected = axDeficiencyEvaluation.detected;
-      const shouldBypassTier1ForNoProgress = noProgressStreak > 0 && !axDeficientDetected;
-      let escalationReason: NavigatorEscalationReason | null = null;
-      let inferredAction: NavigatorActionDecision | null = null;
-      let tier2ObservationCharCount = 0;
-      let resolvedTier: ResolvedPerceptionTier = "TIER_1_AX";
-      let tier2EscalationEvent: EscalationEvent | null = null;
-      let domExtractionAttempted = false;
-      let domExtractionElementCount = 0;
-      let domBypassUsed = false;
-      let domBypassMatchedText: string | null = null;
+    };
 
-      if (shouldBypassTier1ForNoProgress) {
-        escalationReason = "NO_PROGRESS";
-        tierUsage.noProgressEscalations += 1;
-        tier2EscalationEvent = createEscalationEvent({
-          step,
-          reason: escalationReason,
-          fromTier: "TIER_1_AX",
-          toTier: "TIER_2_VISION",
-          urlAtEscalation: urlAtPerception,
-          triggerConfidence: null,
-          confidenceThreshold,
-          resolvedTier: "TIER_2_VISION",
-          resolvedConfidence: null
-        });
-        escalations.push(tier2EscalationEvent);
-        this.logger(
-          `[loop][step ${step}] escalation=NO_PROGRESS streak=${noProgressStreak} url=${urlAtPerception}`
-        );
-      } else if (!axDeficientDetected) {
-        tiersAttempted.push("TIER_1_AX");
-        tierUsage.tier1Calls += 1;
-        this.logger(
-          `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
-        );
-        const tier1Action = await this.options.navigatorEngine.decideNextAction({
-          intent: input.intent,
-          observation,
-          tier: "TIER_1_AX"
-        });
-        const isUnsafeTier1Action = tier1Action.action === "FAILED";
+    const runCleanup = async (params: {
+      finalState: "COMPLETE" | "FAILED";
+      resultStatus: PerceptionActionTaskResult["status"];
+      finalUrl: string;
+      stepsTaken: number;
+      errorDetail: GhostTabTaskErrorDetail | null;
+    }): Promise<void> => {
+      if (!this.options.onTaskCleanup) {
+        return;
+      }
 
-        if (!isUnsafeTier1Action && tier1Action.confidence >= confidenceThreshold) {
-          inferredAction = tier1Action;
-          resolvedTier = "TIER_1_AX";
-          tierUsage.resolvedAtTier1 += 1;
+      try {
+        await this.options.onTaskCleanup({
+          taskId,
+          contextId,
+          finalState: params.finalState,
+          resultStatus: params.resultStatus,
+          finalUrl: params.finalUrl,
+          stepsTaken: params.stepsTaken,
+          errorDetail: params.errorDetail
+        });
+      } catch (error) {
+        this.logger(
+          `[loop] cleanup-failed taskId=${taskId} contextId=${contextId ?? "none"} error=${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    };
+
+    const transitionToIdle = (step: number | null, url: string): void => {
+      if (stateMachine.getState() === "IDLE") {
+        return;
+      }
+      transitionState("IDLE", {
+        step: step ?? undefined,
+        url,
+        reason: "TASK_CONTEXT_CLEANUP"
+      });
+    };
+
+    let lastStep = 0;
+
+    try {
+      transitionState("LOADING", {
+        step: 0,
+        url: input.startUrl,
+        reason: "TASK_ASSIGNED"
+      });
+      this.logger(`[loop] state=LOADING intent="${input.intent}" startUrl=${input.startUrl}`);
+      await this.options.cdpClient.navigate(input.startUrl);
+
+      currentUrl = await this.options.cdpClient.getCurrentUrl();
+      transitionState("PERCEIVING", {
+        step: 1,
+        url: currentUrl,
+        reason: "NAVIGATION_COMPLETE"
+      });
+
+      for (let step = 1; step <= maxSteps; step += 1) {
+        lastStep = step;
+        const urlAtPerception = currentUrl;
+        this.logger(`[loop][step ${step}] state=PERCEIVING url=${urlAtPerception}`);
+        const urlChangedSinceLastPerception =
+          cachedPerception !== null && cachedPerception.url !== urlAtPerception;
+        let axTreeRefetchReason = pendingAXTreeRefetchReason;
+        if (axTreeRefetchReason === "NONE" && urlChangedSinceLastPerception) {
+          axTreeRefetchReason = "URL_CHANGED";
+        }
+        const shouldRefetchAXTree = cachedPerception === null || axTreeRefetchReason !== "NONE";
+
+        let indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
+        let treeEncoding: ToonEncodingResult;
+        if (shouldRefetchAXTree) {
+          indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
+            includeBoundingBoxes: true,
+            charBudget: 8_000
+          });
+          treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
+          cachedPerception = {
+            url: urlAtPerception,
+            indexResult,
+            treeEncoding
+          };
+          pendingAXTreeRefetchReason = "NONE";
+        } else if (cachedPerception) {
+          indexResult = cachedPerception.indexResult;
+          treeEncoding = cachedPerception.treeEncoding;
         } else {
-          escalationReason = isUnsafeTier1Action ? "UNSAFE_ACTION" : "LOW_CONFIDENCE";
-          if (escalationReason === "LOW_CONFIDENCE") {
-            tierUsage.lowConfidenceEscalations += 1;
-          } else {
-            tierUsage.unsafeActionEscalations += 1;
-          }
+          throw new Error("Perception cache invariant violated.");
+        }
+
+        const axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
+        const scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
+        const belowFoldMarginPx = Math.max(24, Math.round(scrollStepPx * DEFAULT_BELOW_FOLD_MARGIN_RATIO));
+        const targetMightBeBelowFold = isTargetLikelyBelowFold(scrollPosition, belowFoldMarginPx);
+        const axDeficiencyEvaluation = evaluateAXDeficiency({
+          interactiveElementCount: indexResult.elementCount,
+          threshold: axDeficientInteractiveThreshold,
+          signals: axDeficiencySignals
+        });
+        const observation = {
+          currentUrl: urlAtPerception,
+          interactiveElementIndex: indexResult.elements,
+          normalizedAXTree: treeEncoding.payload,
+          previousActions: previousActions.slice(-DEFAULT_HISTORY_WINDOW),
+          previousObservations: previousObservations.slice(-DEFAULT_HISTORY_WINDOW)
+        };
+        const tier1ObservationCharCount = JSON.stringify(observation).length;
+        const tiersAttempted: NavigatorInferenceTier[] = [];
+        const axDeficientDetected = axDeficiencyEvaluation.detected;
+        const shouldBypassTier1ForNoProgress = noProgressStreak > 0 && !axDeficientDetected;
+        let escalationReason: NavigatorEscalationReason | null = null;
+        let inferredAction: NavigatorActionDecision | null = null;
+        let tier2ObservationCharCount = 0;
+        let resolvedTier: ResolvedPerceptionTier = "TIER_1_AX";
+        let tier2EscalationEvent: EscalationEvent | null = null;
+        let domExtractionAttempted = false;
+        let domExtractionElementCount = 0;
+        let domBypassUsed = false;
+        let domBypassMatchedText: string | null = null;
+
+        transitionState("INFERRING", {
+          step,
+          url: urlAtPerception
+        });
+
+        if (shouldBypassTier1ForNoProgress) {
+          escalationReason = "NO_PROGRESS";
+          tierUsage.noProgressEscalations += 1;
           tier2EscalationEvent = createEscalationEvent({
             step,
             reason: escalationReason,
             fromTier: "TIER_1_AX",
             toTier: "TIER_2_VISION",
             urlAtEscalation: urlAtPerception,
-            triggerConfidence: tier1Action.confidence,
+            triggerConfidence: null,
             confidenceThreshold,
             resolvedTier: "TIER_2_VISION",
             resolvedConfidence: null
           });
           escalations.push(tier2EscalationEvent);
           this.logger(
-            `[loop][step ${step}] escalation=${escalationReason} threshold=${confidenceThreshold.toFixed(2)} confidence=${tier1Action.confidence.toFixed(2)} action=${tier1Action.action} url=${urlAtPerception}`
+            `[loop][step ${step}] escalation=NO_PROGRESS streak=${noProgressStreak} url=${urlAtPerception}`
+          );
+        } else if (!axDeficientDetected) {
+          tiersAttempted.push("TIER_1_AX");
+          tierUsage.tier1Calls += 1;
+          this.logger(
+            `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
+          );
+          const tier1Action = await this.options.navigatorEngine.decideNextAction({
+            intent: input.intent,
+            observation,
+            tier: "TIER_1_AX"
+          });
+          const isUnsafeTier1Action = tier1Action.action === "FAILED";
+
+          if (!isUnsafeTier1Action && tier1Action.confidence >= confidenceThreshold) {
+            inferredAction = tier1Action;
+            resolvedTier = "TIER_1_AX";
+            tierUsage.resolvedAtTier1 += 1;
+          } else {
+            escalationReason = isUnsafeTier1Action ? "UNSAFE_ACTION" : "LOW_CONFIDENCE";
+            if (escalationReason === "LOW_CONFIDENCE") {
+              tierUsage.lowConfidenceEscalations += 1;
+            } else {
+              tierUsage.unsafeActionEscalations += 1;
+            }
+            tier2EscalationEvent = createEscalationEvent({
+              step,
+              reason: escalationReason,
+              fromTier: "TIER_1_AX",
+              toTier: "TIER_2_VISION",
+              urlAtEscalation: urlAtPerception,
+              triggerConfidence: tier1Action.confidence,
+              confidenceThreshold,
+              resolvedTier: "TIER_2_VISION",
+              resolvedConfidence: null
+            });
+            escalations.push(tier2EscalationEvent);
+            this.logger(
+              `[loop][step ${step}] escalation=${escalationReason} threshold=${confidenceThreshold.toFixed(2)} confidence=${tier1Action.confidence.toFixed(2)} action=${tier1Action.action} url=${urlAtPerception}`
+            );
+          }
+        } else {
+          axDeficientPages.push(
+            createAXDeficientPageLog({
+              step,
+              urlAtPerception,
+              interactiveElementCount: indexResult.elementCount,
+              threshold: axDeficientInteractiveThreshold,
+              signals: axDeficiencySignals
+            })
+          );
+          escalationReason = "AX_DEFICIENT";
+          tierUsage.axDeficientDetections += 1;
+          tier2EscalationEvent = createEscalationEvent({
+            step,
+            reason: escalationReason,
+            fromTier: "TIER_1_AX",
+            toTier: "TIER_2_VISION",
+            urlAtEscalation: urlAtPerception,
+            triggerConfidence: null,
+            confidenceThreshold,
+            resolvedTier: "TIER_2_VISION",
+            resolvedConfidence: null
+          });
+          escalations.push(tier2EscalationEvent);
+          this.logger(
+            `[loop][step ${step}] escalation=AX_DEFICIENT elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
           );
         }
-      } else {
-        axDeficientPages.push(
-          createAXDeficientPageLog({
-            step,
-            urlAtPerception,
-            interactiveElementCount: indexResult.elementCount,
-            threshold: axDeficientInteractiveThreshold,
-            signals: axDeficiencySignals
-          })
-        );
-        escalationReason = "AX_DEFICIENT";
-        tierUsage.axDeficientDetections += 1;
-        tier2EscalationEvent = createEscalationEvent({
-          step,
-          reason: escalationReason,
-          fromTier: "TIER_1_AX",
-          toTier: "TIER_2_VISION",
-          urlAtEscalation: urlAtPerception,
-          triggerConfidence: null,
-          confidenceThreshold,
-          resolvedTier: "TIER_2_VISION",
-          resolvedConfidence: null
-        });
-        escalations.push(tier2EscalationEvent);
-        this.logger(
-          `[loop][step ${step}] escalation=AX_DEFICIENT elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
-        );
-      }
 
-      if (!axDeficientDetected && axDeficiencyEvaluation.lowInteractiveCount) {
-        this.logger(
-          `[loop][step ${step}] ax-deficient-check=SKIPPED reason=${axDeficiencyEvaluation.skipReason} elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
-        );
-      }
+        if (!axDeficientDetected && axDeficiencyEvaluation.lowInteractiveCount) {
+          this.logger(
+            `[loop][step ${step}] ax-deficient-check=SKIPPED reason=${axDeficiencyEvaluation.skipReason} elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
+          );
+        }
 
-      if (!inferredAction) {
-        const shouldAbortNoProgressViewportRecapture =
-          escalationReason === "NO_PROGRESS" &&
-          noProgressStreak >= 2 &&
-          !targetMightBeBelowFold;
-        if (shouldAbortNoProgressViewportRecapture) {
-          inferredAction = {
-            action: "FAILED",
-            target: null,
-            text: `Stopped after ${noProgressStreak} no-progress steps at scrollY=${Math.round(scrollPosition.scrollY)} on ${urlAtPerception}.`,
-            confidence: 1,
-            reasoning:
-              "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
+        if (!inferredAction) {
+          const shouldAbortNoProgressViewportRecapture =
+            escalationReason === "NO_PROGRESS" &&
+            noProgressStreak >= 2 &&
+            !targetMightBeBelowFold;
+          if (shouldAbortNoProgressViewportRecapture) {
+            inferredAction = {
+              action: "FAILED",
+              target: null,
+              text: `Stopped after ${noProgressStreak} no-progress steps at scrollY=${Math.round(scrollPosition.scrollY)} on ${urlAtPerception}.`,
+              confidence: 1,
+              reasoning:
+                "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
+            };
+            resolvedTier = "TIER_2_VISION";
+            if (tier2EscalationEvent) {
+              tier2EscalationEvent.resolvedTier = "TIER_2_VISION";
+              tier2EscalationEvent.resolvedConfidence = inferredAction.confidence;
+            }
+            this.logger(
+              `[loop][step ${step}] state=FAILED reason=NO_BELOW_FOLD_CONTENT url=${urlAtPerception} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight}`
+            );
+          }
+        }
+
+        if (!inferredAction) {
+          domExtractionAttempted = true;
+          const domExtractionResult = await this.options.cdpClient.extractDomInteractiveElements({
+            maxElements: 140
+          });
+          domExtractionElementCount = domExtractionResult.elementCount;
+          const domBypassCandidate = resolveDomBypassAction({
+            intent: input.intent,
+            domExtraction: domExtractionResult
+          });
+
+          if (domBypassCandidate) {
+            inferredAction = domBypassCandidate.action;
+            domBypassUsed = true;
+            domBypassMatchedText = domBypassCandidate.matchedText;
+            resolvedTier = "TIER_1_AX";
+            tierUsage.domBypassResolutions += 1;
+            tierUsage.resolvedAtTier1 += 1;
+            if (tier2EscalationEvent) {
+              tier2EscalationEvent.resolvedTier = "TIER_1_AX";
+              tier2EscalationEvent.resolvedConfidence = domBypassCandidate.action.confidence;
+            }
+            this.logger(
+              `[loop][step ${step}] state=INFERRING tier=DOM_BYPASS url=${urlAtPerception} domElements=${domExtractionResult.elementCount} matched="${domBypassCandidate.matchedText}" score=${domBypassCandidate.score}`
+            );
+          }
+        }
+
+        if (!inferredAction) {
+          tiersAttempted.push("TIER_2_VISION");
+          tierUsage.tier2Calls += 1;
+
+          const screenshot = await this.options.cdpClient.captureScreenshot({
+            mode: "viewport"
+          });
+          const tier2Observation = {
+            ...observation,
+            screenshot: {
+              base64: screenshot.base64,
+              mimeType: screenshot.mimeType,
+              width: screenshot.width,
+              height: screenshot.height,
+              mode: screenshot.mode
+            }
           };
+          tier2ObservationCharCount = JSON.stringify({
+            ...observation,
+            screenshot: {
+              mimeType: screenshot.mimeType,
+              width: screenshot.width,
+              height: screenshot.height,
+              mode: screenshot.mode
+            }
+          }).length;
+
+          this.logger(
+            `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
+          );
+          inferredAction = await this.options.navigatorEngine.decideNextAction({
+            intent: input.intent,
+            observation: tier2Observation,
+            tier: "TIER_2_VISION",
+            escalationReason
+          });
           resolvedTier = "TIER_2_VISION";
           if (tier2EscalationEvent) {
             tier2EscalationEvent.resolvedTier = "TIER_2_VISION";
             tier2EscalationEvent.resolvedConfidence = inferredAction.confidence;
           }
-          this.logger(
-            `[loop][step ${step}] state=FAILED reason=NO_BELOW_FOLD_CONTENT url=${urlAtPerception} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight}`
-          );
         }
-      }
 
-      if (!inferredAction) {
-        domExtractionAttempted = true;
-        const domExtractionResult = await this.options.cdpClient.extractDomInteractiveElements({
-          maxElements: 140
-        });
-        domExtractionElementCount = domExtractionResult.elementCount;
-        const domBypassCandidate = resolveDomBypassAction({
-          intent: input.intent,
-          domExtraction: domExtractionResult
-        });
-
-        if (domBypassCandidate) {
-          inferredAction = domBypassCandidate.action;
-          domBypassUsed = true;
-          domBypassMatchedText = domBypassCandidate.matchedText;
-          resolvedTier = "TIER_1_AX";
-          tierUsage.domBypassResolutions += 1;
-          tierUsage.resolvedAtTier1 += 1;
-          if (tier2EscalationEvent) {
-            tier2EscalationEvent.resolvedTier = "TIER_1_AX";
-            tier2EscalationEvent.resolvedConfidence = domBypassCandidate.action.confidence;
-          }
-          this.logger(
-            `[loop][step ${step}] state=INFERRING tier=DOM_BYPASS url=${urlAtPerception} domElements=${domExtractionResult.elementCount} matched="${domBypassCandidate.matchedText}" score=${domBypassCandidate.score}`
-          );
+        if (!inferredAction) {
+          throw new Error("Navigator produced no action decision.");
         }
-      }
 
-      if (!inferredAction) {
-        tiersAttempted.push("TIER_2_VISION");
-        tierUsage.tier2Calls += 1;
+        let actionToExecute = inferredAction;
+        if (
+          resolvedTier === "TIER_2_VISION" &&
+          shouldTriggerTier3Scroll({
+            action: inferredAction,
+            confidenceThreshold,
+            noProgressStreak,
+            escalationReason,
+            targetMightBeBelowFold
+          })
+        ) {
+          const tier3Escalation: EscalationEvent = createEscalationEvent({
+            step,
+            reason: "RETRY_AFTER_SCROLL",
+            fromTier: "TIER_2_VISION",
+            toTier: "TIER_3_SCROLL",
+            urlAtEscalation: urlAtPerception,
+            triggerConfidence: inferredAction.confidence,
+            confidenceThreshold,
+            resolvedTier: "TIER_3_SCROLL",
+            resolvedConfidence: inferredAction.confidence
+          });
+          escalations.push(tier3Escalation);
 
-        const screenshot = await this.options.cdpClient.captureScreenshot({
-          mode: "viewport"
+          if (scrollCount >= maxScrollSteps) {
+            escalationReason = "RETRY_AFTER_SCROLL";
+            tier3Escalation.resolvedTier = "TIER_2_VISION";
+            actionToExecute = {
+              action: "FAILED",
+              target: null,
+              text: `Tiered perception aborted after ${maxScrollSteps} scroll steps at ${urlAtPerception}.`,
+              confidence: inferredAction.confidence,
+              reasoning: "Tier 2 still could not locate a reliable target after maximum scroll retries."
+            };
+            this.logger(
+              `[loop][step ${step}] state=FAILED reason=MAX_SCROLL_STEPS_REACHED scrollCount=${scrollCount} max=${maxScrollSteps} url=${urlAtPerception}`
+            );
+          } else {
+            escalationReason = "RETRY_AFTER_SCROLL";
+            scrollCount += 1;
+            tierUsage.tier3Scrolls += 1;
+            resolvedTier = "TIER_3_SCROLL";
+            actionToExecute = {
+              action: "SCROLL",
+              target: inferredAction.target,
+              text: String(scrollStepPx),
+              confidence: inferredAction.confidence,
+              reasoning:
+                "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
+            };
+            this.logger(
+              `[loop][step ${step}] state=ACTING tier=TIER_3_SCROLL action=SCROLL px=${scrollStepPx} scrollCount=${scrollCount}/${maxScrollSteps} url=${urlAtPerception}`
+            );
+          }
+        } else if (resolvedTier === "TIER_2_VISION") {
+          tierUsage.resolvedAtTier2 += 1;
+        }
+
+        finalAction = actionToExecute;
+        const observationCharCount = Math.max(tier1ObservationCharCount, tier2ObservationCharCount);
+        assertTier1ConfidencePolicy({
+          step,
+          url: urlAtPerception,
+          resolvedTier,
+          action: actionToExecute,
+          confidenceThreshold
         });
-        const tier2Observation = {
-          ...observation,
-          screenshot: {
-            base64: screenshot.base64,
-            mimeType: screenshot.mimeType,
-            width: screenshot.width,
-            height: screenshot.height,
-            mode: screenshot.mode
-          }
-        };
-        tier2ObservationCharCount = JSON.stringify({
-          ...observation,
-          screenshot: {
-            mimeType: screenshot.mimeType,
-            width: screenshot.width,
-            height: screenshot.height,
-            mode: screenshot.mode
-          }
-        }).length;
 
+        transitionState("ACTING", {
+          step,
+          url: urlAtPerception,
+          reason: `ACTION_${actionToExecute.action}`
+        });
         this.logger(
-          `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
+          `[loop][step ${step}] state=ACTING tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} url=${urlAtPerception}`
         );
-        inferredAction = await this.options.navigatorEngine.decideNextAction({
-          intent: input.intent,
-          observation: tier2Observation,
-          tier: "TIER_2_VISION",
-          escalationReason
-        });
-        resolvedTier = "TIER_2_VISION";
-        if (tier2EscalationEvent) {
-          tier2EscalationEvent.resolvedTier = "TIER_2_VISION";
-          tier2EscalationEvent.resolvedConfidence = inferredAction.confidence;
-        }
-      }
-
-      if (!inferredAction) {
-        throw new Error("Navigator produced no action decision.");
-      }
-
-      let actionToExecute = inferredAction;
-      if (
-        resolvedTier === "TIER_2_VISION" &&
-        shouldTriggerTier3Scroll({
-          action: inferredAction,
-          confidenceThreshold,
-          noProgressStreak,
-          escalationReason,
-          targetMightBeBelowFold
-        })
-      ) {
-        const tier3Escalation: EscalationEvent = createEscalationEvent({
-          step,
-          reason: "RETRY_AFTER_SCROLL",
-          fromTier: "TIER_2_VISION",
-          toTier: "TIER_3_SCROLL",
-          urlAtEscalation: urlAtPerception,
-          triggerConfidence: inferredAction.confidence,
-          confidenceThreshold,
-          resolvedTier: "TIER_3_SCROLL",
-          resolvedConfidence: inferredAction.confidence
-        });
-        escalations.push(tier3Escalation);
-
-        if (scrollCount >= maxScrollSteps) {
-          escalationReason = "RETRY_AFTER_SCROLL";
-          tier3Escalation.resolvedTier = "TIER_2_VISION";
-          actionToExecute = {
-            action: "FAILED",
-            target: null,
-            text: `Tiered perception aborted after ${maxScrollSteps} scroll steps at ${urlAtPerception}.`,
-            confidence: inferredAction.confidence,
-            reasoning: "Tier 2 still could not locate a reliable target after maximum scroll retries."
-          };
-          this.logger(
-            `[loop][step ${step}] state=FAILED reason=MAX_SCROLL_STEPS_REACHED scrollCount=${scrollCount} max=${maxScrollSteps} url=${urlAtPerception}`
-          );
-        } else {
-          escalationReason = "RETRY_AFTER_SCROLL";
-          scrollCount += 1;
-          tierUsage.tier3Scrolls += 1;
-          resolvedTier = "TIER_3_SCROLL";
-          actionToExecute = {
-            action: "SCROLL",
-            target: inferredAction.target,
-            text: String(scrollStepPx),
-            confidence: inferredAction.confidence,
-            reasoning:
-              "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
-          };
-          this.logger(
-            `[loop][step ${step}] state=ACTING tier=TIER_3_SCROLL action=SCROLL px=${scrollStepPx} scrollCount=${scrollCount}/${maxScrollSteps} url=${urlAtPerception}`
-          );
-        }
-      } else if (resolvedTier === "TIER_2_VISION") {
-        tierUsage.resolvedAtTier2 += 1;
-      }
-
-      finalAction = actionToExecute;
-      const observationCharCount = Math.max(tier1ObservationCharCount, tier2ObservationCharCount);
-      assertTier1ConfidencePolicy({
-        step,
-        url: urlAtPerception,
-        resolvedTier,
-        action: actionToExecute,
-        confidenceThreshold
-      });
-
-      this.logger(
-        `[loop][step ${step}] state=ACTING tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} url=${urlAtPerception}`
-      );
-      const execution = await this.options.cdpClient.executeAction(this.toAgentAction(actionToExecute));
-      finalExecution = execution;
-      currentUrl = execution.currentUrl;
-      noProgressStreak = isNoProgressStep({
-        urlAtPerception,
-        urlAfterAction: currentUrl,
-        execution
-      })
-        ? noProgressStreak + 1
-        : 0;
-      const nextAXTreeRefetchReason = determineAXTreeRefetchReason({
-        action: actionToExecute,
-        execution,
-        urlAtPerception,
-        urlAfterAction: currentUrl
-      });
-      pendingAXTreeRefetchReason = nextAXTreeRefetchReason;
-      if (nextAXTreeRefetchReason !== "NONE") {
-        cachedPerception = null;
-      }
-
-      history.push(
-        createStepRecord({
-          step,
+        const execution = await this.options.cdpClient.executeAction(this.toAgentAction(actionToExecute));
+        finalExecution = execution;
+        currentUrl = execution.currentUrl;
+        noProgressStreak = isNoProgressStep({
           urlAtPerception,
           urlAfterAction: currentUrl,
-          state: execution.status === "failed" ? "FAILED" : "ACTING",
-          currentUrl,
-          inferredAction,
+          execution
+        })
+          ? noProgressStreak + 1
+          : 0;
+        const nextAXTreeRefetchReason = determineAXTreeRefetchReason({
           action: actionToExecute,
           execution,
-          tiersAttempted,
-          resolvedTier,
-          escalationReason,
-          axDeficientDetected,
-          axDeficiencySignals,
-          axTreeRefetched: shouldRefetchAXTree,
-          axTreeRefetchReason,
-          scrollPosition,
-          targetMightBeBelowFold,
-          scrollCount,
-          noProgressStreak,
-          postActionSignificantDomMutationObserved: execution.significantDomMutationObserved,
-          postActionMutationSummary: execution.domMutationSummary,
-          domExtractionAttempted,
-          domExtractionElementCount,
-          domBypassUsed,
-          domBypassMatchedText,
-          indexResult,
-          navigatorNormalizedTreeCharCount: treeEncoding.encodedCharCount,
-          navigatorObservationCharCount: observationCharCount,
-          usedToonEncoding: treeEncoding.usedToonEncoding
-        })
-      );
+          urlAtPerception,
+          urlAfterAction: currentUrl
+        });
+        pendingAXTreeRefetchReason = nextAXTreeRefetchReason;
+        if (nextAXTreeRefetchReason !== "NONE") {
+          cachedPerception = null;
+        }
 
-      previousActions.push(actionToExecute);
-      previousObservations.push(
-        `step=${step} tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} nav=${execution.navigationObserved} dom=${execution.domMutationObserved} sigDom=${execution.significantDomMutationObserved} url=${currentUrl}`
-      );
-
-      if (actionToExecute.action === "DONE" || execution.status === "done") {
-        this.logger(`[loop] state=COMPLETE status=DONE steps=${step} finalUrl=${currentUrl}`);
-        return {
-          status: "DONE",
-          intent: input.intent,
-          startUrl: input.startUrl,
-          finalUrl: currentUrl,
-          stepsTaken: step,
-          history,
-          escalations,
-          axDeficientPages,
-          tierUsage: finalizeTierUsageMetrics(tierUsage),
-          finalAction: actionToExecute,
-          finalExecution: execution
-        };
-      }
-
-      if (actionToExecute.action === "FAILED" || execution.status === "failed") {
-        this.logger(`[loop] state=FAILED status=FAILED steps=${step} finalUrl=${currentUrl}`);
-        return {
-          status: "FAILED",
-          intent: input.intent,
-          startUrl: input.startUrl,
-          finalUrl: currentUrl,
-          stepsTaken: step,
-          history,
-          escalations,
-          axDeficientPages,
-          tierUsage: finalizeTierUsageMetrics(tierUsage),
-          finalAction: actionToExecute,
-          finalExecution: execution
-        };
-      }
-
-      if (noProgressStreak >= maxNoProgressSteps) {
-        const loopGuardFailure: NavigatorActionDecision = {
-          action: "FAILED",
-          target: null,
-          text: `Aborted after ${noProgressStreak} no-progress steps at ${currentUrl}.`,
-          confidence: actionToExecute.confidence,
-          reasoning:
-            "Loop guard triggered because actions produced no navigation, DOM mutation, or URL change."
-        };
-        finalAction = loopGuardFailure;
-        this.logger(
-          `[loop] state=FAILED reason=NO_PROGRESS_LOOP steps=${step} streak=${noProgressStreak}/${maxNoProgressSteps} finalUrl=${currentUrl}`
+        history.push(
+          createStepRecord({
+            step,
+            urlAtPerception,
+            urlAfterAction: currentUrl,
+            state: execution.status === "failed" ? "FAILED" : "ACTING",
+            currentUrl,
+            inferredAction,
+            action: actionToExecute,
+            execution,
+            tiersAttempted,
+            resolvedTier,
+            escalationReason,
+            axDeficientDetected,
+            axDeficiencySignals,
+            axTreeRefetched: shouldRefetchAXTree,
+            axTreeRefetchReason,
+            scrollPosition,
+            targetMightBeBelowFold,
+            scrollCount,
+            noProgressStreak,
+            postActionSignificantDomMutationObserved: execution.significantDomMutationObserved,
+            postActionMutationSummary: execution.domMutationSummary,
+            domExtractionAttempted,
+            domExtractionElementCount,
+            domBypassUsed,
+            domBypassMatchedText,
+            indexResult,
+            navigatorNormalizedTreeCharCount: treeEncoding.encodedCharCount,
+            navigatorObservationCharCount: observationCharCount,
+            usedToonEncoding: treeEncoding.usedToonEncoding
+          })
         );
-        return {
-          status: "FAILED",
-          intent: input.intent,
-          startUrl: input.startUrl,
-          finalUrl: currentUrl,
-          stepsTaken: step,
-          history,
-          escalations,
-          axDeficientPages,
-          tierUsage: finalizeTierUsageMetrics(tierUsage),
-          finalAction: loopGuardFailure,
-          finalExecution: execution
-        };
-      }
-    }
 
-    this.logger(`[loop] state=FAILED status=MAX_STEPS steps=${maxSteps} finalUrl=${currentUrl}`);
-    return {
-      status: "MAX_STEPS",
-      intent: input.intent,
-      startUrl: input.startUrl,
-      finalUrl: currentUrl,
-      stepsTaken: maxSteps,
-      history,
-      escalations,
-      axDeficientPages,
-      tierUsage: finalizeTierUsageMetrics(tierUsage),
-      finalAction,
-      finalExecution
-    };
+        previousActions.push(actionToExecute);
+        previousObservations.push(
+          `step=${step} tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} nav=${execution.navigationObserved} dom=${execution.domMutationObserved} sigDom=${execution.significantDomMutationObserved} url=${currentUrl}`
+        );
+
+        if (actionToExecute.action === "DONE" || execution.status === "done") {
+          transitionState("COMPLETE", {
+            step,
+            url: currentUrl,
+            reason: "TASK_DONE"
+          });
+          this.logger(`[loop] state=COMPLETE status=DONE steps=${step} finalUrl=${currentUrl}`);
+          await runCleanup({
+            finalState: "COMPLETE",
+            resultStatus: "DONE",
+            finalUrl: currentUrl,
+            stepsTaken: step,
+            errorDetail: null
+          });
+          transitionToIdle(step, currentUrl);
+          return buildTaskResult({
+            status: "DONE",
+            finalUrl: currentUrl,
+            stepsTaken: step,
+            finalAction: actionToExecute,
+            finalExecution: execution,
+            errorDetail: null
+          });
+        }
+
+        if (actionToExecute.action === "FAILED" || execution.status === "failed") {
+          const errorDetail = createGhostTabTaskErrorDetail({
+            error: new Error(execution.message ?? `Execution failed for action ${actionToExecute.action}.`),
+            url: currentUrl,
+            step
+          });
+          transitionState("FAILED", {
+            step,
+            url: currentUrl,
+            reason: "TASK_FAILED",
+            errorDetail
+          });
+          this.logger(`[loop] state=FAILED status=FAILED steps=${step} finalUrl=${currentUrl}`);
+          await runCleanup({
+            finalState: "FAILED",
+            resultStatus: "FAILED",
+            finalUrl: currentUrl,
+            stepsTaken: step,
+            errorDetail
+          });
+          transitionToIdle(step, currentUrl);
+          return buildTaskResult({
+            status: "FAILED",
+            finalUrl: currentUrl,
+            stepsTaken: step,
+            finalAction: actionToExecute,
+            finalExecution: execution,
+            errorDetail
+          });
+        }
+
+        if (noProgressStreak >= maxNoProgressSteps) {
+          const loopGuardFailure: NavigatorActionDecision = {
+            action: "FAILED",
+            target: null,
+            text: `Aborted after ${noProgressStreak} no-progress steps at ${currentUrl}.`,
+            confidence: actionToExecute.confidence,
+            reasoning:
+              "Loop guard triggered because actions produced no navigation, DOM mutation, or URL change."
+          };
+          finalAction = loopGuardFailure;
+          const errorDetail = createGhostTabTaskErrorDetail({
+            error: new Error(loopGuardFailure.text ?? "No-progress loop guard triggered."),
+            url: currentUrl,
+            step,
+            retryable: true
+          });
+          transitionState("FAILED", {
+            step,
+            url: currentUrl,
+            reason: "NO_PROGRESS_LOOP_GUARD",
+            errorDetail
+          });
+          this.logger(
+            `[loop] state=FAILED reason=NO_PROGRESS_LOOP steps=${step} streak=${noProgressStreak}/${maxNoProgressSteps} finalUrl=${currentUrl}`
+          );
+          await runCleanup({
+            finalState: "FAILED",
+            resultStatus: "FAILED",
+            finalUrl: currentUrl,
+            stepsTaken: step,
+            errorDetail
+          });
+          transitionToIdle(step, currentUrl);
+          return buildTaskResult({
+            status: "FAILED",
+            finalUrl: currentUrl,
+            stepsTaken: step,
+            finalAction: loopGuardFailure,
+            finalExecution: execution,
+            errorDetail
+          });
+        }
+
+        transitionState("PERCEIVING", {
+          step: step + 1,
+          url: currentUrl,
+          reason: "NEXT_STEP"
+        });
+      }
+
+      const maxStepErrorDetail = createGhostTabTaskErrorDetail({
+        error: new Error(`Reached max steps (${maxSteps}) without terminal completion.`),
+        url: currentUrl,
+        step: maxSteps,
+        retryable: true
+      });
+      transitionState("FAILED", {
+        step: maxSteps,
+        url: currentUrl,
+        reason: "MAX_STEPS_REACHED",
+        errorDetail: maxStepErrorDetail
+      });
+      this.logger(`[loop] state=FAILED status=MAX_STEPS steps=${maxSteps} finalUrl=${currentUrl}`);
+      await runCleanup({
+        finalState: "FAILED",
+        resultStatus: "MAX_STEPS",
+        finalUrl: currentUrl,
+        stepsTaken: maxSteps,
+        errorDetail: maxStepErrorDetail
+      });
+      transitionToIdle(maxSteps, currentUrl);
+      return buildTaskResult({
+        status: "MAX_STEPS",
+        finalUrl: currentUrl,
+        stepsTaken: maxSteps,
+        finalAction,
+        finalExecution,
+        errorDetail: maxStepErrorDetail
+      });
+    } catch (error) {
+      const errorDetail = createGhostTabTaskErrorDetail({
+        error,
+        url: currentUrl,
+        step: lastStep > 0 ? lastStep : null
+      });
+      const currentState = stateMachine.getState();
+      if (currentState === "IDLE") {
+        transitionState("LOADING", {
+          step: 0,
+          url: currentUrl,
+          reason: "TASK_RECOVERY"
+        });
+      }
+
+      if (stateMachine.getState() !== "FAILED" && stateMachine.getState() !== "COMPLETE") {
+        transitionState("FAILED", {
+          step: lastStep > 0 ? lastStep : undefined,
+          url: currentUrl,
+          reason: "UNHANDLED_EXCEPTION",
+          errorDetail
+        });
+      }
+
+      await runCleanup({
+        finalState: "FAILED",
+        resultStatus: "FAILED",
+        finalUrl: currentUrl,
+        stepsTaken: lastStep,
+        errorDetail
+      });
+      transitionToIdle(lastStep > 0 ? lastStep : null, currentUrl);
+      this.logger(
+        `[loop] state=FAILED reason=UNHANDLED_EXCEPTION steps=${lastStep} finalUrl=${currentUrl} error=${errorDetail.message}`
+      );
+      return buildTaskResult({
+        status: "FAILED",
+        finalUrl: currentUrl,
+        stepsTaken: lastStep,
+        finalAction,
+        finalExecution,
+        errorDetail
+      });
+    }
   }
 
   private toAgentAction(action: NavigatorActionDecision): AgentActionInput {
@@ -1092,6 +1345,14 @@ function finalizeTierUsageMetrics(metrics: TierUsageMetrics): TierUsageMetrics {
 
 function round6(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
+}
+
+function resolveOptionalString(value: string | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 export function createPerceptionActionLoop(options: PerceptionActionLoopOptions): PerceptionActionLoop {

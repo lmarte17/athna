@@ -52,11 +52,68 @@ export {
   type LoopState,
   type LoopStepRecord,
   type PerceptionActionLoopOptions,
+  type PerceptionActionTaskCleanupContext,
   type PerceptionActionTaskInput,
   type PerceptionActionTaskResult,
   type ResolvedPerceptionTier,
   type TierUsageMetrics
 } from "./loop/orchestrator.js";
+
+export {
+  ALLOWED_GHOST_TAB_STATE_TRANSITIONS,
+  createGhostTabTaskErrorDetail,
+  createGhostTabTaskStateMachine,
+  classifyTaskErrorType,
+  InvalidGhostTabStateTransitionError,
+  type GhostTabStateTransitionContext,
+  type GhostTabStateTransitionEvent,
+  type GhostTabTaskErrorDetail,
+  type GhostTabTaskErrorType,
+  type GhostTabTaskState,
+  GhostTabTaskStateMachine,
+  type GhostTabTaskStateMachineOptions
+} from "./task/state-machine.js";
+
+export {
+  createGhostTabIpcMessage,
+  GHOST_TAB_IPC_REQUEST_TYPES,
+  GHOST_TAB_IPC_RESPONSE_TYPES,
+  GHOST_TAB_IPC_SCHEMA_VERSION,
+  GhostTabIpcValidationError,
+  validateInboundGhostTabIpcMessage,
+  validateOutboundGhostTabIpcMessage,
+  assertValidGhostTabIpcMessage,
+  type AxTreeIpcPayload,
+  type GhostTabIpcAxTreeMessage,
+  type GhostTabIpcInputEventMessage,
+  type GhostTabIpcInjectJsMessage,
+  type GhostTabIpcMessage,
+  type GhostTabIpcMessageBase,
+  type GhostTabIpcMessageByType,
+  type GhostTabIpcMessageType,
+  type GhostTabIpcNavigateMessage,
+  type GhostTabIpcPayloadByType,
+  type GhostTabIpcRequestMessage,
+  type GhostTabIpcRequestType,
+  type GhostTabIpcResponseMessage,
+  type GhostTabIpcResponseType,
+  type GhostTabIpcScreenshotMessage,
+  type GhostTabIpcTaskErrorMessage,
+  type GhostTabIpcTaskResultMessage,
+  type GhostTabIpcValidationResult,
+  type InjectJsIpcPayload,
+  type InputEventIpcPayload,
+  type NavigateIpcPayload,
+  type ScreenshotIpcPayload,
+  type TaskErrorIpcPayload,
+  type TaskResultIpcPayload
+} from "./ipc/schema.js";
+
+export {
+  createGhostTabIpcRouter,
+  GhostTabIpcRouter,
+  type GhostTabIpcRouterOptions
+} from "./ipc/router.js";
 
 export {
   createGhostTabPoolManager,

@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "phase": "3.3",
+  "happyPath": {
+    "status": "DONE",
+    "stepsTaken": 1,
+    "transitions": [
+      "IDLE->LOADING",
+      "LOADING->PERCEIVING",
+      "PERCEIVING->INFERRING",
+      "INFERRING->ACTING",
+      "ACTING->COMPLETE",
+      "COMPLETE->IDLE"
+    ],
+    "cleanupCallCount": 1
+  },
+  "failurePath": {
+    "status": "FAILED",
+    "errorDetail": {
+      "type": "CDP",
+      "status": null,
+      "url": "https://example.com/fail",
+      "message": "CDP Page.navigate failed for https://example.com/fail: simulated navigate error",
+      "retryable": true,
+      "step": null
+    },
+    "transitions": [
+      "IDLE->LOADING",
+      "LOADING->FAILED",
+      "FAILED->IDLE"
+    ],
+    "stateFeedEventCount": 3
+  },
+  "invalidTransition": {
+    "rejected": true,
+    "message": "Invalid Ghost Tab state transition: ACTING -> IDLE. Allowed: PERCEIVING, COMPLETE, FAILED"
+  },
+  "statusFeed": {
+    "happyPathEventCount": 6,
+    "failurePathEventCount": 3
+  }
+}

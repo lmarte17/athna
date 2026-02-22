@@ -18,6 +18,8 @@
     "tiered:smoke": "npm run tiered:smoke -w @ghost-browser/orchestration",
     "context:smoke": "npm run context:smoke -w @ghost-browser/orchestration",
     "pool:smoke": "npm run pool:smoke -w @ghost-browser/orchestration",
+    "state:smoke": "npm run state:smoke -w @ghost-browser/orchestration",
+    "ipc:schema:smoke": "npm run ipc:schema:smoke -w @ghost-browser/orchestration",
     "gemini:spike": "npm run gemini:spike -w @ghost-browser/orchestration",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

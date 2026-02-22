@@ -3,6 +3,13 @@ import {
   type ConnectToGhostTabCdpOptions,
   type GhostTabCdpClient
 } from "../cdp/client.js";
+import {
+  createGhostTabTaskErrorDetail,
+  createGhostTabTaskStateMachine,
+  type GhostTabStateTransitionContext,
+  type GhostTabStateTransitionEvent,
+  type GhostTabTaskState
+} from "../task/state-machine.js";
 
 const DEFAULT_POOL_MIN_SIZE = 2;
 const DEFAULT_POOL_MAX_SIZE = 6;
@@ -35,6 +42,7 @@ export interface GhostTabPoolManagerOptions {
   contextIdPrefix?: string;
   connectTimeoutMs?: number;
   logger?: (line: string) => void;
+  onTaskStateTransition?: (event: GhostTabStateTransitionEvent) => void;
 }
 
 export interface AcquireGhostTabOptions {
@@ -48,6 +56,12 @@ export interface GhostTabLease {
   contextId: string;
   assignmentWaitMs: number;
   cdpClient: GhostTabCdpClient;
+  getTaskState: () => GhostTabTaskState;
+  getTaskStateHistory: () => GhostTabStateTransitionEvent[];
+  transitionTaskState: (
+    to: GhostTabTaskState,
+    context?: GhostTabStateTransitionContext
+  ) => GhostTabStateTransitionEvent;
   release: () => Promise<void>;
 }
 
@@ -84,7 +98,14 @@ export class GhostTabPoolManager {
   private readonly slots = new Map<string, PoolSlot>();
   private readonly availableContextIds: string[] = [];
   private readonly waitQueue: AcquireRequest[] = [];
-  private readonly activeLeases = new Map<string, { contextId: string; released: boolean }>();
+  private readonly activeLeases = new Map<
+    string,
+    {
+      contextId: string;
+      released: boolean;
+      taskStateMachine: ReturnType<typeof createGhostTabTaskStateMachine>;
+    }
+  >();
   private readonly warmAssignmentWaits: number[] = [];
   private readonly queuedAssignmentWaits: number[] = [];
   private readonly warmDurations: number[] = [];
@@ -286,9 +307,17 @@ export class GhostTabPoolManager {
     }
 
     const leaseId = this.nextLeaseIdString();
+    const taskStateMachine = createGhostTabTaskStateMachine({
+      taskId: request.taskId,
+      contextId,
+      onTransition: (event) => {
+        this.options.onTaskStateTransition?.(event);
+      }
+    });
     this.activeLeases.set(leaseId, {
       contextId,
-      released: false
+      released: false,
+      taskStateMachine
     });
 
     this.logger(
@@ -303,6 +332,11 @@ export class GhostTabPoolManager {
       contextId,
       assignmentWaitMs: waitMs,
       cdpClient: slot.cdpClient,
+      getTaskState: () => taskStateMachine.getState(),
+      getTaskStateHistory: () => taskStateMachine.getTransitionHistory(),
+      transitionTaskState: (to, context = {}) => {
+        return taskStateMachine.transition(to, context);
+      },
       release: async () => {
         await this.releaseLease(leaseId);
       }
@@ -317,6 +351,26 @@ export class GhostTabPoolManager {
     }
     active.released = true;
     this.activeLeases.delete(leaseId);
+
+    const stateBeforeRelease = active.taskStateMachine.getState();
+    if (stateBeforeRelease !== "IDLE") {
+      if (stateBeforeRelease !== "COMPLETE" && stateBeforeRelease !== "FAILED") {
+        active.taskStateMachine.transition("FAILED", {
+          reason: "LEASE_RELEASED_BEFORE_TERMINAL_STATE",
+          errorDetail: createGhostTabTaskErrorDetail({
+            error: new Error(
+              `Lease ${leaseId} was released while task was still in ${stateBeforeRelease}.`
+            )
+          })
+        });
+      }
+
+      if (active.taskStateMachine.getState() !== "IDLE") {
+        active.taskStateMachine.transition("IDLE", {
+          reason: "LEASE_RELEASED"
+        });
+      }
+    }
 
     const slot = this.slots.get(active.contextId);
     if (!slot) {

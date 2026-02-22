@@ -1,0 +1,122 @@
+{
+  "ok": true,
+  "phase": "3.4",
+  "schemaValidation": {
+    "requiredTypes": [
+      "NAVIGATE",
+      "SCREENSHOT",
+      "AX_TREE",
+      "INJECT_JS",
+      "INPUT_EVENT",
+      "TASK_RESULT",
+      "TASK_ERROR"
+    ],
+    "validatedFixtureCount": 7,
+    "results": [
+      {
+        "type": "NAVIGATE",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "SCREENSHOT",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "AX_TREE",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "INJECT_JS",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "INPUT_EVENT",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "TASK_RESULT",
+        "inboundOk": true,
+        "outboundOk": true
+      },
+      {
+        "type": "TASK_ERROR",
+        "inboundOk": true,
+        "outboundOk": true
+      }
+    ]
+  },
+  "malformedRejection": {
+    "rejected": true,
+    "details": [
+      "payload.url must be a non-empty string"
+    ]
+  },
+  "routing": {
+    "routingMode": "typed-switch-by-message-type",
+    "requestCount": 5,
+    "taskResultCount": 5,
+    "operations": [
+      "NAVIGATE",
+      "SCREENSHOT",
+      "AX_TREE",
+      "INJECT_JS",
+      "INPUT_EVENT"
+    ],
+    "fakeCdpCalls": [
+      {
+        "method": "navigate",
+        "url": "https://example.com/",
+        "timeoutMs": 10000
+      },
+      {
+        "method": "getCurrentUrl"
+      },
+      {
+        "method": "captureScreenshot",
+        "screenshotOptions": {
+          "mode": "viewport",
+          "quality": 80,
+          "fromSurface": true
+        }
+      },
+      {
+        "method": "extractInteractiveElementIndex",
+        "indexOptions": {
+          "includeBoundingBoxes": true,
+          "charBudget": 8000
+        }
+      },
+      {
+        "method": "executeAction",
+        "action": {
+          "action": "EXTRACT",
+          "target": null,
+          "text": "(() => document.title)()"
+        }
+      },
+      {
+        "method": "executeAction",
+        "action": {
+          "action": "CLICK",
+          "target": {
+            "x": 120,
+            "y": 210
+          },
+          "text": null,
+          "confidence": 0.95,
+          "reasoning": "Click the primary button."
+        }
+      }
+    ]
+  },
+  "errorHandling": {
+    "failedNavigateMappedToTaskError": true,
+    "malformedRawMappedToTaskError": true,
+    "malformedRawOperation": "UNKNOWN"
+  }
+}

@@ -13,6 +13,8 @@
     "tiered:smoke": "npm run build && node --env-file=../.env scripts/tiered-perception-smoke.mjs",
     "context:smoke": "npm run build && node scripts/browser-context-isolation-smoke.mjs",
     "pool:smoke": "npm run build && node scripts/ghost-tab-pool-smoke.mjs",
+    "state:smoke": "npm run build && node scripts/ghost-tab-state-machine-smoke.mjs",
+    "ipc:schema:smoke": "npm run build && node scripts/ipc-message-schema-smoke.mjs",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"
