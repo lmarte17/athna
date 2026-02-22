@@ -6,6 +6,7 @@ import type {
   ExtractDomInteractiveElementsResult,
   GhostTabCdpClient,
   InteractiveElementIndexResult,
+  NavigationOutcome,
   ScrollPositionSnapshot
 } from "../cdp/client.js";
 import { encodeNormalizedAXTreeForNavigator } from "../ax-tree/toon-runtime.js";
@@ -16,6 +17,8 @@ import {
   type NavigatorActiveSubtask,
   type NavigatorEngine,
   type NavigatorObservationSubtask,
+  type NavigatorStructuredError,
+  type NavigatorStructuredErrorType,
   type NavigatorEscalationReason,
   type NavigatorInferenceTier
 } from "../navigator/engine.js";
@@ -47,6 +50,7 @@ const DEFAULT_SCROLL_STEP_PX = 800;
 const DEFAULT_MAX_SCROLL_STEPS = 8;
 const DEFAULT_MAX_NO_PROGRESS_STEPS = 6;
 const DEFAULT_MAX_SUBTASK_RETRIES = 2;
+const DEFAULT_NAVIGATION_TIMEOUT_MS = 30_000;
 const DEFAULT_BELOW_FOLD_MARGIN_RATIO = 0.11;
 const ESTIMATED_TIER1_CALL_COST_USD = 0.00015;
 const ESTIMATED_TIER2_CALL_COST_USD = 0.003;
@@ -96,6 +100,7 @@ export interface PerceptionActionTaskInput {
   maxScrollSteps?: number;
   maxNoProgressSteps?: number;
   maxSubtaskRetries?: number;
+  navigationTimeoutMs?: number;
 }
 
 export interface TaskCheckpointArtifact {
@@ -133,6 +138,18 @@ export interface SubtaskStatusEvent {
   attempt: number;
   checkpointLastCompletedSubtaskIndex: number;
   reason: string;
+  timestamp: string;
+}
+
+export interface StructuredErrorEvent {
+  taskId: string;
+  contextId: string | null;
+  step: number;
+  source: "NAVIGATION" | "PERCEPTION" | "ACTION" | "UNHANDLED_EXCEPTION";
+  reason: string;
+  error: NavigatorStructuredError;
+  navigatorDecision: NavigatorActionDecision | null;
+  decisionSource: "NAVIGATOR" | "POLICY_FALLBACK";
   timestamp: string;
 }
 
@@ -252,6 +269,7 @@ export interface PerceptionActionTaskResult {
   subtasks: RuntimeTaskSubtask[];
   checkpoint: TaskCheckpointState;
   subtaskStatusTimeline: SubtaskStatusEvent[];
+  structuredErrors: StructuredErrorEvent[];
   escalations: EscalationEvent[];
   axDeficientPages: AXDeficientPageLog[];
   tierUsage: TierUsageMetrics;
@@ -285,8 +303,10 @@ export interface PerceptionActionLoopOptions {
   maxScrollSteps?: number;
   maxNoProgressSteps?: number;
   maxSubtaskRetries?: number;
+  navigationTimeoutMs?: number;
   onStateTransition?: (event: GhostTabStateTransitionEvent) => void;
   onSubtaskStatus?: (event: SubtaskStatusEvent) => void;
+  onStructuredError?: (event: StructuredErrorEvent) => void;
   onTaskCleanup?: (context: PerceptionActionTaskCleanupContext) => Promise<void> | void;
   logger?: (line: string) => void;
 }
@@ -299,6 +319,7 @@ class PerceptionActionLoop {
   private readonly maxScrollSteps: number;
   private readonly maxNoProgressSteps: number;
   private readonly maxSubtaskRetries: number;
+  private readonly navigationTimeoutMs: number;
   private readonly logger: (line: string) => void;
 
   constructor(private readonly options: PerceptionActionLoopOptions) {
@@ -310,6 +331,7 @@ class PerceptionActionLoop {
     this.maxScrollSteps = options.maxScrollSteps ?? DEFAULT_MAX_SCROLL_STEPS;
     this.maxNoProgressSteps = options.maxNoProgressSteps ?? DEFAULT_MAX_NO_PROGRESS_STEPS;
     this.maxSubtaskRetries = options.maxSubtaskRetries ?? DEFAULT_MAX_SUBTASK_RETRIES;
+    this.navigationTimeoutMs = options.navigationTimeoutMs ?? DEFAULT_NAVIGATION_TIMEOUT_MS;
     this.logger = options.logger ?? ((line: string) => console.info(line));
   }
 
@@ -336,6 +358,7 @@ class PerceptionActionLoop {
     const maxScrollSteps = input.maxScrollSteps ?? this.maxScrollSteps;
     const maxNoProgressSteps = input.maxNoProgressSteps ?? this.maxNoProgressSteps;
     const maxSubtaskRetries = input.maxSubtaskRetries ?? this.maxSubtaskRetries;
+    const navigationTimeoutMs = input.navigationTimeoutMs ?? this.navigationTimeoutMs;
 
     if (maxSteps <= 0) {
       throw new Error("maxSteps must be greater than zero.");
@@ -357,6 +380,9 @@ class PerceptionActionLoop {
     }
     if (!Number.isFinite(maxSubtaskRetries) || maxSubtaskRetries < 0) {
       throw new Error("maxSubtaskRetries must be zero or greater.");
+    }
+    if (!Number.isFinite(navigationTimeoutMs) || navigationTimeoutMs <= 0) {
+      throw new Error("navigationTimeoutMs must be greater than zero.");
     }
 
     const stateMachine =
@@ -396,6 +422,7 @@ class PerceptionActionLoop {
       subtaskArtifacts: []
     };
     const subtaskStatusTimeline: SubtaskStatusEvent[] = [];
+    const structuredErrors: StructuredErrorEvent[] = [];
     const escalations: EscalationEvent[] = [];
     const axDeficientPages: AXDeficientPageLog[] = [];
     const contextWindow = createNavigatorContextWindowManager();
@@ -442,6 +469,167 @@ class PerceptionActionLoop {
       };
       subtaskStatusTimeline.push(event);
       this.options.onSubtaskStatus?.(event);
+    };
+
+    const transitionStateIfPossible = (
+      to: GhostTabTaskState,
+      context: {
+        step?: number;
+        url?: string;
+        reason?: string;
+        errorDetail?: GhostTabTaskErrorDetail;
+      } = {}
+    ): void => {
+      if (stateMachine.getState() === to) {
+        return;
+      }
+      if (!stateMachine.canTransition(to)) {
+        return;
+      }
+      transitionState(to, context);
+    };
+
+    const toNavigatorStructuredErrorType = (
+      type: GhostTabTaskErrorDetail["type"]
+    ): NavigatorStructuredErrorType => {
+      switch (type) {
+        case "NETWORK":
+        case "RUNTIME":
+        case "CDP":
+        case "TIMEOUT":
+          return type;
+        default:
+          return "CDP";
+      }
+    };
+
+    const toNavigatorStructuredError = (
+      errorDetail: GhostTabTaskErrorDetail,
+      fallbackUrl: string
+    ): NavigatorStructuredError => {
+      return {
+        type: toNavigatorStructuredErrorType(errorDetail.type),
+        status: errorDetail.status,
+        url: errorDetail.url ?? fallbackUrl,
+        message: errorDetail.message,
+        retryable: errorDetail.retryable
+      };
+    };
+
+    const resolveStructuredErrorDecision = async (params: {
+      step: number;
+      source: StructuredErrorEvent["source"];
+      reason: string;
+      errorDetail: GhostTabTaskErrorDetail;
+      url: string;
+    }): Promise<NavigatorActionDecision | null> => {
+      const structuredError = toNavigatorStructuredError(params.errorDetail, params.url);
+      const contextSnapshot = contextWindow.buildSnapshot();
+      const activeSubtaskIndex = getActiveSubtaskIndex();
+      const activeSubtask = activeSubtaskIndex >= 0 ? subtasks[activeSubtaskIndex] : null;
+      const taskSubtasksForNavigator: NavigatorObservationSubtask[] =
+        subtasks.map(toNavigatorObservationSubtask);
+      const activeSubtaskForNavigator: NavigatorActiveSubtask | null = activeSubtask
+        ? toNavigatorActiveSubtask({
+            subtask: activeSubtask,
+            index: activeSubtaskIndex,
+            totalSubtasks: subtasks.length
+          })
+        : null;
+
+      transitionStateIfPossible("PERCEIVING", {
+        step: params.step > 0 ? params.step : 1,
+        url: params.url,
+        reason: `${params.reason}:STRUCTURED_ERROR_CONTEXT`
+      });
+      transitionStateIfPossible("INFERRING", {
+        step: params.step > 0 ? params.step : 1,
+        url: params.url,
+        reason: `${params.reason}:STRUCTURED_ERROR_DECISION`
+      });
+
+      let decision: NavigatorActionDecision | null = null;
+      try {
+        decision = await this.options.navigatorEngine.decideNextAction({
+          intent: input.intent,
+          tier: "TIER_1_AX",
+          observation: {
+            currentUrl: params.url,
+            interactiveElementIndex: [],
+            normalizedAXTree: [],
+            previousActions: contextSnapshot.previousActions,
+            previousObservations: contextSnapshot.previousObservations,
+            historySummary: contextSnapshot.historySummary,
+            contextWindowStats: {
+              recentPairCount: contextSnapshot.recentPairCount,
+              summarizedPairCount: contextSnapshot.summarizedPairCount,
+              totalPairCount: contextSnapshot.totalPairCount,
+              summaryCharCount: contextSnapshot.summaryCharCount
+            },
+            taskSubtasks: taskSubtasksForNavigator,
+            activeSubtask: activeSubtaskForNavigator,
+            checkpointState: {
+              lastCompletedSubtaskIndex: checkpoint.lastCompletedSubtaskIndex,
+              currentSubtaskAttempt: checkpoint.currentSubtaskAttempt
+            },
+            structuredError
+          }
+        });
+      } catch (error) {
+        this.logger(
+          `[loop][step ${params.step}] structured-error decision-failed source=${params.source} reason=${params.reason} error=${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+
+      let decisionSource: StructuredErrorEvent["decisionSource"] = "NAVIGATOR";
+      if (decision === null && structuredError.retryable) {
+        decisionSource = "POLICY_FALLBACK";
+        decision = {
+          action: "WAIT",
+          target: null,
+          text: "1000",
+          confidence: 0.5,
+          reasoning:
+            "Retryable structured error fallback: issue a short wait/retry instead of immediate failure."
+        };
+      } else if (decision && structuredError.retryable && decision.action === "FAILED") {
+        decisionSource = "POLICY_FALLBACK";
+        decision = {
+          action: "WAIT",
+          target: null,
+          text: "1000",
+          confidence: Math.max(0.5, Math.min(1, decision.confidence)),
+          reasoning: `Retryable structured error fallback: ${decision.reasoning}`
+        };
+      }
+
+      if (decision) {
+        finalAction = decision;
+        contextWindow.appendPair({
+          step: params.step > 0 ? params.step : 1,
+          action: decision,
+          observation: `structured-error source=${params.source} type=${structuredError.type} retryable=${structuredError.retryable} status=${structuredError.status ?? "none"} reason=${params.reason}`,
+          url: params.url,
+          resolvedTier: "TIER_1_AX"
+        });
+      }
+
+      const event: StructuredErrorEvent = {
+        taskId,
+        contextId,
+        step: params.step,
+        source: params.source,
+        reason: params.reason,
+        error: structuredError,
+        navigatorDecision: decision,
+        decisionSource,
+        timestamp: new Date().toISOString()
+      };
+      structuredErrors.push(event);
+      this.options.onStructuredError?.(event);
+      return decision;
     };
 
     const activateSubtask = (subtaskIndex: number, reason: string): void => {
@@ -591,6 +779,7 @@ class PerceptionActionLoop {
         subtasks,
         checkpoint,
         subtaskStatusTimeline,
+        structuredErrors,
         escalations,
         axDeficientPages,
         tierUsage: finalizeTierUsageMetrics(tierUsage),
@@ -652,9 +841,61 @@ class PerceptionActionLoop {
         reason: "TASK_ASSIGNED"
       });
       this.logger(`[loop] state=LOADING intent="${input.intent}" startUrl=${input.startUrl}`);
-      await this.options.cdpClient.navigate(input.startUrl);
+      await this.options.cdpClient.navigate(input.startUrl, navigationTimeoutMs);
 
       currentUrl = await this.options.cdpClient.getCurrentUrl();
+      const navigationOutcome = this.options.cdpClient.getLastNavigationOutcome();
+      const navigationErrorDetail = buildNavigationStructuredErrorDetail({
+        outcome: navigationOutcome,
+        fallbackUrl: currentUrl || input.startUrl
+      });
+      if (navigationErrorDetail) {
+        const activeSubtaskAtNavigationError = getActiveSubtaskIndex();
+        if (activeSubtaskAtNavigationError >= 0) {
+          const subtask = subtasks[activeSubtaskAtNavigationError];
+          subtask.status = "FAILED";
+          subtask.failedStep = 0;
+          subtask.lastUpdatedAt = new Date().toISOString();
+          emitSubtaskStatus(activeSubtaskAtNavigationError, "NAVIGATION_STRUCTURED_ERROR");
+        }
+
+        await resolveStructuredErrorDecision({
+          step: 0,
+          source: "NAVIGATION",
+          reason: "NAVIGATION_STRUCTURED_ERROR",
+          errorDetail: navigationErrorDetail,
+          url: currentUrl || input.startUrl
+        });
+
+        transitionStateIfPossible("FAILED", {
+          step: 0,
+          url: currentUrl || input.startUrl,
+          reason: "NAVIGATION_STRUCTURED_ERROR",
+          errorDetail: navigationErrorDetail
+        });
+        this.logger(
+          `[loop] state=FAILED reason=NAVIGATION_STRUCTURED_ERROR status=${String(
+            navigationErrorDetail.status
+          )} retryable=${navigationErrorDetail.retryable} url=${currentUrl || input.startUrl}`
+        );
+        await runCleanup({
+          finalState: "FAILED",
+          resultStatus: "FAILED",
+          finalUrl: currentUrl || input.startUrl,
+          stepsTaken: 0,
+          errorDetail: navigationErrorDetail
+        });
+        transitionToIdle(0, currentUrl || input.startUrl);
+        return buildTaskResult({
+          status: "FAILED",
+          finalUrl: currentUrl || input.startUrl,
+          stepsTaken: 0,
+          finalAction,
+          finalExecution,
+          errorDetail: navigationErrorDetail
+        });
+      }
+
       transitionState("PERCEIVING", {
         step: 1,
         url: currentUrl,
@@ -675,27 +916,79 @@ class PerceptionActionLoop {
 
         let indexResult: Awaited<ReturnType<GhostTabCdpClient["extractInteractiveElementIndex"]>>;
         let treeEncoding: ToonEncodingResult;
-        if (shouldRefetchAXTree) {
-          indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
-            includeBoundingBoxes: true,
-            charBudget: 8_000
-          });
-          treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
-          cachedPerception = {
+        let axDeficiencySignals: AXDeficiencySignals;
+        let scrollPosition: ScrollPositionSnapshot;
+        try {
+          if (shouldRefetchAXTree) {
+            indexResult = await this.options.cdpClient.extractInteractiveElementIndex({
+              includeBoundingBoxes: true,
+              charBudget: 8_000
+            });
+            treeEncoding = await encodeNormalizedAXTreeForNavigator(indexResult.normalizedAXTree.nodes);
+            cachedPerception = {
+              url: urlAtPerception,
+              indexResult,
+              treeEncoding
+            };
+            pendingAXTreeRefetchReason = "NONE";
+          } else if (cachedPerception) {
+            indexResult = cachedPerception.indexResult;
+            treeEncoding = cachedPerception.treeEncoding;
+          } else {
+            throw new Error("Perception cache invariant violated.");
+          }
+
+          axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
+          scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
+        } catch (error) {
+          const perceptionErrorDetail = createGhostTabTaskErrorDetail({
+            error,
             url: urlAtPerception,
-            indexResult,
-            treeEncoding
-          };
-          pendingAXTreeRefetchReason = "NONE";
-        } else if (cachedPerception) {
-          indexResult = cachedPerception.indexResult;
-          treeEncoding = cachedPerception.treeEncoding;
-        } else {
-          throw new Error("Perception cache invariant violated.");
+            step
+          });
+          const activeSubtaskOnPerceptionError = getActiveSubtaskIndex();
+          if (activeSubtaskOnPerceptionError >= 0) {
+            const subtask = subtasks[activeSubtaskOnPerceptionError];
+            subtask.status = "FAILED";
+            subtask.failedStep = step;
+            subtask.lastUpdatedAt = new Date().toISOString();
+            emitSubtaskStatus(activeSubtaskOnPerceptionError, "PERCEPTION_STRUCTURED_ERROR");
+          }
+
+          await resolveStructuredErrorDecision({
+            step,
+            source: "PERCEPTION",
+            reason: "PERCEPTION_STRUCTURED_ERROR",
+            errorDetail: perceptionErrorDetail,
+            url: urlAtPerception
+          });
+          transitionStateIfPossible("FAILED", {
+            step,
+            url: urlAtPerception,
+            reason: "PERCEPTION_STRUCTURED_ERROR",
+            errorDetail: perceptionErrorDetail
+          });
+          this.logger(
+            `[loop] state=FAILED reason=PERCEPTION_STRUCTURED_ERROR steps=${step} type=${perceptionErrorDetail.type} retryable=${perceptionErrorDetail.retryable} url=${urlAtPerception}`
+          );
+          await runCleanup({
+            finalState: "FAILED",
+            resultStatus: "FAILED",
+            finalUrl: urlAtPerception,
+            stepsTaken: step,
+            errorDetail: perceptionErrorDetail
+          });
+          transitionToIdle(step, urlAtPerception);
+          return buildTaskResult({
+            status: "FAILED",
+            finalUrl: urlAtPerception,
+            stepsTaken: step,
+            finalAction,
+            finalExecution,
+            errorDetail: perceptionErrorDetail
+          });
         }
 
-        const axDeficiencySignals = await this.options.cdpClient.getAXDeficiencySignals();
-        const scrollPosition = await this.options.cdpClient.getScrollPositionSnapshot();
         const belowFoldMarginPx = Math.max(24, Math.round(scrollStepPx * DEFAULT_BELOW_FOLD_MARGIN_RATIO));
         const targetMightBeBelowFold = isTargetLikelyBelowFold(scrollPosition, belowFoldMarginPx);
         const axDeficiencyEvaluation = evaluateAXDeficiency({
@@ -1069,7 +1362,57 @@ class PerceptionActionLoop {
         this.logger(
           `[loop][step ${step}] state=ACTING tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} url=${urlAtPerception}`
         );
-        const execution = await this.options.cdpClient.executeAction(this.toAgentAction(actionToExecute));
+        let execution: ActionExecutionResult;
+        try {
+          execution = await this.options.cdpClient.executeAction(this.toAgentAction(actionToExecute));
+        } catch (error) {
+          const actionErrorDetail = createGhostTabTaskErrorDetail({
+            error,
+            url: urlAtPerception,
+            step
+          });
+          const activeSubtaskOnActionError = getActiveSubtaskIndex();
+          if (activeSubtaskOnActionError >= 0) {
+            const subtask = subtasks[activeSubtaskOnActionError];
+            subtask.status = "FAILED";
+            subtask.failedStep = step;
+            subtask.lastUpdatedAt = new Date().toISOString();
+            emitSubtaskStatus(activeSubtaskOnActionError, "ACTION_STRUCTURED_ERROR");
+          }
+
+          await resolveStructuredErrorDecision({
+            step,
+            source: "ACTION",
+            reason: "ACTION_STRUCTURED_ERROR",
+            errorDetail: actionErrorDetail,
+            url: urlAtPerception
+          });
+          transitionStateIfPossible("FAILED", {
+            step,
+            url: urlAtPerception,
+            reason: "ACTION_STRUCTURED_ERROR",
+            errorDetail: actionErrorDetail
+          });
+          this.logger(
+            `[loop] state=FAILED reason=ACTION_STRUCTURED_ERROR steps=${step} type=${actionErrorDetail.type} retryable=${actionErrorDetail.retryable} url=${urlAtPerception}`
+          );
+          await runCleanup({
+            finalState: "FAILED",
+            resultStatus: "FAILED",
+            finalUrl: urlAtPerception,
+            stepsTaken: step,
+            errorDetail: actionErrorDetail
+          });
+          transitionToIdle(step, urlAtPerception);
+          return buildTaskResult({
+            status: "FAILED",
+            finalUrl: urlAtPerception,
+            stepsTaken: step,
+            finalAction: actionToExecute,
+            finalExecution,
+            errorDetail: actionErrorDetail
+          });
+        }
         finalExecution = execution;
         currentUrl = execution.currentUrl;
         noProgressStreak = isNoProgressStep({
@@ -1364,23 +1707,26 @@ class PerceptionActionLoop {
         url: currentUrl,
         step: lastStep > 0 ? lastStep : null
       });
-      const currentState = stateMachine.getState();
-      if (currentState === "IDLE") {
-        transitionState("LOADING", {
+      if (stateMachine.getState() === "IDLE") {
+        transitionStateIfPossible("LOADING", {
           step: 0,
           url: currentUrl,
           reason: "TASK_RECOVERY"
         });
       }
-
-      if (stateMachine.getState() !== "FAILED" && stateMachine.getState() !== "COMPLETE") {
-        transitionState("FAILED", {
-          step: lastStep > 0 ? lastStep : undefined,
-          url: currentUrl,
-          reason: "UNHANDLED_EXCEPTION",
-          errorDetail
-        });
-      }
+      await resolveStructuredErrorDecision({
+        step: lastStep > 0 ? lastStep : 0,
+        source: "UNHANDLED_EXCEPTION",
+        reason: "UNHANDLED_EXCEPTION",
+        errorDetail,
+        url: currentUrl
+      });
+      transitionStateIfPossible("FAILED", {
+        step: lastStep > 0 ? lastStep : undefined,
+        url: currentUrl,
+        reason: "UNHANDLED_EXCEPTION",
+        errorDetail
+      });
 
       await runCleanup({
         finalState: "FAILED",
@@ -1625,6 +1971,50 @@ function evaluateSubtaskVerification(input: {
       };
     }
   }
+}
+
+function buildNavigationStructuredErrorDetail(input: {
+  outcome: NavigationOutcome | null;
+  fallbackUrl: string;
+}): GhostTabTaskErrorDetail | null {
+  if (!input.outcome) {
+    return null;
+  }
+
+  const status = input.outcome.status;
+  const finalUrl = input.outcome.finalUrl ?? input.fallbackUrl;
+  const hasStatusError = typeof status === "number" && Number.isFinite(status) && status >= 400;
+  const hasCdpError = typeof input.outcome.errorText === "string" && input.outcome.errorText.length > 0;
+  if (!hasStatusError && !hasCdpError) {
+    return null;
+  }
+
+  if (hasCdpError) {
+    return createGhostTabTaskErrorDetail({
+      error: new Error(
+        `Navigation failed for ${input.outcome.requestedUrl}: ${input.outcome.errorText ?? "unknown error"}`
+      ),
+      type: "NETWORK",
+      status,
+      url: finalUrl,
+      step: 0,
+      retryable: true
+    });
+  }
+
+  const retryable = Boolean(status !== null && status >= 500);
+  return createGhostTabTaskErrorDetail({
+    error: new Error(
+      `Navigation returned HTTP ${String(status)}${
+        input.outcome.statusText ? ` ${input.outcome.statusText}` : ""
+      } for ${finalUrl}.`
+    ),
+    type: "NETWORK",
+    status,
+    url: finalUrl,
+    step: 0,
+    retryable
+  });
 }
 
 function tokenizeCondition(condition: string): string[] {

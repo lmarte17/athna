@@ -55,6 +55,7 @@ export interface NavigatorObservationInput {
   taskSubtasks?: NavigatorObservationSubtask[] | null;
   activeSubtask?: NavigatorActiveSubtask | null;
   checkpointState?: NavigatorCheckpointState | null;
+  structuredError?: NavigatorStructuredError | null;
   screenshot?: NavigatorScreenshotInput | null;
 }
 
@@ -91,6 +92,16 @@ export interface NavigatorActiveSubtask {
 export interface NavigatorCheckpointState {
   lastCompletedSubtaskIndex: number;
   currentSubtaskAttempt: number;
+}
+
+export type NavigatorStructuredErrorType = "NETWORK" | "RUNTIME" | "CDP" | "TIMEOUT";
+
+export interface NavigatorStructuredError {
+  type: NavigatorStructuredErrorType;
+  status: number | null;
+  url: string;
+  message: string;
+  retryable: boolean;
 }
 
 export interface NavigatorDecisionRequest {
@@ -202,7 +213,8 @@ function buildNavigatorUserPayload(
     contextWindowStats: input.observation.contextWindowStats ?? null,
     taskSubtasks: input.observation.taskSubtasks ?? [],
     activeSubtask: input.observation.activeSubtask ?? null,
-    checkpointState: input.observation.checkpointState ?? null
+    checkpointState: input.observation.checkpointState ?? null,
+    structuredError: input.observation.structuredError ?? null
   };
 
   if (input.observation.interactiveElementIndex && input.observation.interactiveElementIndex.length > 0) {
@@ -271,6 +283,9 @@ function buildNavigatorPrompt(
     "- taskSubtasks contains ordered subtasks and their statuses for checkpoint-aware execution.",
     "- activeSubtask is the current objective; prioritize actions that satisfy its verification condition.",
     "- checkpointState tracks completed subtasks and current retry attempt.",
+    "- structuredError, when present, is an orchestration-caught failure object: {type,status,url,message,retryable}.",
+    "- If structuredError.retryable=true, prefer a concrete retry/recovery action before FAILED when plausible.",
+    "- If structuredError.retryable=false and no alternative route is clear, return FAILED with concise reasoning.",
     "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",
     "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
     "- Keep reasoning concise.",

@@ -1,0 +1,95 @@
+{
+  "ok": true,
+  "phase": "4.3",
+  "summary": {
+    "scenarioCount": 3,
+    "scenarios": [
+      {
+        "name": "http-404-structured",
+        "status": "FAILED",
+        "stepsTaken": 0,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 0,
+          "finalError": {
+            "type": "NETWORK",
+            "status": 404,
+            "url": "http://127.0.0.1:52177/404",
+            "message": "Navigation returned HTTP 404 Not Found for http://127.0.0.1:52177/404.",
+            "retryable": false,
+            "step": 0
+          },
+          "structuredErrorCount": 1,
+          "expectedMatch": {
+            "source": "NAVIGATION",
+            "type": "NETWORK",
+            "status": 404,
+            "retryable": false
+          },
+          "navigatorDecisionAction": "FAILED",
+          "decisionSource": "NAVIGATOR"
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.3/scenarios/http-404-structured-structured-error-objects-result.json"
+      },
+      {
+        "name": "http-503-retryable",
+        "status": "FAILED",
+        "stepsTaken": 0,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 0,
+          "finalError": {
+            "type": "NETWORK",
+            "status": 503,
+            "url": "http://127.0.0.1:52177/503",
+            "message": "Navigation returned HTTP 503 Service Unavailable for http://127.0.0.1:52177/503.",
+            "retryable": true,
+            "step": 0
+          },
+          "structuredErrorCount": 1,
+          "expectedMatch": {
+            "source": "NAVIGATION",
+            "type": "NETWORK",
+            "status": 503,
+            "retryable": true
+          },
+          "navigatorDecisionAction": "WAIT",
+          "decisionSource": "NAVIGATOR"
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.3/scenarios/http-503-retryable-structured-error-objects-result.json"
+      },
+      {
+        "name": "runtime-eval-fault-structured",
+        "status": "FAILED",
+        "stepsTaken": 1,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 1,
+          "finalError": {
+            "type": "RUNTIME",
+            "status": null,
+            "url": "http://127.0.0.1:52177/runtime-fault",
+            "message": "Runtime.evaluate failed: Uncaught",
+            "retryable": false,
+            "step": 1
+          },
+          "structuredErrorCount": 1,
+          "expectedMatch": {
+            "source": "PERCEPTION",
+            "type": "RUNTIME",
+            "status": null,
+            "retryable": false
+          },
+          "navigatorDecisionAction": "FAILED",
+          "decisionSource": "NAVIGATOR"
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.3/scenarios/runtime-eval-fault-structured-structured-error-objects-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "remoteDebuggingPort": 9333,
+    "headful": false,
+    "localServerPort": 52177
+  }
+}

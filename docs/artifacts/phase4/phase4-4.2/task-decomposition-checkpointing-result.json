@@ -24,7 +24,7 @@
             "isDecomposed": true,
             "impliedStepCount": 8,
             "generatedBy": "HEURISTIC_V1",
-            "generatedAt": "2026-02-22T20:23:23.977Z"
+            "generatedAt": "2026-02-22T20:51:45.215Z"
           }
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.2/scenarios/flight-intent-decomposition-task-decomposition-checkpointing-result.json"
@@ -49,7 +49,7 @@
             "isDecomposed": true,
             "impliedStepCount": 8,
             "generatedBy": "HEURISTIC_V1",
-            "generatedAt": "2026-02-22T20:24:13.898Z"
+            "generatedAt": "2026-02-22T20:52:33.218Z"
           }
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.2/scenarios/checkpoint-retry-pressure-task-decomposition-checkpointing-result.json"

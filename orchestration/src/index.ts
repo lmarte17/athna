@@ -25,6 +25,7 @@ export {
   type GhostTabResourceMetrics,
   type InteractiveElementIndexEntry,
   type InteractiveElementIndexResult,
+  type NavigationOutcome,
   type NormalizedAXNode,
   type ScrollPositionSnapshot,
   type ScreenshotClipRegion,
@@ -49,6 +50,8 @@ export {
   type NavigatorInferenceTier,
   type NavigatorObservationSubtask,
   type NavigatorObservationContextStats,
+  type NavigatorStructuredError,
+  type NavigatorStructuredErrorType,
   type NavigatorObservationInput,
   type NavigatorPromptBudgetEstimate
 } from "./navigator/engine.js";
@@ -89,6 +92,7 @@ export {
   type PerceptionActionTaskResult,
   type RuntimeTaskSubtask,
   type ResolvedPerceptionTier,
+  type StructuredErrorEvent,
   type SubtaskStatusEvent,
   type TierUsageMetrics
 } from "./loop/orchestrator.js";

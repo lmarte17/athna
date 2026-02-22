@@ -18,6 +18,7 @@
     "tiered:smoke": "npm run tiered:smoke -w @ghost-browser/orchestration",
     "context-window:smoke": "npm run context-window:smoke -w @ghost-browser/orchestration",
     "decomposition:smoke": "npm run decomposition:smoke -w @ghost-browser/orchestration",
+    "structured-error:smoke": "npm run structured-error:smoke -w @ghost-browser/orchestration",
     "context:smoke": "npm run context:smoke -w @ghost-browser/orchestration",
     "pool:smoke": "npm run pool:smoke -w @ghost-browser/orchestration",
     "state:smoke": "npm run state:smoke -w @ghost-browser/orchestration",

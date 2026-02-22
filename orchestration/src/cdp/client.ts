@@ -233,6 +233,15 @@ export interface ActionExecutionResult {
   message: string | null;
 }
 
+export interface NavigationOutcome {
+  requestedUrl: string;
+  finalUrl: string | null;
+  status: number | null;
+  statusText: string | null;
+  errorText: string | null;
+  timestamp: string;
+}
+
 export interface GhostTabResourceMetrics {
   source: "CDP_PERFORMANCE";
   timestamp: string;
@@ -259,6 +268,7 @@ export interface GhostViewportSettings {
 
 export interface GhostTabCdpClient {
   navigate(url: string, timeoutMs?: number): Promise<void>;
+  getLastNavigationOutcome(): NavigationOutcome | null;
   extractNormalizedAXTree(
     options?: ExtractNormalizedAXTreeOptions
   ): Promise<ExtractNormalizedAXTreeResult>;
@@ -338,6 +348,7 @@ interface RawAXNode {
 class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   private readonly crashListeners = new Set<(event: GhostTabCrashEvent) => void>();
   private lastCrashEvent: GhostTabCrashEvent | null = null;
+  private lastNavigationOutcome: NavigationOutcome | null = null;
 
   constructor(
     private readonly browser: Browser,
@@ -358,12 +369,39 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   }
 
   async navigate(url: string, timeoutMs = DEFAULT_NAVIGATION_TIMEOUT_MS): Promise<void> {
+    const mainFrameId = await getMainFrameId(this.cdpSession).catch(() => null);
+    const responseTracker = trackMainDocumentResponse(this.cdpSession, {
+      timeoutMs,
+      mainFrameId
+    });
     const navigationResult = await this.cdpSession.send("Page.navigate", { url });
     if (navigationResult.errorText) {
+      responseTracker.cancel();
+      this.lastNavigationOutcome = {
+        requestedUrl: url,
+        finalUrl: await this.getCurrentUrl().catch(() => url),
+        status: null,
+        statusText: null,
+        errorText: navigationResult.errorText,
+        timestamp: new Date().toISOString()
+      };
       throw new Error(`CDP Page.navigate failed for ${url}: ${navigationResult.errorText}`);
     }
 
     await waitForLoadEvent(this.cdpSession, timeoutMs);
+    const response = await responseTracker.promise.catch(() => null);
+    this.lastNavigationOutcome = {
+      requestedUrl: url,
+      finalUrl: await this.getCurrentUrl().catch(() => url),
+      status: response?.status ?? null,
+      statusText: response?.statusText ?? null,
+      errorText: null,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  getLastNavigationOutcome(): NavigationOutcome | null {
+    return this.lastNavigationOutcome;
   }
 
   async extractNormalizedAXTree(
@@ -1286,6 +1324,126 @@ function waitForLoadEvent(cdpSession: CDPSession, timeoutMs: number): Promise<vo
   });
 }
 
+interface MainDocumentResponseEvent {
+  frameId: string | null;
+  status: number | null;
+  statusText: string | null;
+}
+
+interface MainDocumentResponseTracker {
+  promise: Promise<MainDocumentResponseEvent | null>;
+  cancel: () => void;
+}
+
+function trackMainDocumentResponse(
+  cdpSession: CDPSession,
+  input: {
+    timeoutMs: number;
+    mainFrameId: string | null;
+  }
+): MainDocumentResponseTracker {
+  let latest: MainDocumentResponseEvent | null = null;
+  let settled = false;
+  let timeoutHandle: NodeJS.Timeout | null = null;
+  let loadHandle: NodeJS.Timeout | null = null;
+  let resolvePromise: ((value: MainDocumentResponseEvent | null) => void) | null = null;
+
+  const onResponse = (event: unknown): void => {
+    const normalized = normalizeMainDocumentResponseEvent(event);
+    if (!normalized) {
+      return;
+    }
+    if (input.mainFrameId && normalized.frameId && normalized.frameId !== input.mainFrameId) {
+      return;
+    }
+    latest = normalized;
+  };
+
+  const cleanup = (): void => {
+    cdpSession.off("Network.responseReceived", onResponse);
+    cdpSession.off("Page.loadEventFired", onLoadEvent);
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+      timeoutHandle = null;
+    }
+    if (loadHandle) {
+      clearTimeout(loadHandle);
+      loadHandle = null;
+    }
+  };
+
+  const finish = (value: MainDocumentResponseEvent | null): void => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    cleanup();
+    resolvePromise?.(value);
+  };
+
+  const onLoadEvent = (): void => {
+    if (settled) {
+      return;
+    }
+    // Allow responseReceived to flush before resolving.
+    loadHandle = setTimeout(() => {
+      finish(latest);
+    }, 25);
+  };
+
+  const promise = new Promise<MainDocumentResponseEvent | null>((resolve) => {
+    resolvePromise = resolve;
+    cdpSession.on("Network.responseReceived", onResponse);
+    cdpSession.on("Page.loadEventFired", onLoadEvent);
+    timeoutHandle = setTimeout(() => {
+      finish(latest);
+    }, Math.max(250, input.timeoutMs));
+  });
+
+  return {
+    promise,
+    cancel: () => finish(latest)
+  };
+}
+
+function normalizeMainDocumentResponseEvent(event: unknown): MainDocumentResponseEvent | null {
+  if (typeof event !== "object" || event === null) {
+    return null;
+  }
+
+  const candidate = event as Record<string, unknown>;
+  if (candidate.type !== "Document") {
+    return null;
+  }
+
+  const response =
+    typeof candidate.response === "object" && candidate.response !== null
+      ? (candidate.response as Record<string, unknown>)
+      : null;
+  if (!response) {
+    return null;
+  }
+
+  return {
+    frameId: typeof candidate.frameId === "string" ? candidate.frameId : null,
+    status:
+      typeof response.status === "number" && Number.isFinite(response.status) ? response.status : null,
+    statusText: typeof response.statusText === "string" ? response.statusText : null
+  };
+}
+
+async function getMainFrameId(cdpSession: CDPSession): Promise<string | null> {
+  const frameTree = (await cdpSession.send("Page.getFrameTree")) as {
+    frameTree?: {
+      frame?: {
+        id?: unknown;
+      };
+    };
+  };
+  const frameId = frameTree?.frameTree?.frame?.id;
+  return typeof frameId === "string" && frameId.trim().length > 0 ? frameId : null;
+}
+
 function resolveCaptureScreenshotOptions(
   options: CaptureScreenshotOptions
 ): ResolvedCaptureScreenshotOptions {
@@ -2033,6 +2191,7 @@ export async function connectToGhostTabCdp(
   });
   const cdpSession = await page.context().newCDPSession(page);
   await cdpSession.send("Page.enable");
+  await cdpSession.send("Network.enable");
   await cdpSession.send("Runtime.enable");
   await cdpSession.send("DOM.enable");
   await cdpSession.send("Accessibility.enable");

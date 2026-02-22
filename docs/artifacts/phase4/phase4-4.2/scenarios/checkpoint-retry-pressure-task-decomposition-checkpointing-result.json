@@ -1,5 +1,5 @@
 {
-  "taskId": "task-1771791853897",
+  "taskId": "task-1771793553217",
   "contextId": null,
   "status": "FAILED",
   "intent": "Open flights search, fill origin and destination, set dates, apply cheapest filter, extract top fare, and verify final details.",
@@ -16,16 +16,16 @@
       "inferredAction": {
         "action": "TYPE",
         "target": null,
-        "text": "https://www.google.com/flights",
-        "confidence": 1,
-        "reasoning": "Initial step, current page is blank, need to navigate to a flight search website to open the flight-search experience. Google Flights is a suitable starting point."
+        "text": "flight search",
+        "confidence": 0.85,
+        "reasoning": "On a blank page, to 'Open the flight-search experience' (active subtask), the most logical initial action is to type a search query. Since no specific input field is present, a general type action is used to initiate a search."
       },
       "action": {
         "action": "TYPE",
         "target": null,
-        "text": "https://www.google.com/flights",
-        "confidence": 1,
-        "reasoning": "Initial step, current page is blank, need to navigate to a flight search website to open the flight-search experience. Google Flights is a suitable starting point."
+        "text": "flight search",
+        "confidence": 0.85,
+        "reasoning": "On a blank page, to 'Open the flight-search experience' (active subtask), the most logical initial action is to type a search query. Since no specific input field is present, a general type action is used to initiate a search."
       },
       "execution": {
         "status": "acted",
@@ -92,8 +92,8 @@
       "normalizedCharCount": 186,
       "navigatorNormalizedTreeCharCount": 293,
       "navigatorObservationCharCount": 1837,
-      "tier1PromptCharCount": 3773,
-      "tier1EstimatedPromptTokens": 944,
+      "tier1PromptCharCount": 4126,
+      "tier1EstimatedPromptTokens": 1032,
       "tier2PromptCharCount": 0,
       "tier2EstimatedPromptTokens": 0,
       "decompositionUsed": true,
@@ -113,7 +113,7 @@
       "contextSummaryCharCount": 0,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-22T20:24:17.696Z"
+      "timestamp": "2026-02-22T20:52:52.465Z"
     },
     {
       "step": 2,
@@ -122,126 +122,18 @@
       "state": "ACTING",
       "currentUrl": "about:blank",
       "inferredAction": {
-        "action": "WAIT",
-        "target": null,
-        "text": "5000",
-        "confidence": 1,
-        "reasoning": "Waiting for the navigation to 'https://www.google.com/flights' to complete, as the current URL is still 'about:blank' after the previous TYPE action."
-      },
-      "action": {
-        "action": "WAIT",
-        "target": null,
-        "text": "5000",
-        "confidence": 1,
-        "reasoning": "Waiting for the navigation to 'https://www.google.com/flights' to complete, as the current URL is still 'about:blank' after the previous TYPE action."
-      },
-      "execution": {
-        "status": "acted",
-        "action": "WAIT",
-        "currentUrl": "about:blank",
-        "navigationObserved": false,
-        "domMutationObserved": false,
-        "significantDomMutationObserved": false,
-        "domMutationSummary": {
-          "mutationObserved": false,
-          "significantMutationObserved": false,
-          "addedOrRemovedNodeCount": 0,
-          "interactiveRoleMutationCount": 0,
-          "childListMutationCount": 0,
-          "attributeMutationCount": 0
-        },
-        "extractedData": null,
-        "message": "Waited 5000ms"
-      },
-      "tiersAttempted": [
-        "TIER_1_AX"
-      ],
-      "resolvedTier": "TIER_1_AX",
-      "escalationReason": null,
-      "axDeficientDetected": false,
-      "axDeficiencySignals": {
-        "readyState": "complete",
-        "isLoadComplete": true,
-        "hasSignificantVisualContent": false,
-        "visibleElementCount": 0,
-        "textCharCount": 0,
-        "mediaElementCount": 0,
-        "domInteractiveCandidateCount": 0
-      },
-      "axTreeRefetched": true,
-      "axTreeRefetchReason": "SIGNIFICANT_DOM_MUTATION",
-      "scrollPosition": {
-        "scrollY": 0,
-        "viewportHeight": 900,
-        "documentHeight": 900,
-        "maxScrollY": 0,
-        "remainingScrollPx": 0,
-        "atTop": true,
-        "atBottom": true
-      },
-      "targetMightBeBelowFold": false,
-      "scrollCount": 0,
-      "noProgressStreak": 1,
-      "postActionSignificantDomMutationObserved": false,
-      "postActionMutationSummary": {
-        "mutationObserved": false,
-        "significantMutationObserved": false,
-        "addedOrRemovedNodeCount": 0,
-        "interactiveRoleMutationCount": 0,
-        "childListMutationCount": 0,
-        "attributeMutationCount": 0
-      },
-      "domExtractionAttempted": false,
-      "domExtractionElementCount": 0,
-      "domBypassUsed": false,
-      "domBypassMatchedText": null,
-      "interactiveElementCount": 0,
-      "normalizedNodeCount": 1,
-      "normalizedCharCount": 186,
-      "navigatorNormalizedTreeCharCount": 293,
-      "navigatorObservationCharCount": 2201,
-      "tier1PromptCharCount": 4138,
-      "tier1EstimatedPromptTokens": 1035,
-      "tier2PromptCharCount": 0,
-      "tier2EstimatedPromptTokens": 0,
-      "decompositionUsed": true,
-      "decompositionImpliedStepCount": 8,
-      "activeSubtaskId": "subtask-1",
-      "activeSubtaskIntent": "Open the flight-search experience.",
-      "activeSubtaskStatus": "IN_PROGRESS",
-      "activeSubtaskAttempt": 2,
-      "activeSubtaskIndex": 1,
-      "totalSubtasks": 5,
-      "checkpointLastCompletedSubtaskIndex": -1,
-      "checkpointCurrentSubtaskAttempt": 2,
-      "contextRecentPairCount": 1,
-      "contextSummarizedPairCount": 0,
-      "contextTotalPairCount": 1,
-      "contextSummaryIncluded": false,
-      "contextSummaryCharCount": 0,
-      "promptTokenAlertTriggered": false,
-      "usedToonEncoding": true,
-      "timestamp": "2026-02-22T20:24:26.666Z"
-    },
-    {
-      "step": 3,
-      "urlAtPerception": "about:blank",
-      "urlAfterAction": "about:blank",
-      "state": "ACTING",
-      "currentUrl": "about:blank",
-      "inferredAction": {
         "action": "TYPE",
         "target": null,
-        "text": "https://www.google.com/flights",
-        "confidence": 1,
-        "reasoning": "Current URL is still 'about:blank' after previous navigation attempt and wait. Re-attempting to navigate to Google Flights to open the flight-search experience."
+        "text": "flights.google.com",
+        "confidence": 0.9,
+        "reasoning": "The previous 'TYPE \"flight search\"' action on 'about:blank' did not result in navigation to a flight search experience. To progress the active subtask 'Open the flight-search experience' (attempt 2), the most direct and reliable approach is to type a known flight search website's URL."
       },
       "action": {
         "action": "TYPE",
         "target": null,
-        "text": "https://www.google.com/flights",
-        "confidence": 1,
-        "reasoning": "Current URL is still 'about:blank' after previous navigation attempt and wait. Re-attempting to navigate to Google Flights to open the flight-search experience."
+        "text": "flights.google.com",
+        "confidence": 0.9,
+        "reasoning": "The previous 'TYPE \"flight search\"' action on 'about:blank' did not result in navigation to a flight search experience. To progress the active subtask 'Open the flight-search experience' (attempt 2), the most direct and reliable approach is to type a known flight search website's URL."
       },
       "execution": {
         "status": "acted",
@@ -307,9 +199,117 @@
       "normalizedNodeCount": 1,
       "normalizedCharCount": 186,
       "navigatorNormalizedTreeCharCount": 293,
-      "navigatorObservationCharCount": 2527,
-      "tier1PromptCharCount": 4464,
-      "tier1EstimatedPromptTokens": 1116,
+      "navigatorObservationCharCount": 2250,
+      "tier1PromptCharCount": 4540,
+      "tier1EstimatedPromptTokens": 1135,
+      "tier2PromptCharCount": 0,
+      "tier2EstimatedPromptTokens": 0,
+      "decompositionUsed": true,
+      "decompositionImpliedStepCount": 8,
+      "activeSubtaskId": "subtask-1",
+      "activeSubtaskIntent": "Open the flight-search experience.",
+      "activeSubtaskStatus": "IN_PROGRESS",
+      "activeSubtaskAttempt": 2,
+      "activeSubtaskIndex": 1,
+      "totalSubtasks": 5,
+      "checkpointLastCompletedSubtaskIndex": -1,
+      "checkpointCurrentSubtaskAttempt": 2,
+      "contextRecentPairCount": 1,
+      "contextSummarizedPairCount": 0,
+      "contextTotalPairCount": 1,
+      "contextSummaryIncluded": false,
+      "contextSummaryCharCount": 0,
+      "promptTokenAlertTriggered": false,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-22T20:53:03.686Z"
+    },
+    {
+      "step": 3,
+      "urlAtPerception": "about:blank",
+      "urlAfterAction": "about:blank",
+      "state": "ACTING",
+      "currentUrl": "about:blank",
+      "inferredAction": {
+        "action": "TYPE",
+        "target": null,
+        "text": "flights.google.com",
+        "confidence": 0.9,
+        "reasoning": "Previous attempts to navigate to a flight search page from 'about:blank' via 'TYPE' actions did not result in navigation. To achieve the active subtask 'Open the flight-search experience' (attempt 3), typing a direct flight search URL like 'flights.google.com' is the most direct remaining approach, assuming the environment will process this as a navigation request."
+      },
+      "action": {
+        "action": "TYPE",
+        "target": null,
+        "text": "flights.google.com",
+        "confidence": 0.9,
+        "reasoning": "Previous attempts to navigate to a flight search page from 'about:blank' via 'TYPE' actions did not result in navigation. To achieve the active subtask 'Open the flight-search experience' (attempt 3), typing a direct flight search URL like 'flights.google.com' is the most direct remaining approach, assuming the environment will process this as a navigation request."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "TYPE",
+        "currentUrl": "about:blank",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_1_AX"
+      ],
+      "resolvedTier": "TIER_1_AX",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": false,
+        "visibleElementCount": 0,
+        "textCharCount": 0,
+        "mediaElementCount": 0,
+        "domInteractiveCandidateCount": 0
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "SIGNIFICANT_DOM_MUTATION",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 900,
+        "maxScrollY": 0,
+        "remainingScrollPx": 0,
+        "atTop": true,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
+      "scrollCount": 0,
+      "noProgressStreak": 1,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": false,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 0,
+      "normalizedNodeCount": 1,
+      "normalizedCharCount": 186,
+      "navigatorNormalizedTreeCharCount": 293,
+      "navigatorObservationCharCount": 2730,
+      "tier1PromptCharCount": 5020,
+      "tier1EstimatedPromptTokens": 1255,
       "tier2PromptCharCount": 0,
       "tier2EstimatedPromptTokens": 0,
       "decompositionUsed": true,
@@ -329,14 +329,14 @@
       "contextSummaryCharCount": 0,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-22T20:24:33.751Z"
+      "timestamp": "2026-02-22T20:53:12.153Z"
     }
   ],
   "decomposition": {
     "isDecomposed": true,
     "impliedStepCount": 8,
     "generatedBy": "HEURISTIC_V1",
-    "generatedAt": "2026-02-22T20:24:13.898Z"
+    "generatedAt": "2026-02-22T20:52:33.218Z"
   },
   "subtasks": [
     {
@@ -351,7 +351,7 @@
       "attemptCount": 3,
       "completedStep": null,
       "failedStep": 3,
-      "lastUpdatedAt": "2026-02-22T20:24:33.751Z"
+      "lastUpdatedAt": "2026-02-22T20:53:12.153Z"
     },
     {
       "id": "subtask-2",
@@ -365,7 +365,7 @@
       "attemptCount": 0,
       "completedStep": null,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-22T20:24:13.898Z"
+      "lastUpdatedAt": "2026-02-22T20:52:33.218Z"
     },
     {
       "id": "subtask-3",
@@ -379,7 +379,7 @@
       "attemptCount": 0,
       "completedStep": null,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-22T20:24:13.898Z"
+      "lastUpdatedAt": "2026-02-22T20:52:33.218Z"
     },
     {
       "id": "subtask-4",
@@ -393,7 +393,7 @@
       "attemptCount": 0,
       "completedStep": null,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-22T20:24:13.898Z"
+      "lastUpdatedAt": "2026-02-22T20:52:33.218Z"
     },
     {
       "id": "subtask-5",
@@ -407,7 +407,7 @@
       "attemptCount": 0,
       "completedStep": null,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-22T20:24:13.898Z"
+      "lastUpdatedAt": "2026-02-22T20:52:33.218Z"
     }
   ],
   "checkpoint": {
@@ -417,7 +417,7 @@
   },
   "subtaskStatusTimeline": [
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -429,10 +429,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-2",
       "subtaskIntent": "Populate departure and destination locations.",
@@ -444,10 +444,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-3",
       "subtaskIntent": "Set the requested travel dates and options.",
@@ -459,10 +459,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-4",
       "subtaskIntent": "Run search and refine toward lowest fare options.",
@@ -474,10 +474,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-5",
       "subtaskIntent": "Extract the cheapest itinerary details.",
@@ -489,10 +489,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -504,10 +504,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:FAILED",
-      "timestamp": "2026-02-22T20:24:17.696Z"
+      "timestamp": "2026-02-22T20:52:52.465Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -519,10 +519,10 @@
       "attempt": 2,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:RETRY_FROM_CHECKPOINT",
-      "timestamp": "2026-02-22T20:24:17.696Z"
+      "timestamp": "2026-02-22T20:52:52.465Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -534,10 +534,10 @@
       "attempt": 2,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:FAILED",
-      "timestamp": "2026-02-22T20:24:26.666Z"
+      "timestamp": "2026-02-22T20:53:03.686Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -549,10 +549,10 @@
       "attempt": 3,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:RETRY_FROM_CHECKPOINT",
-      "timestamp": "2026-02-22T20:24:26.666Z"
+      "timestamp": "2026-02-22T20:53:03.686Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -564,9 +564,10 @@
       "attempt": 3,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:FAILED",
-      "timestamp": "2026-02-22T20:24:33.751Z"
+      "timestamp": "2026-02-22T20:53:12.153Z"
     }
   ],
+  "structuredErrors": [],
   "escalations": [],
   "axDeficientPages": [],
   "tierUsage": {
@@ -589,8 +590,8 @@
     "summaryRefreshCount": 0,
     "latestSummary": null,
     "summaryCharCount": 0,
-    "maxPromptCharCount": 4464,
-    "maxEstimatedPromptTokens": 1116,
+    "maxPromptCharCount": 5020,
+    "maxEstimatedPromptTokens": 1255,
     "promptTokenAlertThreshold": 12000,
     "tokenAlertCount": 0,
     "tokenAlerts": []
@@ -599,7 +600,7 @@
     "action": "FAILED",
     "target": null,
     "text": "Aborted after 1 no-progress steps at about:blank.",
-    "confidence": 1,
+    "confidence": 0.9,
     "reasoning": "Loop guard triggered because actions produced no navigation, DOM mutation, or URL change."
   },
   "finalExecution": {
@@ -630,121 +631,121 @@
   },
   "stateTransitions": [
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "IDLE",
       "to": "LOADING",
-      "timestamp": "2026-02-22T20:24:13.898Z",
+      "timestamp": "2026-02-22T20:52:33.218Z",
       "step": 0,
       "url": "about:blank",
       "reason": "TASK_ASSIGNED",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "LOADING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-22T20:24:13.904Z",
+      "timestamp": "2026-02-22T20:52:33.256Z",
       "step": 1,
       "url": "about:blank",
       "reason": "NAVIGATION_COMPLETE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-22T20:24:13.907Z",
+      "timestamp": "2026-02-22T20:52:33.259Z",
       "step": 1,
       "url": "about:blank",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-22T20:24:15.173Z",
+      "timestamp": "2026-02-22T20:52:49.949Z",
       "step": 1,
       "url": "about:blank",
       "reason": "ACTION_TYPE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-22T20:24:17.696Z",
+      "timestamp": "2026-02-22T20:52:52.465Z",
       "step": 2,
       "url": "about:blank",
       "reason": "SUBTASK_RETRY",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-22T20:24:17.702Z",
+      "timestamp": "2026-02-22T20:52:52.470Z",
       "step": 2,
       "url": "about:blank",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-22T20:24:19.159Z",
+      "timestamp": "2026-02-22T20:53:01.169Z",
       "step": 2,
       "url": "about:blank",
-      "reason": "ACTION_WAIT",
+      "reason": "ACTION_TYPE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-22T20:24:26.666Z",
+      "timestamp": "2026-02-22T20:53:03.686Z",
       "step": 3,
       "url": "about:blank",
       "reason": "SUBTASK_RETRY",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-22T20:24:26.671Z",
+      "timestamp": "2026-02-22T20:53:03.692Z",
       "step": 3,
       "url": "about:blank",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-22T20:24:31.226Z",
+      "timestamp": "2026-02-22T20:53:09.636Z",
       "step": 3,
       "url": "about:blank",
       "reason": "ACTION_TYPE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "ACTING",
       "to": "FAILED",
-      "timestamp": "2026-02-22T20:24:33.751Z",
+      "timestamp": "2026-02-22T20:53:12.154Z",
       "step": 3,
       "url": "about:blank",
       "reason": "NO_PROGRESS_LOOP_GUARD",
@@ -758,11 +759,11 @@
       }
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "from": "FAILED",
       "to": "IDLE",
-      "timestamp": "2026-02-22T20:24:33.751Z",
+      "timestamp": "2026-02-22T20:53:12.154Z",
       "step": 3,
       "url": "about:blank",
       "reason": "TASK_CONTEXT_CLEANUP",
@@ -789,7 +790,7 @@
   },
   "subtaskStatusCallbackEvents": [
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -801,10 +802,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-2",
       "subtaskIntent": "Populate departure and destination locations.",
@@ -816,10 +817,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-3",
       "subtaskIntent": "Set the requested travel dates and options.",
@@ -831,10 +832,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-4",
       "subtaskIntent": "Run search and refine toward lowest fare options.",
@@ -846,10 +847,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-5",
       "subtaskIntent": "Extract the cheapest itinerary details.",
@@ -861,10 +862,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-22T20:24:13.898Z"
+      "timestamp": "2026-02-22T20:52:33.218Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -876,10 +877,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:FAILED",
-      "timestamp": "2026-02-22T20:24:17.696Z"
+      "timestamp": "2026-02-22T20:52:52.465Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -891,10 +892,10 @@
       "attempt": 2,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:RETRY_FROM_CHECKPOINT",
-      "timestamp": "2026-02-22T20:24:17.696Z"
+      "timestamp": "2026-02-22T20:52:52.465Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -906,10 +907,10 @@
       "attempt": 2,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:FAILED",
-      "timestamp": "2026-02-22T20:24:26.666Z"
+      "timestamp": "2026-02-22T20:53:03.686Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -921,10 +922,10 @@
       "attempt": 3,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:RETRY_FROM_CHECKPOINT",
-      "timestamp": "2026-02-22T20:24:26.666Z"
+      "timestamp": "2026-02-22T20:53:03.686Z"
     },
     {
-      "taskId": "task-1771791853897",
+      "taskId": "task-1771793553217",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Open the flight-search experience.",
@@ -936,7 +937,7 @@
       "attempt": 3,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "NO_PROGRESS_LOOP_GUARD:FAILED",
-      "timestamp": "2026-02-22T20:24:33.751Z"
+      "timestamp": "2026-02-22T20:53:12.153Z"
     }
   ],
   "summary": {
@@ -955,7 +956,7 @@
       "isDecomposed": true,
       "impliedStepCount": 8,
       "generatedBy": "HEURISTIC_V1",
-      "generatedAt": "2026-02-22T20:24:13.898Z"
+      "generatedAt": "2026-02-22T20:52:33.218Z"
     }
   }
 }

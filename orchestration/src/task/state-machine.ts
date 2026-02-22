@@ -163,11 +163,12 @@ export function createGhostTabTaskErrorDetail(input: {
   url?: string | null;
   step?: number | null;
   status?: number | null;
+  type?: GhostTabTaskErrorType;
   retryable?: boolean;
 }): GhostTabTaskErrorDetail {
   const message =
     input.error instanceof Error ? input.error.message : `Unknown failure: ${String(input.error)}`;
-  const type = classifyTaskErrorType(input.error);
+  const type = input.type ?? classifyTaskErrorType(input.error);
   const retryable =
     typeof input.retryable === "boolean"
       ? input.retryable
