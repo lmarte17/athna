@@ -650,6 +650,7 @@ function validateTaskErrorPayload(value: unknown, field: string, details: string
   validateNullableString(value.url, `${field}.url`, details);
   validateNonEmptyString(value.message, `${field}.message`, details);
   validateOptionalBoolean(value.retryable, `${field}.retryable`, details, false);
+  validateNullableString(value.errorType, `${field}.errorType`, details);
   validateNullableFiniteNumber(value.step, `${field}.step`, details);
 }
 

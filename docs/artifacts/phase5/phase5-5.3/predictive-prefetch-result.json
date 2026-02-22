@@ -1,0 +1,973 @@
+{
+  "ok": true,
+  "phase": "5.3",
+  "harnessOrigin": "http://127.0.0.1:59805",
+  "runCount": 4,
+  "traceSettleMs": 80,
+  "threshold": {
+    "minExpectedTtfbReductionMs": 150,
+    "maxExpectedTtfbReductionMs": 300,
+    "observedMedianReductionMs": 221.5
+  },
+  "baseline": {
+    "medianTtfbMs": 227,
+    "ttfbValuesMs": [
+      226,
+      225,
+      228,
+      231
+    ],
+    "runs": [
+      {
+        "runId": "baseline-1-1771799500814",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=baseline-1-1771799500814",
+        "targetUrl": "http://127.0.0.1:59805/target?run=baseline-1-1771799500814",
+        "usePrefetch": false,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=baseline-1-1771799500814",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=baseline-1-1771799500814",
+        "prefetchResult": null,
+        "ttfbMs": 226,
+        "navigationDurationMs": 339,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=baseline-1-1771799500814",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:41.080Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      },
+      {
+        "runId": "baseline-2-1771799501576",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=baseline-2-1771799501576",
+        "targetUrl": "http://127.0.0.1:59805/target?run=baseline-2-1771799501576",
+        "usePrefetch": false,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=baseline-2-1771799501576",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=baseline-2-1771799501576",
+        "prefetchResult": null,
+        "ttfbMs": 225,
+        "navigationDurationMs": 338,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=baseline-2-1771799501576",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:41.838Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      },
+      {
+        "runId": "baseline-3-1771799502336",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=baseline-3-1771799502336",
+        "targetUrl": "http://127.0.0.1:59805/target?run=baseline-3-1771799502336",
+        "usePrefetch": false,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=baseline-3-1771799502336",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=baseline-3-1771799502336",
+        "prefetchResult": null,
+        "ttfbMs": 228,
+        "navigationDurationMs": 344,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=baseline-3-1771799502336",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:42.613Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      },
+      {
+        "runId": "baseline-4-1771799503126",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=baseline-4-1771799503126",
+        "targetUrl": "http://127.0.0.1:59805/target?run=baseline-4-1771799503126",
+        "usePrefetch": false,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=baseline-4-1771799503126",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=baseline-4-1771799503126",
+        "prefetchResult": null,
+        "ttfbMs": 231,
+        "navigationDurationMs": 354,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=baseline-4-1771799503126",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:43.399Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      }
+    ]
+  },
+  "prefetched": {
+    "medianTtfbMs": 5.5,
+    "ttfbValuesMs": [
+      4,
+      7,
+      5,
+      6
+    ],
+    "runs": [
+      {
+        "runId": "prefetch-1-1771799501193",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=prefetch-1-1771799501193",
+        "targetUrl": "http://127.0.0.1:59805/target?run=prefetch-1-1771799501193",
+        "usePrefetch": true,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=prefetch-1-1771799501193",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=prefetch-1-1771799501193",
+        "prefetchResult": {
+          "requestedUrl": "http://127.0.0.1:59805/target?run=prefetch-1-1771799501193",
+          "normalizedUrl": "http://127.0.0.1:59805/target?run=prefetch-1-1771799501193",
+          "status": "PREFETCHED",
+          "startedAt": "2026-02-22T22:31:41.231Z",
+          "finishedAt": "2026-02-22T22:31:41.456Z",
+          "durationMs": 225,
+          "reason": "PREFETCH_HEAD_REQUEST_COMPLETED",
+          "errorMessage": null
+        },
+        "ttfbMs": 4,
+        "navigationDurationMs": 119,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=prefetch-1-1771799501193",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:41.461Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      },
+      {
+        "runId": "prefetch-2-1771799501951",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=prefetch-2-1771799501951",
+        "targetUrl": "http://127.0.0.1:59805/target?run=prefetch-2-1771799501951",
+        "usePrefetch": true,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=prefetch-2-1771799501951",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=prefetch-2-1771799501951",
+        "prefetchResult": {
+          "requestedUrl": "http://127.0.0.1:59805/target?run=prefetch-2-1771799501951",
+          "normalizedUrl": "http://127.0.0.1:59805/target?run=prefetch-2-1771799501951",
+          "status": "PREFETCHED",
+          "startedAt": "2026-02-22T22:31:41.986Z",
+          "finishedAt": "2026-02-22T22:31:42.211Z",
+          "durationMs": 225,
+          "reason": "PREFETCH_HEAD_REQUEST_COMPLETED",
+          "errorMessage": null
+        },
+        "ttfbMs": 7,
+        "navigationDurationMs": 124,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=prefetch-2-1771799501951",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:42.219Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      },
+      {
+        "runId": "prefetch-3-1771799502729",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=prefetch-3-1771799502729",
+        "targetUrl": "http://127.0.0.1:59805/target?run=prefetch-3-1771799502729",
+        "usePrefetch": true,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=prefetch-3-1771799502729",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=prefetch-3-1771799502729",
+        "prefetchResult": {
+          "requestedUrl": "http://127.0.0.1:59805/target?run=prefetch-3-1771799502729",
+          "normalizedUrl": "http://127.0.0.1:59805/target?run=prefetch-3-1771799502729",
+          "status": "PREFETCHED",
+          "startedAt": "2026-02-22T22:31:42.781Z",
+          "finishedAt": "2026-02-22T22:31:43.005Z",
+          "durationMs": 224,
+          "reason": "PREFETCH_HEAD_REQUEST_COMPLETED",
+          "errorMessage": null
+        },
+        "ttfbMs": 5,
+        "navigationDurationMs": 120,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=prefetch-3-1771799502729",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:43.010Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      },
+      {
+        "runId": "prefetch-4-1771799503522",
+        "sourceUrl": "http://127.0.0.1:59805/source?run=prefetch-4-1771799503522",
+        "targetUrl": "http://127.0.0.1:59805/target?run=prefetch-4-1771799503522",
+        "usePrefetch": true,
+        "urlBeforePrefetch": "http://127.0.0.1:59805/source?run=prefetch-4-1771799503522",
+        "urlAfterPrefetch": "http://127.0.0.1:59805/source?run=prefetch-4-1771799503522",
+        "prefetchResult": {
+          "requestedUrl": "http://127.0.0.1:59805/target?run=prefetch-4-1771799503522",
+          "normalizedUrl": "http://127.0.0.1:59805/target?run=prefetch-4-1771799503522",
+          "status": "PREFETCHED",
+          "startedAt": "2026-02-22T22:31:43.563Z",
+          "finishedAt": "2026-02-22T22:31:43.787Z",
+          "durationMs": 224,
+          "reason": "PREFETCH_HEAD_REQUEST_COMPLETED",
+          "errorMessage": null
+        },
+        "ttfbMs": 6,
+        "navigationDurationMs": 124,
+        "trace": {
+          "entries": [
+            {
+              "url": "http://127.0.0.1:59805/target?run=prefetch-4-1771799503522",
+              "resourceType": "Document",
+              "status": 200,
+              "connectionId": "395",
+              "remoteIPAddress": "127.0.0.1",
+              "remotePort": 59805,
+              "protocol": "http/1.1",
+              "timestamp": "2026-02-22T22:31:43.794Z"
+            }
+          ],
+          "uniqueConnectionIds": [
+            "395"
+          ],
+          "uniqueRemoteEndpoints": [
+            "127.0.0.1:59805"
+          ]
+        }
+      }
+    ]
+  },
+  "loopIntegration": {
+    "runId": "loop-1771799503912",
+    "startUrl": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+    "expectedTargetUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+    "result": {
+      "taskId": "task-1771799503913",
+      "contextId": null,
+      "status": "DONE",
+      "intent": "open the loop target link",
+      "startUrl": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+      "finalUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+      "stepsTaken": 2,
+      "history": [
+        {
+          "step": 1,
+          "urlAtPerception": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+          "urlAfterAction": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "state": "ACTING",
+          "currentUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "inferredAction": {
+            "action": "CLICK",
+            "target": {
+              "x": 59,
+              "y": 17
+            },
+            "text": "Click the loop target link",
+            "confidence": 0.93,
+            "reasoning": "Single visible loop target link"
+          },
+          "action": {
+            "action": "CLICK",
+            "target": {
+              "x": 59,
+              "y": 17
+            },
+            "text": "Click the loop target link",
+            "confidence": 0.93,
+            "reasoning": "Single visible loop target link"
+          },
+          "execution": {
+            "status": "acted",
+            "action": "CLICK",
+            "currentUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+            "navigationObserved": false,
+            "domMutationObserved": false,
+            "significantDomMutationObserved": false,
+            "domMutationSummary": {
+              "mutationObserved": false,
+              "significantMutationObserved": false,
+              "addedOrRemovedNodeCount": 0,
+              "interactiveRoleMutationCount": 0,
+              "childListMutationCount": 0,
+              "attributeMutationCount": 0
+            },
+            "extractedData": null,
+            "message": null
+          },
+          "tiersAttempted": [
+            "TIER_1_AX"
+          ],
+          "resolvedTier": "TIER_1_AX",
+          "escalationReason": null,
+          "axDeficientDetected": false,
+          "axDeficiencySignals": {
+            "readyState": "complete",
+            "isLoadComplete": true,
+            "hasSignificantVisualContent": false,
+            "visibleElementCount": 1,
+            "textCharCount": 14,
+            "mediaElementCount": 0,
+            "domInteractiveCandidateCount": 1
+          },
+          "axTreeRefetched": true,
+          "axTreeRefetchReason": "INITIAL",
+          "scrollPosition": {
+            "scrollY": 0,
+            "viewportHeight": 900,
+            "documentHeight": 900,
+            "maxScrollY": 0,
+            "remainingScrollPx": 0,
+            "atTop": true,
+            "atBottom": true
+          },
+          "targetMightBeBelowFold": false,
+          "scrollCount": 0,
+          "noProgressStreak": 0,
+          "postActionSignificantDomMutationObserved": false,
+          "postActionMutationSummary": {
+            "mutationObserved": false,
+            "significantMutationObserved": false,
+            "addedOrRemovedNodeCount": 0,
+            "interactiveRoleMutationCount": 0,
+            "childListMutationCount": 0,
+            "attributeMutationCount": 0
+          },
+          "domExtractionAttempted": false,
+          "domExtractionElementCount": 0,
+          "domBypassUsed": false,
+          "domBypassMatchedText": null,
+          "interactiveElementCount": 1,
+          "normalizedNodeCount": 3,
+          "normalizedCharCount": 634,
+          "navigatorNormalizedTreeCharCount": 513,
+          "navigatorObservationCharCount": 1485,
+          "tier1PromptCharCount": 3672,
+          "tier1EstimatedPromptTokens": 918,
+          "tier2PromptCharCount": 0,
+          "tier2EstimatedPromptTokens": 0,
+          "decompositionUsed": false,
+          "decompositionImpliedStepCount": 1,
+          "activeSubtaskId": "subtask-1",
+          "activeSubtaskIntent": "open the loop target link",
+          "activeSubtaskStatus": "IN_PROGRESS",
+          "activeSubtaskAttempt": 1,
+          "activeSubtaskIndex": 1,
+          "totalSubtasks": 1,
+          "checkpointLastCompletedSubtaskIndex": 0,
+          "checkpointCurrentSubtaskAttempt": 0,
+          "contextRecentPairCount": 0,
+          "contextSummarizedPairCount": 0,
+          "contextTotalPairCount": 0,
+          "contextSummaryIncluded": false,
+          "contextSummaryCharCount": 0,
+          "observationCachePerceptionHit": false,
+          "observationCachePerceptionAgeMs": null,
+          "observationCacheDecisionHit": false,
+          "observationCacheDecisionKey": "TIER_1_AX|NONE",
+          "observationCacheScreenshotHit": false,
+          "prefetchCandidateUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "prefetchStatus": "PREFETCHED",
+          "prefetchReason": "PREFETCH_REQUEST_DISPATCHED",
+          "prefetchDurationMs": 3,
+          "promptTokenAlertTriggered": false,
+          "usedToonEncoding": true,
+          "timestamp": "2026-02-22T22:31:43.989Z"
+        },
+        {
+          "step": 2,
+          "urlAtPerception": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "urlAfterAction": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "state": "ACTING",
+          "currentUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "inferredAction": {
+            "action": "DONE",
+            "target": null,
+            "text": "Reached loop target page.",
+            "confidence": 0.99,
+            "reasoning": "Target page reached."
+          },
+          "action": {
+            "action": "DONE",
+            "target": null,
+            "text": "Reached loop target page.",
+            "confidence": 0.99,
+            "reasoning": "Target page reached."
+          },
+          "execution": {
+            "status": "done",
+            "action": "DONE",
+            "currentUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+            "navigationObserved": false,
+            "domMutationObserved": false,
+            "significantDomMutationObserved": false,
+            "domMutationSummary": null,
+            "extractedData": null,
+            "message": "Reached loop target page."
+          },
+          "tiersAttempted": [
+            "TIER_1_AX"
+          ],
+          "resolvedTier": "TIER_1_AX",
+          "escalationReason": null,
+          "axDeficientDetected": false,
+          "axDeficiencySignals": {
+            "readyState": "complete",
+            "isLoadComplete": true,
+            "hasSignificantVisualContent": false,
+            "visibleElementCount": 1,
+            "textCharCount": 30,
+            "mediaElementCount": 0,
+            "domInteractiveCandidateCount": 0
+          },
+          "axTreeRefetched": true,
+          "axTreeRefetchReason": "NAVIGATION",
+          "scrollPosition": {
+            "scrollY": 0,
+            "viewportHeight": 900,
+            "documentHeight": 900,
+            "maxScrollY": 0,
+            "remainingScrollPx": 0,
+            "atTop": true,
+            "atBottom": true
+          },
+          "targetMightBeBelowFold": false,
+          "scrollCount": 0,
+          "noProgressStreak": 0,
+          "postActionSignificantDomMutationObserved": false,
+          "postActionMutationSummary": null,
+          "domExtractionAttempted": false,
+          "domExtractionElementCount": 0,
+          "domBypassUsed": false,
+          "domBypassMatchedText": null,
+          "interactiveElementCount": 0,
+          "normalizedNodeCount": 3,
+          "normalizedCharCount": 589,
+          "navigatorNormalizedTreeCharCount": 477,
+          "navigatorObservationCharCount": 1370,
+          "tier1PromptCharCount": 3558,
+          "tier1EstimatedPromptTokens": 890,
+          "tier2PromptCharCount": 0,
+          "tier2EstimatedPromptTokens": 0,
+          "decompositionUsed": false,
+          "decompositionImpliedStepCount": 1,
+          "activeSubtaskId": null,
+          "activeSubtaskIntent": null,
+          "activeSubtaskStatus": null,
+          "activeSubtaskAttempt": 0,
+          "activeSubtaskIndex": 0,
+          "totalSubtasks": 1,
+          "checkpointLastCompletedSubtaskIndex": 0,
+          "checkpointCurrentSubtaskAttempt": 0,
+          "contextRecentPairCount": 1,
+          "contextSummarizedPairCount": 0,
+          "contextTotalPairCount": 1,
+          "contextSummaryIncluded": false,
+          "contextSummaryCharCount": 0,
+          "observationCachePerceptionHit": false,
+          "observationCachePerceptionAgeMs": null,
+          "observationCacheDecisionHit": false,
+          "observationCacheDecisionKey": "TIER_1_AX|NONE",
+          "observationCacheScreenshotHit": false,
+          "prefetchCandidateUrl": null,
+          "prefetchStatus": "NOT_REQUESTED",
+          "prefetchReason": null,
+          "prefetchDurationMs": null,
+          "promptTokenAlertTriggered": false,
+          "usedToonEncoding": true,
+          "timestamp": "2026-02-22T22:31:43.995Z"
+        }
+      ],
+      "decomposition": {
+        "isDecomposed": false,
+        "impliedStepCount": 1,
+        "generatedBy": "HEURISTIC_V1",
+        "generatedAt": "2026-02-22T22:31:43.914Z"
+      },
+      "subtasks": [
+        {
+          "id": "subtask-1",
+          "intent": "open the loop target link",
+          "startUrl": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+          "verification": {
+            "type": "action_confirmed",
+            "condition": "At least one meaningful action completed for the intent."
+          },
+          "status": "COMPLETE",
+          "attemptCount": 1,
+          "completedStep": 1,
+          "failedStep": null,
+          "lastUpdatedAt": "2026-02-22T22:31:43.988Z"
+        }
+      ],
+      "checkpoint": {
+        "lastCompletedSubtaskIndex": 0,
+        "currentSubtaskAttempt": 0,
+        "subtaskArtifacts": [
+          {
+            "subtaskId": "subtask-1",
+            "step": 1,
+            "completionUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+            "resolvedTier": "TIER_1_AX",
+            "action": "CLICK",
+            "timestamp": "2026-02-22T22:31:43.988Z"
+          }
+        ]
+      },
+      "subtaskStatusTimeline": [
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "subtaskId": "subtask-1",
+          "subtaskIntent": "open the loop target link",
+          "status": "IN_PROGRESS",
+          "verificationType": "action_confirmed",
+          "verificationCondition": "At least one meaningful action completed for the intent.",
+          "currentSubtaskIndex": 1,
+          "totalSubtasks": 1,
+          "attempt": 1,
+          "checkpointLastCompletedSubtaskIndex": -1,
+          "reason": "DECOMPOSITION_INITIALIZED",
+          "timestamp": "2026-02-22T22:31:43.914Z"
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "subtaskId": "subtask-1",
+          "subtaskIntent": "open the loop target link",
+          "status": "COMPLETE",
+          "verificationType": "action_confirmed",
+          "verificationCondition": "At least one meaningful action completed for the intent.",
+          "currentSubtaskIndex": 1,
+          "totalSubtasks": 1,
+          "attempt": 1,
+          "checkpointLastCompletedSubtaskIndex": 0,
+          "reason": "VERIFIED:meaningful_action_confirmed",
+          "timestamp": "2026-02-22T22:31:43.988Z"
+        }
+      ],
+      "structuredErrors": [],
+      "escalations": [],
+      "axDeficientPages": [],
+      "prefetches": [
+        {
+          "step": 1,
+          "action": "CLICK",
+          "source": "DOM_LINK_TARGET",
+          "candidateUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "prefetch": {
+            "requestedUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+            "normalizedUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+            "status": "PREFETCHED",
+            "startedAt": "2026-02-22T22:31:43.967Z",
+            "finishedAt": "2026-02-22T22:31:43.970Z",
+            "durationMs": 3,
+            "reason": "PREFETCH_REQUEST_DISPATCHED",
+            "errorMessage": null
+          },
+          "timestamp": "2026-02-22T22:31:43.970Z"
+        }
+      ],
+      "tierUsage": {
+        "tier1Calls": 2,
+        "tier2Calls": 0,
+        "tier3Scrolls": 0,
+        "axDeficientDetections": 0,
+        "lowConfidenceEscalations": 0,
+        "noProgressEscalations": 0,
+        "unsafeActionEscalations": 0,
+        "domBypassResolutions": 0,
+        "resolvedAtTier1": 2,
+        "resolvedAtTier2": 0,
+        "estimatedCostUsd": 0.0003,
+        "estimatedVisionCostAvoidedUsd": 0
+      },
+      "contextWindow": {
+        "maxRecentPairCount": 1,
+        "maxSummarizedPairCount": 0,
+        "summaryRefreshCount": 0,
+        "latestSummary": null,
+        "summaryCharCount": 0,
+        "maxPromptCharCount": 3672,
+        "maxEstimatedPromptTokens": 918,
+        "promptTokenAlertThreshold": 12000,
+        "tokenAlertCount": 0,
+        "tokenAlerts": []
+      },
+      "observationCache": {
+        "ttlMs": 60000,
+        "perceptionHits": 0,
+        "perceptionMisses": 0,
+        "decisionHits": 0,
+        "decisionMisses": 2,
+        "screenshotHits": 0,
+        "screenshotMisses": 0,
+        "entriesWritten": 2,
+        "expiredEntries": 0,
+        "invalidations": 1,
+        "finalEntryCount": 1
+      },
+      "finalAction": {
+        "action": "DONE",
+        "target": null,
+        "text": "Reached loop target page.",
+        "confidence": 0.99,
+        "reasoning": "Target page reached."
+      },
+      "finalExecution": {
+        "status": "done",
+        "action": "DONE",
+        "currentUrl": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": null,
+        "extractedData": null,
+        "message": "Reached loop target page."
+      },
+      "errorDetail": null,
+      "stateTransitions": [
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "IDLE",
+          "to": "LOADING",
+          "timestamp": "2026-02-22T22:31:43.914Z",
+          "step": 0,
+          "url": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+          "reason": "TASK_ASSIGNED",
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "LOADING",
+          "to": "PERCEIVING",
+          "timestamp": "2026-02-22T22:31:43.955Z",
+          "step": 1,
+          "url": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+          "reason": "NAVIGATION_COMPLETE",
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "PERCEIVING",
+          "to": "INFERRING",
+          "timestamp": "2026-02-22T22:31:43.965Z",
+          "step": 1,
+          "url": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+          "reason": null,
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "INFERRING",
+          "to": "ACTING",
+          "timestamp": "2026-02-22T22:31:43.966Z",
+          "step": 1,
+          "url": "http://127.0.0.1:59805/loop-source?run=loop-1771799503912",
+          "reason": "ACTION_CLICK",
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "ACTING",
+          "to": "PERCEIVING",
+          "timestamp": "2026-02-22T22:31:43.989Z",
+          "step": 2,
+          "url": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "reason": "NEXT_STEP",
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "PERCEIVING",
+          "to": "INFERRING",
+          "timestamp": "2026-02-22T22:31:43.994Z",
+          "step": 2,
+          "url": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "reason": null,
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "INFERRING",
+          "to": "ACTING",
+          "timestamp": "2026-02-22T22:31:43.994Z",
+          "step": 2,
+          "url": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "reason": "ACTION_DONE",
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "ACTING",
+          "to": "COMPLETE",
+          "timestamp": "2026-02-22T22:31:43.995Z",
+          "step": 2,
+          "url": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "reason": "TASK_DONE",
+          "errorDetail": null
+        },
+        {
+          "taskId": "task-1771799503913",
+          "contextId": null,
+          "from": "COMPLETE",
+          "to": "IDLE",
+          "timestamp": "2026-02-22T22:31:43.996Z",
+          "step": 2,
+          "url": "http://127.0.0.1:59805/loop-target?run=loop-1771799503912",
+          "reason": "TASK_CONTEXT_CLEANUP",
+          "errorDetail": null
+        }
+      ]
+    }
+  },
+  "requestLog": [
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "baseline-1-1771799500814",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:40.818Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "baseline-1-1771799500814",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:40.857Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "prefetch-1-1771799501193",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:41.196Z"
+    },
+    {
+      "path": "/target",
+      "method": "HEAD",
+      "runId": "prefetch-1-1771799501193",
+      "socketId": "socket-2",
+      "timestamp": "2026-02-22T22:31:41.234Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "prefetch-1-1771799501193",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:41.459Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "baseline-2-1771799501576",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:41.579Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "baseline-2-1771799501576",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:41.615Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "prefetch-2-1771799501951",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:41.953Z"
+    },
+    {
+      "path": "/target",
+      "method": "HEAD",
+      "runId": "prefetch-2-1771799501951",
+      "socketId": "socket-2",
+      "timestamp": "2026-02-22T22:31:41.989Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "prefetch-2-1771799501951",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:42.216Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "baseline-3-1771799502336",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:42.341Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "baseline-3-1771799502336",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:42.388Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "prefetch-3-1771799502729",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:42.743Z"
+    },
+    {
+      "path": "/target",
+      "method": "HEAD",
+      "runId": "prefetch-3-1771799502729",
+      "socketId": "socket-2",
+      "timestamp": "2026-02-22T22:31:42.783Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "prefetch-3-1771799502729",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.008Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "baseline-4-1771799503126",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.131Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "baseline-4-1771799503126",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.170Z"
+    },
+    {
+      "path": "/source",
+      "method": "GET",
+      "runId": "prefetch-4-1771799503522",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.526Z"
+    },
+    {
+      "path": "/target",
+      "method": "HEAD",
+      "runId": "prefetch-4-1771799503522",
+      "socketId": "socket-2",
+      "timestamp": "2026-02-22T22:31:43.565Z"
+    },
+    {
+      "path": "/target",
+      "method": "GET",
+      "runId": "prefetch-4-1771799503522",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.791Z"
+    },
+    {
+      "path": "/loop-source",
+      "method": "GET",
+      "runId": "loop-1771799503912",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.917Z"
+    },
+    {
+      "path": "/loop-target",
+      "method": "HEAD",
+      "runId": "loop-1771799503912",
+      "socketId": "socket-2",
+      "timestamp": "2026-02-22T22:31:43.973Z"
+    },
+    {
+      "path": "/loop-target",
+      "method": "GET",
+      "runId": "loop-1771799503912",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:31:43.973Z"
+    }
+  ],
+  "timestamp": "2026-02-22T22:31:43.996Z"
+}

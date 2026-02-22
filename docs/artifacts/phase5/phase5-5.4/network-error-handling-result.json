@@ -1,0 +1,84 @@
+{
+  "ok": true,
+  "phase": "5.4",
+  "summary": {
+    "scenarioCount": 2,
+    "scenarios": [
+      {
+        "name": "dns-failure",
+        "status": "FAILED",
+        "stepsTaken": 0,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 0,
+          "finalUrl": "chrome-error://chromewebdata/",
+          "finalError": {
+            "type": "NETWORK",
+            "status": null,
+            "url": "chrome-error://chromewebdata/",
+            "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+            "retryable": true,
+            "errorType": "DNS_FAILURE",
+            "step": 0
+          },
+          "structuredErrorCount": 1,
+          "matchedEvent": {
+            "source": "NAVIGATION",
+            "error": {
+              "type": "NETWORK",
+              "status": null,
+              "url": "chrome-error://chromewebdata/",
+              "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+              "retryable": true,
+              "errorType": "DNS_FAILURE"
+            },
+            "decisionSource": "NAVIGATOR",
+            "decisionAction": "WAIT"
+          },
+          "navigatorCallCount": 1
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.4/scenarios/dns-failure-network-error-handling-result.json"
+      },
+      {
+        "name": "http-503",
+        "status": "FAILED",
+        "stepsTaken": 0,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 0,
+          "finalUrl": "http://127.0.0.1:60463/503?run=http-503-1771800067162",
+          "finalError": {
+            "type": "NETWORK",
+            "status": 503,
+            "url": "http://127.0.0.1:60463/503?run=http-503-1771800067162",
+            "message": "Navigation returned HTTP 503 Service Unavailable for http://127.0.0.1:60463/503?run=http-503-1771800067162 (HTTP_5XX).",
+            "retryable": true,
+            "errorType": "HTTP_5XX",
+            "step": 0
+          },
+          "structuredErrorCount": 1,
+          "matchedEvent": {
+            "source": "NAVIGATION",
+            "error": {
+              "type": "NETWORK",
+              "status": 503,
+              "url": "http://127.0.0.1:60463/503?run=http-503-1771800067162",
+              "message": "Navigation returned HTTP 503 Service Unavailable for http://127.0.0.1:60463/503?run=http-503-1771800067162 (HTTP_5XX).",
+              "retryable": true,
+              "errorType": "HTTP_5XX"
+            },
+            "decisionSource": "NAVIGATOR",
+            "decisionAction": "WAIT"
+          },
+          "navigatorCallCount": 1
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.4/scenarios/http-503-network-error-handling-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "remoteDebuggingPort": 9333,
+    "harnessPort": 60463
+  },
+  "timestamp": "2026-02-22T22:41:07.301Z"
+}

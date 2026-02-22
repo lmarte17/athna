@@ -1,0 +1,456 @@
+{
+  "ok": true,
+  "phase": "5.2",
+  "runConfig": {
+    "contextCount": 2,
+    "fetchRounds": 6,
+    "traceSettleMs": 150
+  },
+  "harnessOrigin": "http://127.0.0.1:58614",
+  "contextProbes": [
+    {
+      "contextId": "ctx-1",
+      "runId": "ctx-1-1771798519374",
+      "fetchSummary": {
+        "phaseA": {
+          "count": 6,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ],
+          "ok": true
+        },
+        "phaseB": {
+          "count": 6,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ],
+          "ok": true
+        }
+      },
+      "cdpTrace": {
+        "entries": [
+          {
+            "url": "http://127.0.0.1:58614/connection-harness?contextId=ctx-1&run=ctx-1-1771798519374&visit=1",
+            "resourceType": "Document",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.387Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=A&seq=1",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.439Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=A&seq=2",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.442Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=A&seq=3",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.444Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=A&seq=4",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.446Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=A&seq=5",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.448Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=A&seq=6",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:19.450Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/connection-harness?contextId=ctx-1&run=ctx-1-1771798519374&visit=2",
+            "resourceType": "Document",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:21.970Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=B&seq=1",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:22.017Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=B&seq=2",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:22.020Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=B&seq=3",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:22.023Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=B&seq=4",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:22.026Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=B&seq=5",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:22.029Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-1&run=ctx-1-1771798519374&phase=B&seq=6",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "31",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:22.031Z"
+          }
+        ],
+        "uniqueConnectionIds": [
+          "31"
+        ],
+        "uniqueRemoteEndpoints": [
+          "127.0.0.1:58614"
+        ]
+      }
+    },
+    {
+      "contextId": "ctx-2",
+      "runId": "ctx-2-1771798524687",
+      "fetchSummary": {
+        "phaseA": {
+          "count": 6,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ],
+          "ok": true
+        },
+        "phaseB": {
+          "count": 6,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ],
+          "ok": true
+        }
+      },
+      "cdpTrace": {
+        "entries": [
+          {
+            "url": "http://127.0.0.1:58614/connection-harness?contextId=ctx-2&run=ctx-2-1771798524687&visit=1",
+            "resourceType": "Document",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.698Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=A&seq=1",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.743Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=A&seq=2",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.746Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=A&seq=3",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.748Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=A&seq=4",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.751Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=A&seq=5",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.753Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=A&seq=6",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:24.755Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/connection-harness?contextId=ctx-2&run=ctx-2-1771798524687&visit=2",
+            "resourceType": "Document",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.273Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=B&seq=1",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.316Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=B&seq=2",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.319Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=B&seq=3",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.321Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=B&seq=4",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.323Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=B&seq=5",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.325Z"
+          },
+          {
+            "url": "http://127.0.0.1:58614/probe?contextId=ctx-2&run=ctx-2-1771798524687&phase=B&seq=6",
+            "resourceType": "Fetch",
+            "status": 200,
+            "connectionId": "84",
+            "remoteIPAddress": "127.0.0.1",
+            "remotePort": 58614,
+            "protocol": "http/1.1",
+            "timestamp": "2026-02-22T22:15:27.327Z"
+          }
+        ],
+        "uniqueConnectionIds": [
+          "84"
+        ],
+        "uniqueRemoteEndpoints": [
+          "127.0.0.1:58614"
+        ]
+      }
+    }
+  ],
+  "requestSummary": {
+    "ctx-1": {
+      "requestCount": 14,
+      "socketCounts": {
+        "socket-1": 14
+      },
+      "paths": {
+        "/connection-harness": 2,
+        "/probe": 12
+      }
+    },
+    "ctx-2": {
+      "requestCount": 14,
+      "socketCounts": {
+        "socket-2": 14
+      },
+      "paths": {
+        "/connection-harness": 2,
+        "/probe": 12
+      }
+    }
+  },
+  "analysis": {
+    "sharedServerSockets": [],
+    "reusedServerSocketByContext": {
+      "ctx-1": true,
+      "ctx-2": true
+    },
+    "sharedCdpConnectionIds": [],
+    "cdpUniqueConnectionIdsByContext": {
+      "ctx-1": [
+        "31"
+      ],
+      "ctx-2": [
+        "84"
+      ]
+    }
+  },
+  "poolSnapshotAfterRun": {
+    "minSize": 2,
+    "maxSize": 2,
+    "totalSlots": 2,
+    "cold": 0,
+    "replenishing": 0,
+    "available": 2,
+    "inUse": 0,
+    "queued": 0,
+    "slotStates": [
+      {
+        "contextId": "ctx-1",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 170
+      },
+      {
+        "contextId": "ctx-2",
+        "state": "AVAILABLE",
+        "lastWarmDurationMs": 11
+      }
+    ]
+  },
+  "poolTelemetry": {
+    "warmAssignmentCount": 2,
+    "queuedAssignmentCount": 0,
+    "averageWarmAssignmentWaitMs": 0,
+    "averageQueueWaitMs": 0,
+    "averageWarmDurationMs": 90.5
+  },
+  "connectionLog": [
+    {
+      "event": "OPEN",
+      "socketId": "socket-1",
+      "timestamp": "2026-02-22T22:15:19.383Z",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 58640
+    },
+    {
+      "event": "OPEN",
+      "socketId": "socket-2",
+      "timestamp": "2026-02-22T22:15:24.696Z",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 58646
+    }
+  ],
+  "timestamp": "2026-02-22T22:15:29.989Z"
+}

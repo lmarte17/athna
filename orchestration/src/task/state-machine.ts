@@ -22,6 +22,7 @@ export interface GhostTabTaskErrorDetail {
   url: string | null;
   message: string;
   retryable: boolean;
+  errorType: string | null;
   step: number | null;
 }
 
@@ -165,6 +166,7 @@ export function createGhostTabTaskErrorDetail(input: {
   status?: number | null;
   type?: GhostTabTaskErrorType;
   retryable?: boolean;
+  errorType?: string | null;
 }): GhostTabTaskErrorDetail {
   const message =
     input.error instanceof Error ? input.error.message : `Unknown failure: ${String(input.error)}`;
@@ -180,6 +182,7 @@ export function createGhostTabTaskErrorDetail(input: {
     url: input.url ?? null,
     message,
     retryable,
+    errorType: input.errorType ?? null,
     step: input.step ?? null
   };
 }

@@ -24,7 +24,10 @@ const DEFAULT_AX_BBOX_CONCURRENCY = 8;
 const DEFAULT_REQUEST_INTERCEPTION_ENABLED = true;
 const DEFAULT_REQUEST_INTERCEPTION_BLOCK_STYLESHEETS = false;
 const DEFAULT_VISUAL_RENDER_SETTLE_MS = 250;
+const DEFAULT_HTTP_CACHE_POLICY_MODE = "RESPECT_HEADERS" as const;
+const DEFAULT_HTTP_CACHE_TTL_MS = 60_000;
 const DEFAULT_AGENT_FAST_BLOCKED_RESOURCE_TYPES = new Set(["Image", "Font", "Media"]);
+const DEFAULT_PREFETCH_TIMEOUT_MS = 2_500;
 const PRUNED_AX_ROLES = new Set(["generic", "none", "presentation", "inlinetextbox"]);
 const INTERACTIVE_AX_ROLES = new Set([
   "button",
@@ -42,6 +45,7 @@ const INTERACTIVE_AX_ROLES = new Set([
 ]);
 const AGENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
 const REQUEST_INTERCEPTION_MODES = ["AGENT_FAST", "VISUAL_RENDER", "DISABLED"] as const;
+const HTTP_CACHE_POLICY_MODES = ["RESPECT_HEADERS", "FORCE_REFRESH", "OVERRIDE_TTL"] as const;
 const REQUEST_CLASSIFICATIONS = ["DOCUMENT_HTML", "JSON_API", "STATIC_ASSET", "OTHER"] as const;
 const BLOCKABLE_RESOURCE_TYPES = new Set(["Image", "Font", "Media", "Stylesheet"]);
 
@@ -51,10 +55,21 @@ export interface ConnectToGhostTabCdpOptions {
   targetPageIndex?: number;
   targetUrlIncludes?: string;
   requestInterception?: RequestInterceptionSettings;
+  httpCachePolicy?: HttpCachePolicy;
 }
 
 export type RequestInterceptionMode = (typeof REQUEST_INTERCEPTION_MODES)[number];
+export type HttpCachePolicyMode = (typeof HTTP_CACHE_POLICY_MODES)[number];
 export type RequestClassification = (typeof REQUEST_CLASSIFICATIONS)[number];
+export type NetworkErrorType =
+  | "DNS_FAILURE"
+  | "CONNECTION_TIMEOUT"
+  | "TLS_ERROR"
+  | "CONNECTION_FAILED"
+  | "HTTP_4XX"
+  | "HTTP_5XX"
+  | "ABORTED"
+  | "UNKNOWN_NETWORK_ERROR";
 
 export interface RequestInterceptionSettings {
   enabled?: boolean;
@@ -62,6 +77,16 @@ export interface RequestInterceptionSettings {
   blockStylesheets?: boolean;
   blockedResourceTypes?: string[];
   visualRenderSettleMs?: number;
+}
+
+export interface HttpCachePolicy {
+  mode?: HttpCachePolicyMode;
+  ttlMs?: number;
+}
+
+export interface HttpCachePolicyState {
+  mode: HttpCachePolicyMode;
+  ttlMs: number | null;
 }
 
 export interface RequestInterceptionMetricsSnapshot {
@@ -83,6 +108,39 @@ export interface RequestInterceptionMetrics {
   lifetime: RequestInterceptionMetricsSnapshot;
   currentNavigation: RequestInterceptionMetricsSnapshot | null;
   visualRenderPassCount: number;
+}
+
+export interface PrefetchOptions {
+  timeoutMs?: number;
+  awaitResponse?: boolean;
+}
+
+export interface PrefetchResult {
+  requestedUrl: string;
+  normalizedUrl: string | null;
+  status: "PREFETCHED" | "SKIPPED" | "FAILED";
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  reason: string | null;
+  errorMessage: string | null;
+}
+
+export interface NetworkConnectionTraceEntry {
+  url: string;
+  resourceType: string | null;
+  status: number | null;
+  connectionId: string | null;
+  remoteIPAddress: string | null;
+  remotePort: number | null;
+  protocol: string | null;
+  timestamp: string;
+}
+
+export interface NetworkConnectionTrace {
+  entries: NetworkConnectionTraceEntry[];
+  uniqueConnectionIds: string[];
+  uniqueRemoteEndpoints: string[];
 }
 
 export interface CaptureJpegOptions {
@@ -279,6 +337,7 @@ export interface NavigationOutcome {
   status: number | null;
   statusText: string | null;
   errorText: string | null;
+  errorType: NetworkErrorType | null;
   timestamp: string;
 }
 
@@ -309,6 +368,14 @@ export interface GhostViewportSettings {
 export interface GhostTabCdpClient {
   navigate(url: string, timeoutMs?: number): Promise<void>;
   getLastNavigationOutcome(): NavigationOutcome | null;
+  setHttpCachePolicy(policy: HttpCachePolicy): Promise<void>;
+  getHttpCachePolicy(): HttpCachePolicyState;
+  resolveLinkUrlAtPoint(target: AgentActionTarget): Promise<string | null>;
+  prefetch(url: string, options?: PrefetchOptions): Promise<PrefetchResult>;
+  traceNetworkConnections<T>(
+    operation: () => Promise<T>,
+    settleMs?: number
+  ): Promise<{ result: T; trace: NetworkConnectionTrace }>;
   setRequestInterceptionMode(mode: RequestInterceptionMode): Promise<void>;
   getRequestInterceptionMode(): RequestInterceptionMode;
   getRequestInterceptionMetrics(): RequestInterceptionMetrics;
@@ -365,6 +432,11 @@ interface ResolvedRequestInterceptionSettings {
   visualRenderSettleMs: number;
 }
 
+interface ResolvedHttpCachePolicy {
+  mode: HttpCachePolicyMode;
+  ttlMs: number | null;
+}
+
 interface NormalizedRequestPausedEvent {
   requestId: string;
   resourceType: string | null;
@@ -408,13 +480,17 @@ interface RawAXNode {
 class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   private readonly crashListeners = new Set<(event: GhostTabCrashEvent) => void>();
   private readonly requestInterceptionSettings: ResolvedRequestInterceptionSettings;
+  private readonly urlNavigationVisitsMs = new Map<string, number>();
   private readonly fetchRequestPausedListener: (event: unknown) => void;
   private requestInterceptionInitialized = false;
+  private networkCacheDisabled = false;
   private requestInterceptionMode: RequestInterceptionMode;
+  private httpCachePolicy: ResolvedHttpCachePolicy;
   private lifetimeRequestInterceptionMetrics = createRequestInterceptionMetricsSnapshot(null);
   private currentNavigationRequestInterceptionMetrics: RequestInterceptionMetricsSnapshot | null =
     null;
   private visualRenderPassCount = 0;
+  private lastPrefetchResult: PrefetchResult | null = null;
   private lastCrashEvent: GhostTabCrashEvent | null = null;
   private lastNavigationOutcome: NavigationOutcome | null = null;
 
@@ -422,12 +498,14 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     private readonly browser: Browser,
     private readonly cdpSession: CDPSession,
     private readonly page: Page,
-    requestInterceptionSettings: ResolvedRequestInterceptionSettings
+    requestInterceptionSettings: ResolvedRequestInterceptionSettings,
+    httpCachePolicy: ResolvedHttpCachePolicy
   ) {
     this.requestInterceptionSettings = requestInterceptionSettings;
     this.requestInterceptionMode = requestInterceptionSettings.enabled
       ? requestInterceptionSettings.initialMode
       : "DISABLED";
+    this.httpCachePolicy = httpCachePolicy;
     this.fetchRequestPausedListener = (event: unknown) => {
       void this.handleRequestPaused(event);
     };
@@ -446,27 +524,36 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   }
 
   async initialize(): Promise<void> {
+    await this.setNetworkCacheDisabled(false);
     await this.enableRequestInterception();
   }
 
   async navigate(url: string, timeoutMs = DEFAULT_NAVIGATION_TIMEOUT_MS): Promise<void> {
     this.beginNavigationRequestInterceptionMetrics(url);
-    const mainFrameId = await getMainFrameId(this.cdpSession).catch(() => null);
-    const responseTracker = trackMainDocumentResponse(this.cdpSession, {
-      timeoutMs,
-      mainFrameId
-    });
+    const navigationStartedAtMs = Date.now();
+    const cacheDecision = this.resolveNavigationCacheDecision(url, navigationStartedAtMs);
+    let responseTracker: MainDocumentResponseTracker | null = null;
+    let navigationCompleted = false;
 
     try {
+      await this.setNetworkCacheDisabled(cacheDecision.cacheDisabled);
+      const mainFrameId = await getMainFrameId(this.cdpSession).catch(() => null);
+      responseTracker = trackMainDocumentResponse(this.cdpSession, {
+        timeoutMs,
+        mainFrameId
+      });
+
       const navigationResult = await this.cdpSession.send("Page.navigate", { url });
       if (navigationResult.errorText) {
-        responseTracker.cancel();
+        const response = await responseTracker.promise.catch(() => null);
         this.lastNavigationOutcome = {
           requestedUrl: url,
           finalUrl: await this.getCurrentUrl().catch(() => url),
-          status: null,
-          statusText: null,
+          status: response?.status ?? null,
+          statusText: response?.statusText ?? null,
           errorText: navigationResult.errorText,
+          errorType:
+            response?.errorType ?? classifyNetworkErrorTypeFromFailureText(navigationResult.errorText),
           timestamp: new Date().toISOString()
         };
         throw new Error(`CDP Page.navigate failed for ${url}: ${navigationResult.errorText}`);
@@ -474,21 +561,246 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
 
       await waitForLoadEvent(this.cdpSession, timeoutMs);
       const response = await responseTracker.promise.catch(() => null);
+      const statusBasedErrorType = classifyHttpStatusErrorType(response?.status ?? null);
       this.lastNavigationOutcome = {
         requestedUrl: url,
         finalUrl: await this.getCurrentUrl().catch(() => url),
         status: response?.status ?? null,
         statusText: response?.statusText ?? null,
-        errorText: null,
+        errorText: response?.errorText ?? null,
+        errorType: response?.errorType ?? statusBasedErrorType,
         timestamp: new Date().toISOString()
       };
+      navigationCompleted = true;
     } finally {
+      responseTracker?.cancel();
+      if (navigationCompleted && cacheDecision.cacheKey) {
+        this.recordNavigationVisit(cacheDecision.cacheKey, Date.now());
+      }
+      await this.setNetworkCacheDisabled(false).catch(() => {
+        // Ignore teardown/detach races after navigation failures.
+      });
       this.completeNavigationRequestInterceptionMetrics();
     }
   }
 
   getLastNavigationOutcome(): NavigationOutcome | null {
     return this.lastNavigationOutcome;
+  }
+
+  async setHttpCachePolicy(policy: HttpCachePolicy): Promise<void> {
+    this.httpCachePolicy = resolveHttpCachePolicy(policy);
+  }
+
+  getHttpCachePolicy(): HttpCachePolicyState {
+    return {
+      mode: this.httpCachePolicy.mode,
+      ttlMs: this.httpCachePolicy.ttlMs
+    };
+  }
+
+  async resolveLinkUrlAtPoint(target: AgentActionTarget): Promise<string | null> {
+    if (!Number.isFinite(target.x) || !Number.isFinite(target.y)) {
+      return null;
+    }
+
+    const result = await evaluateJsonExpression<{ href: string | null }>(
+      this.cdpSession,
+      `(() => {
+        const targetX = ${target.x};
+        const targetY = ${target.y};
+        const scrollX = window.scrollX || window.pageXOffset || 0;
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        const viewportX = Math.round(targetX - scrollX);
+        const viewportY = Math.round(targetY - scrollY);
+
+        const candidatePoints = [
+          [viewportX, viewportY],
+          [Math.round(targetX), Math.round(targetY)]
+        ];
+
+        const findAnchor = (node) => {
+          if (!(node instanceof Element)) {
+            return null;
+          }
+          if (node.matches("a[href], area[href]")) {
+            return node;
+          }
+          return node.closest("a[href], area[href]");
+        };
+
+        for (const [x, y] of candidatePoints) {
+          if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            continue;
+          }
+          const element = document.elementFromPoint(x, y);
+          const anchor = findAnchor(element);
+          if (anchor instanceof HTMLAnchorElement || anchor instanceof HTMLAreaElement) {
+            return { href: anchor.href || null };
+          }
+        }
+
+        return { href: null };
+      })();`
+    );
+
+    const href = typeof result?.href === "string" ? result.href.trim() : "";
+    return href.length > 0 ? href : null;
+  }
+
+  async prefetch(url: string, options: PrefetchOptions = {}): Promise<PrefetchResult> {
+    const startedAtMs = Date.now();
+    const startedAt = new Date(startedAtMs).toISOString();
+    const timeoutMs = Math.max(100, options.timeoutMs ?? DEFAULT_PREFETCH_TIMEOUT_MS);
+    const awaitResponse = options.awaitResponse ?? true;
+
+    let normalizedUrl: string | null = null;
+    try {
+      const baseUrl = await this.getCurrentUrl().catch(() => "about:blank");
+      normalizedUrl = new URL(url, baseUrl).toString();
+    } catch {
+      normalizedUrl = null;
+    }
+
+    if (!normalizedUrl || !isHttpLikeUrl(normalizedUrl)) {
+      const skipped = createPrefetchResult({
+        requestedUrl: url,
+        normalizedUrl,
+        status: "SKIPPED",
+        startedAt,
+        startedAtMs,
+        reason: "PREFETCH_URL_NOT_HTTP",
+        errorMessage: null
+      });
+      this.lastPrefetchResult = skipped;
+      return skipped;
+    }
+
+    try {
+      const fetchResult = await evaluateJsonExpression<{
+        status: "fulfilled" | "rejected" | "dispatched";
+        reason: string | null;
+      }>(
+        this.cdpSession,
+        `(() => (async () => {
+          const targetUrl = ${JSON.stringify(normalizedUrl)};
+          const timeoutMs = ${timeoutMs};
+          const awaitResponse = ${awaitResponse ? "true" : "false"};
+          let timeoutId = null;
+          let aborted = false;
+          const controller = typeof AbortController === "function" ? new AbortController() : null;
+          const clearTimeoutIfNeeded = () => {
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+          };
+
+          if (controller) {
+            timeoutId = setTimeout(() => {
+              aborted = true;
+              controller.abort();
+            }, timeoutMs);
+          }
+
+          const fetchPromise = fetch(targetUrl, {
+            method: "HEAD",
+            mode: "no-cors",
+            credentials: "omit",
+            cache: "no-store",
+            keepalive: true,
+            redirect: "follow",
+            signal: controller ? controller.signal : undefined
+          }).finally(() => {
+            clearTimeoutIfNeeded();
+          });
+
+          if (!awaitResponse) {
+            void fetchPromise.catch(() => {});
+            return {
+              status: "dispatched",
+              reason: "PREFETCH_REQUEST_DISPATCHED"
+            };
+          }
+
+          try {
+            await fetchPromise;
+            return {
+              status: "fulfilled",
+              reason: null
+            };
+          } catch (error) {
+            const message =
+              typeof error === "object" && error !== null && "message" in error
+                ? String(error.message)
+                : String(error);
+
+            return {
+              status: "rejected",
+              reason: aborted ? "PREFETCH_ABORTED_TIMEOUT" : message
+            };
+          }
+        })())();`
+      );
+
+      const status = fetchResult.status === "rejected" ? "FAILED" : "PREFETCHED";
+      const prefetchResult = createPrefetchResult({
+        requestedUrl: url,
+        normalizedUrl,
+        status,
+        startedAt,
+        startedAtMs,
+        reason:
+          fetchResult.status === "fulfilled"
+            ? "PREFETCH_HEAD_REQUEST_COMPLETED"
+            : fetchResult.status === "dispatched"
+              ? fetchResult.reason ?? "PREFETCH_REQUEST_DISPATCHED"
+              : fetchResult.reason ?? "PREFETCH_REQUEST_FAILED",
+        errorMessage: fetchResult.status === "rejected" ? fetchResult.reason : null
+      });
+      this.lastPrefetchResult = prefetchResult;
+      return prefetchResult;
+    } catch (error) {
+      const failed = createPrefetchResult({
+        requestedUrl: url,
+        normalizedUrl,
+        status: "FAILED",
+        startedAt,
+        startedAtMs,
+        reason: "PREFETCH_RUNTIME_EVALUATE_FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      this.lastPrefetchResult = failed;
+      return failed;
+    }
+  }
+
+  async traceNetworkConnections<T>(
+    operation: () => Promise<T>,
+    settleMs = 100
+  ): Promise<{ result: T; trace: NetworkConnectionTrace }> {
+    const entries: NetworkConnectionTraceEntry[] = [];
+    const onResponse = (event: unknown): void => {
+      const entry = normalizeNetworkConnectionTraceEntry(event);
+      if (entry) {
+        entries.push(entry);
+      }
+    };
+
+    this.cdpSession.on("Network.responseReceived", onResponse);
+    try {
+      const result = await operation();
+      if (settleMs > 0) {
+        await sleep(settleMs);
+      }
+
+      return {
+        result,
+        trace: summarizeNetworkConnectionTrace(entries)
+      };
+    } finally {
+      this.cdpSession.off("Network.responseReceived", onResponse);
+    }
   }
 
   async setRequestInterceptionMode(mode: RequestInterceptionMode): Promise<void> {
@@ -1342,6 +1654,72 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     }
   }
 
+  private resolveNavigationCacheDecision(
+    navigationUrl: string,
+    nowMs: number
+  ): {
+    cacheKey: string | null;
+    cacheDisabled: boolean;
+  } {
+    const cacheKey = normalizeNavigationCacheKey(navigationUrl, this.page.url());
+
+    if (this.httpCachePolicy.mode === "FORCE_REFRESH") {
+      return {
+        cacheKey,
+        cacheDisabled: true
+      };
+    }
+
+    if (this.httpCachePolicy.mode !== "OVERRIDE_TTL" || this.httpCachePolicy.ttlMs === null) {
+      return {
+        cacheKey,
+        cacheDisabled: false
+      };
+    }
+
+    if (!cacheKey) {
+      return {
+        cacheKey,
+        cacheDisabled: false
+      };
+    }
+
+    const lastVisitedAtMs = this.urlNavigationVisitsMs.get(cacheKey);
+    if (typeof lastVisitedAtMs !== "number" || !Number.isFinite(lastVisitedAtMs)) {
+      return {
+        cacheKey,
+        cacheDisabled: false
+      };
+    }
+
+    return {
+      cacheKey,
+      cacheDisabled: nowMs - lastVisitedAtMs >= this.httpCachePolicy.ttlMs
+    };
+  }
+
+  private recordNavigationVisit(cacheKey: string, visitedAtMs: number): void {
+    if (this.urlNavigationVisitsMs.size >= 2_048 && !this.urlNavigationVisitsMs.has(cacheKey)) {
+      const oldestKey = this.urlNavigationVisitsMs.keys().next().value;
+      if (typeof oldestKey === "string") {
+        this.urlNavigationVisitsMs.delete(oldestKey);
+      }
+    }
+
+    this.urlNavigationVisitsMs.set(cacheKey, visitedAtMs);
+  }
+
+  private async setNetworkCacheDisabled(cacheDisabled: boolean): Promise<void> {
+    if (this.networkCacheDisabled === cacheDisabled) {
+      return;
+    }
+
+    await this.cdpSession.send("Network.setCacheDisabled", {
+      cacheDisabled
+    });
+    this.networkCacheDisabled = cacheDisabled;
+  }
+
   private async enableRequestInterception(): Promise<void> {
     if (!this.requestInterceptionSettings.enabled || this.requestInterceptionInitialized) {
       return;
@@ -1637,9 +2015,25 @@ function waitForLoadEvent(cdpSession: CDPSession, timeoutMs: number): Promise<vo
 }
 
 interface MainDocumentResponseEvent {
+  requestId: string | null;
   frameId: string | null;
+  url: string | null;
   status: number | null;
   statusText: string | null;
+  errorText: string | null;
+  errorType: NetworkErrorType | null;
+  blockedReason: string | null;
+  canceled: boolean | null;
+}
+
+interface MainDocumentLoadingFailedEvent {
+  requestId: string | null;
+  frameId: string | null;
+  url: string | null;
+  errorText: string;
+  errorType: NetworkErrorType;
+  blockedReason: string | null;
+  canceled: boolean | null;
 }
 
 interface MainDocumentResponseTracker {
@@ -1654,7 +2048,8 @@ function trackMainDocumentResponse(
     mainFrameId: string | null;
   }
 ): MainDocumentResponseTracker {
-  let latest: MainDocumentResponseEvent | null = null;
+  let latestResponse: MainDocumentResponseEvent | null = null;
+  let latestLoadingFailed: MainDocumentLoadingFailedEvent | null = null;
   let settled = false;
   let timeoutHandle: NodeJS.Timeout | null = null;
   let loadHandle: NodeJS.Timeout | null = null;
@@ -1668,11 +2063,23 @@ function trackMainDocumentResponse(
     if (input.mainFrameId && normalized.frameId && normalized.frameId !== input.mainFrameId) {
       return;
     }
-    latest = normalized;
+    latestResponse = normalized;
+  };
+
+  const onLoadingFailed = (event: unknown): void => {
+    const normalized = normalizeMainDocumentLoadingFailedEvent(event);
+    if (!normalized) {
+      return;
+    }
+    if (input.mainFrameId && normalized.frameId && normalized.frameId !== input.mainFrameId) {
+      return;
+    }
+    latestLoadingFailed = normalized;
   };
 
   const cleanup = (): void => {
     cdpSession.off("Network.responseReceived", onResponse);
+    cdpSession.off("Network.loadingFailed", onLoadingFailed);
     cdpSession.off("Page.loadEventFired", onLoadEvent);
     if (timeoutHandle) {
       clearTimeout(timeoutHandle);
@@ -1684,13 +2091,13 @@ function trackMainDocumentResponse(
     }
   };
 
-  const finish = (value: MainDocumentResponseEvent | null): void => {
+  const finish = (): void => {
     if (settled) {
       return;
     }
     settled = true;
     cleanup();
-    resolvePromise?.(value);
+    resolvePromise?.(mergeMainDocumentEvents(latestResponse, latestLoadingFailed));
   };
 
   const onLoadEvent = (): void => {
@@ -1699,22 +2106,23 @@ function trackMainDocumentResponse(
     }
     // Allow responseReceived to flush before resolving.
     loadHandle = setTimeout(() => {
-      finish(latest);
+      finish();
     }, 25);
   };
 
   const promise = new Promise<MainDocumentResponseEvent | null>((resolve) => {
     resolvePromise = resolve;
     cdpSession.on("Network.responseReceived", onResponse);
+    cdpSession.on("Network.loadingFailed", onLoadingFailed);
     cdpSession.on("Page.loadEventFired", onLoadEvent);
     timeoutHandle = setTimeout(() => {
-      finish(latest);
+      finish();
     }, Math.max(250, input.timeoutMs));
   });
 
   return {
     promise,
-    cancel: () => finish(latest)
+    cancel: () => finish()
   };
 }
 
@@ -1737,10 +2145,259 @@ function normalizeMainDocumentResponseEvent(event: unknown): MainDocumentRespons
   }
 
   return {
+    requestId: typeof candidate.requestId === "string" ? candidate.requestId : null,
     frameId: typeof candidate.frameId === "string" ? candidate.frameId : null,
+    url: typeof response.url === "string" ? response.url : null,
     status:
       typeof response.status === "number" && Number.isFinite(response.status) ? response.status : null,
-    statusText: typeof response.statusText === "string" ? response.statusText : null
+    statusText: typeof response.statusText === "string" ? response.statusText : null,
+    errorText: null,
+    errorType: null,
+    blockedReason: null,
+    canceled: null
+  };
+}
+
+function normalizeMainDocumentLoadingFailedEvent(
+  event: unknown
+): MainDocumentLoadingFailedEvent | null {
+  if (typeof event !== "object" || event === null) {
+    return null;
+  }
+
+  const candidate = event as Record<string, unknown>;
+  if (candidate.type !== "Document") {
+    return null;
+  }
+
+  const errorText =
+    typeof candidate.errorText === "string" && candidate.errorText.trim().length > 0
+      ? candidate.errorText.trim()
+      : null;
+  if (!errorText) {
+    return null;
+  }
+
+  const blockedReason =
+    typeof candidate.blockedReason === "string" && candidate.blockedReason.trim().length > 0
+      ? candidate.blockedReason.trim()
+      : null;
+  const canceled = typeof candidate.canceled === "boolean" ? candidate.canceled : null;
+
+  return {
+    requestId: typeof candidate.requestId === "string" ? candidate.requestId : null,
+    frameId: typeof candidate.frameId === "string" ? candidate.frameId : null,
+    url: typeof candidate.url === "string" ? candidate.url : null,
+    errorText,
+    errorType: classifyNetworkErrorTypeFromFailureText(errorText, {
+      blockedReason,
+      canceled
+    }),
+    blockedReason,
+    canceled
+  };
+}
+
+function mergeMainDocumentEvents(
+  response: MainDocumentResponseEvent | null,
+  loadingFailed: MainDocumentLoadingFailedEvent | null
+): MainDocumentResponseEvent | null {
+  if (!response && !loadingFailed) {
+    return null;
+  }
+
+  if (!loadingFailed) {
+    return response;
+  }
+
+  return {
+    requestId: loadingFailed.requestId ?? response?.requestId ?? null,
+    frameId: loadingFailed.frameId ?? response?.frameId ?? null,
+    url: loadingFailed.url ?? response?.url ?? null,
+    status: response?.status ?? null,
+    statusText: response?.statusText ?? null,
+    errorText: loadingFailed.errorText,
+    errorType: loadingFailed.errorType,
+    blockedReason: loadingFailed.blockedReason,
+    canceled: loadingFailed.canceled
+  };
+}
+
+function normalizeNetworkConnectionTraceEntry(event: unknown): NetworkConnectionTraceEntry | null {
+  if (typeof event !== "object" || event === null) {
+    return null;
+  }
+
+  const candidate = event as Record<string, unknown>;
+  const response =
+    typeof candidate.response === "object" && candidate.response !== null
+      ? (candidate.response as Record<string, unknown>)
+      : null;
+  if (!response) {
+    return null;
+  }
+
+  const connectionIdRaw = response.connectionId;
+  let connectionId: string | null = null;
+  if (typeof connectionIdRaw === "string" && connectionIdRaw.trim().length > 0) {
+    connectionId = connectionIdRaw.trim();
+  } else if (typeof connectionIdRaw === "number" && Number.isFinite(connectionIdRaw)) {
+    connectionId = String(connectionIdRaw);
+  }
+
+  const remoteIPAddress =
+    typeof response.remoteIPAddress === "string" && response.remoteIPAddress.trim().length > 0
+      ? response.remoteIPAddress.trim()
+      : null;
+  const remotePort =
+    typeof response.remotePort === "number" && Number.isFinite(response.remotePort)
+      ? response.remotePort
+      : null;
+
+  return {
+    url: typeof response.url === "string" ? response.url : "",
+    resourceType: typeof candidate.type === "string" ? candidate.type : null,
+    status:
+      typeof response.status === "number" && Number.isFinite(response.status) ? response.status : null,
+    connectionId,
+    remoteIPAddress,
+    remotePort,
+    protocol: typeof response.protocol === "string" ? response.protocol : null,
+    timestamp: new Date().toISOString()
+  };
+}
+
+function summarizeNetworkConnectionTrace(entries: NetworkConnectionTraceEntry[]): NetworkConnectionTrace {
+  const uniqueConnectionIds = new Set<string>();
+  const uniqueRemoteEndpoints = new Set<string>();
+
+  for (const entry of entries) {
+    if (entry.connectionId) {
+      uniqueConnectionIds.add(entry.connectionId);
+    }
+
+    if (entry.remoteIPAddress && entry.remotePort !== null) {
+      uniqueRemoteEndpoints.add(`${entry.remoteIPAddress}:${String(entry.remotePort)}`);
+    }
+  }
+
+  return {
+    entries,
+    uniqueConnectionIds: [...uniqueConnectionIds].sort(),
+    uniqueRemoteEndpoints: [...uniqueRemoteEndpoints].sort()
+  };
+}
+
+function classifyHttpStatusErrorType(status: number | null): NetworkErrorType | null {
+  if (typeof status !== "number" || !Number.isFinite(status)) {
+    return null;
+  }
+
+  if (status >= 500) {
+    return "HTTP_5XX";
+  }
+  if (status >= 400) {
+    return "HTTP_4XX";
+  }
+
+  return null;
+}
+
+function classifyNetworkErrorTypeFromFailureText(
+  errorText: string,
+  options: {
+    blockedReason?: string | null;
+    canceled?: boolean | null;
+  } = {}
+): NetworkErrorType {
+  const normalized = errorText.trim().toUpperCase();
+  if (options.canceled) {
+    return "ABORTED";
+  }
+
+  if (options.blockedReason) {
+    return "CONNECTION_FAILED";
+  }
+
+  if (
+    normalized.includes("ERR_NAME_NOT_RESOLVED") ||
+    normalized.includes("ERR_DNS") ||
+    normalized.includes("NAME_NOT_RESOLVED")
+  ) {
+    return "DNS_FAILURE";
+  }
+
+  if (
+    normalized.includes("ERR_TIMED_OUT") ||
+    normalized.includes("ERR_CONNECTION_TIMED_OUT") ||
+    normalized.includes("TIMED_OUT")
+  ) {
+    return "CONNECTION_TIMEOUT";
+  }
+
+  if (
+    normalized.includes("ERR_SSL") ||
+    normalized.includes("ERR_CERT") ||
+    normalized.includes("ERR_TLS")
+  ) {
+    return "TLS_ERROR";
+  }
+
+  if (
+    normalized.includes("ERR_CONNECTION") ||
+    normalized.includes("ERR_ADDRESS_UNREACHABLE") ||
+    normalized.includes("ERR_INTERNET_DISCONNECTED") ||
+    normalized.includes("ERR_NETWORK_CHANGED")
+  ) {
+    return "CONNECTION_FAILED";
+  }
+
+  return "UNKNOWN_NETWORK_ERROR";
+}
+
+function isHttpLikeUrl(url: string): boolean {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
+function normalizeNavigationCacheKey(url: string, baseUrl: string): string | null {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) {
+    return null;
+  }
+
+  try {
+    const baseCandidate = baseUrl.trim();
+    const hasValidBase =
+      baseCandidate.length > 0 &&
+      baseCandidate !== "about:blank" &&
+      isHttpLikeUrl(baseCandidate);
+    const resolved = hasValidBase ? new URL(trimmedUrl, baseCandidate) : new URL(trimmedUrl);
+    resolved.hash = "";
+    return resolved.toString();
+  } catch {
+    return trimmedUrl;
+  }
+}
+
+function createPrefetchResult(input: {
+  requestedUrl: string;
+  normalizedUrl: string | null;
+  status: PrefetchResult["status"];
+  startedAt: string;
+  startedAtMs: number;
+  reason: string | null;
+  errorMessage: string | null;
+}): PrefetchResult {
+  const finishedAtMs = Date.now();
+  return {
+    requestedUrl: input.requestedUrl,
+    normalizedUrl: input.normalizedUrl,
+    status: input.status,
+    startedAt: input.startedAt,
+    finishedAt: new Date(finishedAtMs).toISOString(),
+    durationMs: Math.max(0, finishedAtMs - input.startedAtMs),
+    reason: input.reason,
+    errorMessage: input.errorMessage
   };
 }
 
@@ -2532,6 +3189,34 @@ function resolveRequestInterceptionSettings(
   };
 }
 
+function resolveHttpCachePolicy(policy: HttpCachePolicy | undefined): ResolvedHttpCachePolicy {
+  const mode =
+    policy?.mode ??
+    (policy && policy.ttlMs !== undefined ? "OVERRIDE_TTL" : null) ??
+    readHttpCachePolicyModeEnv("GHOST_HTTP_CACHE_MODE", DEFAULT_HTTP_CACHE_POLICY_MODE);
+
+  if (mode !== "OVERRIDE_TTL") {
+    return {
+      mode,
+      ttlMs: null
+    };
+  }
+
+  const configuredTtlMs =
+    policy?.ttlMs ??
+    readNonNegativeIntegerEnv("GHOST_HTTP_CACHE_TTL_MS", DEFAULT_HTTP_CACHE_TTL_MS);
+  if (!Number.isFinite(configuredTtlMs) || configuredTtlMs <= 0) {
+    throw new Error(
+      `httpCachePolicy.ttlMs must be > 0 when mode=OVERRIDE_TTL. Received: ${String(policy?.ttlMs)}`
+    );
+  }
+
+  return {
+    mode,
+    ttlMs: Math.floor(configuredTtlMs)
+  };
+}
+
 function createRequestInterceptionMetricsSnapshot(
   requestedUrl: string | null
 ): RequestInterceptionMetricsSnapshot {
@@ -2751,6 +3436,23 @@ function readRequestInterceptionModeEnv(
   return defaultValue;
 }
 
+function readHttpCachePolicyModeEnv(
+  name: string,
+  defaultValue: HttpCachePolicyMode
+): HttpCachePolicyMode {
+  const rawValue = process.env[name];
+  if (!rawValue || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const normalized = rawValue.trim().toUpperCase();
+  if (HTTP_CACHE_POLICY_MODES.includes(normalized as HttpCachePolicyMode)) {
+    return normalized as HttpCachePolicyMode;
+  }
+
+  return defaultValue;
+}
+
 export async function connectToGhostTabCdp(
   options: ConnectToGhostTabCdpOptions
 ): Promise<GhostTabCdpClient> {
@@ -2760,6 +3462,7 @@ export async function connectToGhostTabCdp(
   const requestInterceptionSettings = resolveRequestInterceptionSettings(
     options.requestInterception
   );
+  const httpCachePolicy = resolveHttpCachePolicy(options.httpCachePolicy);
   const browser = await chromium.connectOverCDP(options.endpointURL, {
     timeout: connectTimeoutMs
   });
@@ -2781,7 +3484,8 @@ export async function connectToGhostTabCdp(
     browser,
     cdpSession,
     page,
-    requestInterceptionSettings
+    requestInterceptionSettings,
+    httpCachePolicy
   );
 
   try {

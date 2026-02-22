@@ -7,8 +7,12 @@ import type {
   DomMutationSummary,
   ExtractDomInteractiveElementsResult,
   GhostTabCdpClient,
+  HttpCachePolicy,
+  HttpCachePolicyState,
   InteractiveElementIndexResult,
   NavigationOutcome,
+  NetworkErrorType,
+  PrefetchResult,
   ScrollPositionSnapshot
 } from "../cdp/client.js";
 import { encodeNormalizedAXTreeForNavigator } from "../ax-tree/toon-runtime.js";
@@ -111,6 +115,7 @@ export interface PerceptionActionTaskInput {
   maxSubtaskRetries?: number;
   navigationTimeoutMs?: number;
   observationCacheTtlMs?: number;
+  httpCachePolicy?: HttpCachePolicy;
 }
 
 export interface TaskCheckpointArtifact {
@@ -218,6 +223,10 @@ export interface LoopStepRecord {
   observationCacheDecisionHit: boolean;
   observationCacheDecisionKey: string | null;
   observationCacheScreenshotHit: boolean;
+  prefetchCandidateUrl: string | null;
+  prefetchStatus: PrefetchResult["status"] | "NOT_REQUESTED";
+  prefetchReason: string | null;
+  prefetchDurationMs: number | null;
   promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
   timestamp: string;
@@ -266,6 +275,15 @@ export interface TierUsageMetrics {
   estimatedVisionCostAvoidedUsd: number;
 }
 
+export interface PrefetchEvent {
+  step: number;
+  action: NavigatorActionDecision["action"];
+  source: "DOM_LINK_TARGET" | "ACTION_TEXT_URL" | "NONE";
+  candidateUrl: string | null;
+  prefetch: PrefetchResult | null;
+  timestamp: string;
+}
+
 export interface PerceptionActionTaskResult {
   taskId: string;
   contextId: string | null;
@@ -287,9 +305,11 @@ export interface PerceptionActionTaskResult {
   structuredErrors: StructuredErrorEvent[];
   escalations: EscalationEvent[];
   axDeficientPages: AXDeficientPageLog[];
+  prefetches: PrefetchEvent[];
   tierUsage: TierUsageMetrics;
   contextWindow: NavigatorContextWindowMetrics;
   observationCache: NavigatorObservationCacheMetrics;
+  httpCachePolicy: HttpCachePolicyState;
   finalAction: NavigatorActionDecision | null;
   finalExecution: ActionExecutionResult | null;
   errorDetail: GhostTabTaskErrorDetail | null;
@@ -321,6 +341,7 @@ export interface PerceptionActionLoopOptions {
   maxSubtaskRetries?: number;
   navigationTimeoutMs?: number;
   observationCacheTtlMs?: number;
+  httpCachePolicy?: HttpCachePolicy;
   onStateTransition?: (event: GhostTabStateTransitionEvent) => void;
   onSubtaskStatus?: (event: SubtaskStatusEvent) => void;
   onStructuredError?: (event: StructuredErrorEvent) => void;
@@ -338,6 +359,7 @@ class PerceptionActionLoop {
   private readonly maxSubtaskRetries: number;
   private readonly navigationTimeoutMs: number;
   private readonly observationCacheTtlMs: number;
+  private readonly defaultHttpCachePolicy: HttpCachePolicy | null;
   private readonly logger: (line: string) => void;
 
   constructor(private readonly options: PerceptionActionLoopOptions) {
@@ -351,6 +373,7 @@ class PerceptionActionLoop {
     this.maxSubtaskRetries = options.maxSubtaskRetries ?? DEFAULT_MAX_SUBTASK_RETRIES;
     this.navigationTimeoutMs = options.navigationTimeoutMs ?? DEFAULT_NAVIGATION_TIMEOUT_MS;
     this.observationCacheTtlMs = options.observationCacheTtlMs ?? DEFAULT_OBSERVATION_CACHE_TTL_MS;
+    this.defaultHttpCachePolicy = options.httpCachePolicy ?? null;
     this.logger = options.logger ?? ((line: string) => console.info(line));
   }
 
@@ -379,6 +402,7 @@ class PerceptionActionLoop {
     const maxSubtaskRetries = input.maxSubtaskRetries ?? this.maxSubtaskRetries;
     const navigationTimeoutMs = input.navigationTimeoutMs ?? this.navigationTimeoutMs;
     const observationCacheTtlMs = input.observationCacheTtlMs ?? this.observationCacheTtlMs;
+    const requestedHttpCachePolicy = input.httpCachePolicy ?? this.defaultHttpCachePolicy;
 
     if (maxSteps <= 0) {
       throw new Error("maxSteps must be greater than zero.");
@@ -407,6 +431,16 @@ class PerceptionActionLoop {
     if (!Number.isFinite(observationCacheTtlMs) || observationCacheTtlMs <= 0) {
       throw new Error("observationCacheTtlMs must be greater than zero.");
     }
+
+    if (requestedHttpCachePolicy) {
+      await this.options.cdpClient.setHttpCachePolicy(requestedHttpCachePolicy);
+    }
+    const appliedHttpCachePolicy = this.options.cdpClient.getHttpCachePolicy();
+    this.logger(
+      `[loop] http-cache mode=${appliedHttpCachePolicy.mode} ttlMs=${
+        appliedHttpCachePolicy.ttlMs === null ? "null" : String(appliedHttpCachePolicy.ttlMs)
+      }`
+    );
 
     const stateMachine =
       this.options.stateMachine ??
@@ -448,6 +482,7 @@ class PerceptionActionLoop {
     const structuredErrors: StructuredErrorEvent[] = [];
     const escalations: EscalationEvent[] = [];
     const axDeficientPages: AXDeficientPageLog[] = [];
+    const prefetches: PrefetchEvent[] = [];
     const contextWindow = createNavigatorContextWindowManager();
     const observationCache = createNavigatorObservationCacheManager({
       ttlMs: observationCacheTtlMs
@@ -534,7 +569,8 @@ class PerceptionActionLoop {
         status: errorDetail.status,
         url: errorDetail.url ?? fallbackUrl,
         message: errorDetail.message,
-        retryable: errorDetail.retryable
+        retryable: errorDetail.retryable,
+        errorType: errorDetail.errorType
       };
     };
 
@@ -632,7 +668,7 @@ class PerceptionActionLoop {
         contextWindow.appendPair({
           step: params.step > 0 ? params.step : 1,
           action: decision,
-          observation: `structured-error source=${params.source} type=${structuredError.type} retryable=${structuredError.retryable} status=${structuredError.status ?? "none"} reason=${params.reason}`,
+          observation: `structured-error source=${params.source} type=${structuredError.type} errorType=${structuredError.errorType ?? "none"} retryable=${structuredError.retryable} status=${structuredError.status ?? "none"} reason=${params.reason}`,
           url: params.url,
           resolvedTier: "TIER_1_AX"
         });
@@ -804,9 +840,11 @@ class PerceptionActionLoop {
         structuredErrors,
         escalations,
         axDeficientPages,
+        prefetches,
         tierUsage: finalizeTierUsageMetrics(tierUsage),
         contextWindow: contextWindow.getMetrics(),
         observationCache: observationCache.getMetrics(),
+        httpCachePolicy: appliedHttpCachePolicy,
         finalAction: params.finalAction,
         finalExecution: params.finalExecution,
         errorDetail: params.errorDetail,
@@ -855,6 +893,43 @@ class PerceptionActionLoop {
       });
     };
 
+    const resolvePrefetchEvent = async (
+      prefetchPromise: Promise<PrefetchEvent> | null,
+      step: number,
+      url: string
+    ): Promise<PrefetchEvent | null> => {
+      if (!prefetchPromise) {
+        return null;
+      }
+
+      try {
+        return await prefetchPromise;
+      } catch (error) {
+        this.logger(
+          `[loop][step ${step}] prefetch-unhandled-error url=${url} error=${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        return {
+          step,
+          action: "CLICK",
+          source: "NONE",
+          candidateUrl: null,
+          prefetch: {
+            requestedUrl: "",
+            normalizedUrl: null,
+            status: "FAILED",
+            startedAt: new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+            durationMs: 0,
+            reason: "PREFETCH_UNHANDLED_ERROR",
+            errorMessage: error instanceof Error ? error.message : String(error)
+          },
+          timestamp: new Date().toISOString()
+        };
+      }
+    };
+
     let lastStep = 0;
 
     try {
@@ -864,9 +939,14 @@ class PerceptionActionLoop {
         reason: "TASK_ASSIGNED"
       });
       this.logger(`[loop] state=LOADING intent="${input.intent}" startUrl=${input.startUrl}`);
-      await this.options.cdpClient.navigate(input.startUrl, navigationTimeoutMs);
+      let navigationThrownError: unknown = null;
+      try {
+        await this.options.cdpClient.navigate(input.startUrl, navigationTimeoutMs);
+      } catch (error) {
+        navigationThrownError = error;
+      }
 
-      currentUrl = await this.options.cdpClient.getCurrentUrl();
+      currentUrl = await this.options.cdpClient.getCurrentUrl().catch(() => input.startUrl);
       const navigationOutcome = this.options.cdpClient.getLastNavigationOutcome();
       const navigationErrorDetail = buildNavigationStructuredErrorDetail({
         outcome: navigationOutcome,
@@ -917,6 +997,10 @@ class PerceptionActionLoop {
           finalExecution,
           errorDetail: navigationErrorDetail
         });
+      }
+
+      if (navigationThrownError) {
+        throw navigationThrownError;
       }
 
       transitionState("PERCEIVING", {
@@ -1461,6 +1545,14 @@ class PerceptionActionLoop {
           action: actionToExecute,
           confidenceThreshold
         });
+        const prefetchPromise =
+          actionToExecute.action === "CLICK"
+            ? this.launchPredictivePrefetch({
+                step,
+                action: actionToExecute,
+                urlAtPerception
+              })
+            : null;
 
         transitionState("ACTING", {
           step,
@@ -1474,6 +1566,15 @@ class PerceptionActionLoop {
         try {
           execution = await this.options.cdpClient.executeAction(this.toAgentAction(actionToExecute));
         } catch (error) {
+          const prefetchEventOnActionError = await resolvePrefetchEvent(
+            prefetchPromise,
+            step,
+            urlAtPerception
+          );
+          if (prefetchEventOnActionError) {
+            prefetches.push(prefetchEventOnActionError);
+          }
+
           const actionErrorDetail = createGhostTabTaskErrorDetail({
             error,
             url: urlAtPerception,
@@ -1522,6 +1623,13 @@ class PerceptionActionLoop {
           });
         }
         finalExecution = execution;
+        const prefetchEvent = await resolvePrefetchEvent(prefetchPromise, step, urlAtPerception);
+        if (prefetchEvent) {
+          prefetches.push(prefetchEvent);
+          this.logger(
+            `[loop][step ${step}] prefetch status=${prefetchEvent.prefetch?.status ?? "SKIPPED"} source=${prefetchEvent.source} candidate=${prefetchEvent.candidateUrl ?? "none"} reason=${prefetchEvent.prefetch?.reason ?? "none"}`
+          );
+        }
         currentUrl = execution.currentUrl;
         noProgressStreak = isNoProgressStep({
           urlAtPerception,
@@ -1608,6 +1716,10 @@ class PerceptionActionLoop {
             observationCacheDecisionHit,
             observationCacheDecisionKey,
             observationCacheScreenshotHit,
+            prefetchCandidateUrl: prefetchEvent?.candidateUrl ?? null,
+            prefetchStatus: prefetchEvent?.prefetch?.status ?? "NOT_REQUESTED",
+            prefetchReason: prefetchEvent?.prefetch?.reason ?? null,
+            prefetchDurationMs: prefetchEvent?.prefetch?.durationMs ?? null,
             promptTokenAlertTriggered,
             usedToonEncoding: treeEncoding.usedToonEncoding
           })
@@ -1868,6 +1980,69 @@ class PerceptionActionLoop {
     }
   }
 
+  private async launchPredictivePrefetch(input: {
+    step: number;
+    action: NavigatorActionDecision;
+    urlAtPerception: string;
+  }): Promise<PrefetchEvent> {
+    const timestamp = new Date().toISOString();
+    if (input.action.action !== "CLICK") {
+      return {
+        step: input.step,
+        action: input.action.action,
+        source: "NONE",
+        candidateUrl: null,
+        prefetch: null,
+        timestamp
+      };
+    }
+
+    let source: PrefetchEvent["source"] = "NONE";
+    let candidateUrl: string | null = extractFirstHttpUrl(input.action.text);
+    if (candidateUrl) {
+      source = "ACTION_TEXT_URL";
+    }
+
+    if (!candidateUrl && input.action.target) {
+      try {
+        const domCandidate = await this.options.cdpClient.resolveLinkUrlAtPoint(input.action.target);
+        if (domCandidate) {
+          candidateUrl = domCandidate;
+          source = "DOM_LINK_TARGET";
+        }
+      } catch (error) {
+        this.logger(
+          `[loop][step ${input.step}] prefetch-candidate-failed url=${input.urlAtPerception} error=${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
+    if (!candidateUrl) {
+      return {
+        step: input.step,
+        action: input.action.action,
+        source,
+        candidateUrl: null,
+        prefetch: null,
+        timestamp
+      };
+    }
+
+    const prefetch = await this.options.cdpClient.prefetch(candidateUrl, {
+      awaitResponse: false
+    });
+    return {
+      step: input.step,
+      action: input.action.action,
+      source,
+      candidateUrl,
+      prefetch,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   private toAgentAction(action: NavigatorActionDecision): AgentActionInput {
     return {
       action: action.action,
@@ -1877,6 +2052,20 @@ class PerceptionActionLoop {
       reasoning: action.reasoning
     };
   }
+}
+
+function extractFirstHttpUrl(text: string | null): string | null {
+  if (!text || !text.trim()) {
+    return null;
+  }
+
+  const match = text.match(/https?:\/\/[^\s"'\\)>]+/i);
+  if (!match) {
+    return null;
+  }
+
+  const candidate = match[0].trim();
+  return candidate.length > 0 ? candidate : null;
 }
 
 function createStepRecord(input: {
@@ -1923,6 +2112,10 @@ function createStepRecord(input: {
   observationCacheDecisionHit: boolean;
   observationCacheDecisionKey: string | null;
   observationCacheScreenshotHit: boolean;
+  prefetchCandidateUrl: string | null;
+  prefetchStatus: PrefetchResult["status"] | "NOT_REQUESTED";
+  prefetchReason: string | null;
+  prefetchDurationMs: number | null;
   promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
 }): LoopStepRecord {
@@ -1981,6 +2174,10 @@ function createStepRecord(input: {
     observationCacheDecisionHit: input.observationCacheDecisionHit,
     observationCacheDecisionKey: input.observationCacheDecisionKey,
     observationCacheScreenshotHit: input.observationCacheScreenshotHit,
+    prefetchCandidateUrl: input.prefetchCandidateUrl,
+    prefetchStatus: input.prefetchStatus,
+    prefetchReason: input.prefetchReason,
+    prefetchDurationMs: input.prefetchDurationMs,
     promptTokenAlertTriggered: input.promptTokenAlertTriggered,
     usedToonEncoding: input.usedToonEncoding,
     timestamp: new Date().toISOString()
@@ -2115,6 +2312,8 @@ function buildNavigationStructuredErrorDetail(input: {
 
   const status = input.outcome.status;
   const finalUrl = input.outcome.finalUrl ?? input.fallbackUrl;
+  const statusDerivedErrorType = toHttpStatusNetworkErrorType(status);
+  const errorType = input.outcome.errorType ?? statusDerivedErrorType;
   const hasStatusError = typeof status === "number" && Number.isFinite(status) && status >= 400;
   const hasCdpError = typeof input.outcome.errorText === "string" && input.outcome.errorText.length > 0;
   if (!hasStatusError && !hasCdpError) {
@@ -2122,31 +2321,71 @@ function buildNavigationStructuredErrorDetail(input: {
   }
 
   if (hasCdpError) {
+    const resolvedErrorType = errorType ?? "UNKNOWN_NETWORK_ERROR";
     return createGhostTabTaskErrorDetail({
       error: new Error(
-        `Navigation failed for ${input.outcome.requestedUrl}: ${input.outcome.errorText ?? "unknown error"}`
+        `Navigation failed for ${input.outcome.requestedUrl}: ${input.outcome.errorText ?? "unknown error"} (${resolvedErrorType})`
       ),
       type: "NETWORK",
       status,
       url: finalUrl,
       step: 0,
-      retryable: true
+      retryable: isRetryableNavigationNetworkErrorType(resolvedErrorType, status),
+      errorType: resolvedErrorType
     });
   }
 
-  const retryable = Boolean(status !== null && status >= 500);
+  const resolvedErrorType = errorType ?? "UNKNOWN_NETWORK_ERROR";
+  const retryable = isRetryableNavigationNetworkErrorType(resolvedErrorType, status);
   return createGhostTabTaskErrorDetail({
     error: new Error(
       `Navigation returned HTTP ${String(status)}${
         input.outcome.statusText ? ` ${input.outcome.statusText}` : ""
-      } for ${finalUrl}.`
+      } for ${finalUrl} (${resolvedErrorType}).`
     ),
     type: "NETWORK",
     status,
     url: finalUrl,
     step: 0,
-    retryable
+    retryable,
+    errorType: resolvedErrorType
   });
+}
+
+function toHttpStatusNetworkErrorType(status: number | null): NetworkErrorType | null {
+  if (typeof status !== "number" || !Number.isFinite(status)) {
+    return null;
+  }
+
+  if (status >= 500) {
+    return "HTTP_5XX";
+  }
+  if (status >= 400) {
+    return "HTTP_4XX";
+  }
+
+  return null;
+}
+
+function isRetryableNavigationNetworkErrorType(
+  errorType: NetworkErrorType | string | null,
+  status: number | null
+): boolean {
+  switch (errorType) {
+    case "DNS_FAILURE":
+    case "CONNECTION_TIMEOUT":
+    case "CONNECTION_FAILED":
+    case "HTTP_5XX":
+      return true;
+    case "TLS_ERROR":
+    case "HTTP_4XX":
+    case "ABORTED":
+      return false;
+    case "UNKNOWN_NETWORK_ERROR":
+      return true;
+    default:
+      return Boolean(typeof status === "number" && Number.isFinite(status) && status >= 500);
+  }
 }
 
 function tokenizeCondition(condition: string): string[] {

@@ -1,0 +1,101 @@
+{
+  "ok": true,
+  "phase": "5.5",
+  "runConfig": {
+    "contextCount": 2,
+    "ttlOverrideMs": 2000
+  },
+  "policies": {
+    "contextOne": {
+      "mode": "RESPECT_HEADERS",
+      "ttlMs": null
+    },
+    "contextTwo": {
+      "mode": "RESPECT_HEADERS",
+      "ttlMs": null
+    }
+  },
+  "scenarios": {
+    "repeatVisitUsesCache": {
+      "resourceKey": "ctx1-repeat-cache",
+      "firstNavigationHits": 1,
+      "secondNavigationHits": 1
+    },
+    "forceRefreshAlwaysFetches": {
+      "resourceKey": "ctx1-repeat-cache",
+      "hitsBefore": 1,
+      "hitsAfterFirstForcedNavigation": 2,
+      "hitsAfterSecondForcedNavigation": 3
+    },
+    "ttlOverrideFreshThenRefresh": {
+      "resourceKey": "ctx2-ttl-override",
+      "ttlMs": 2000,
+      "hitsAfterFirstNavigation": 1,
+      "hitsWithinTtl": 1,
+      "hitsAfterTtlExpiry": 2
+    },
+    "crossContextPartitionIsolation": {
+      "resourceKey": "shared-partition-resource",
+      "hitsAfterContextOneFirstNavigation": 1,
+      "hitsAfterContextOneSecondNavigation": 1,
+      "hitsAfterContextTwoFirstNavigation": 2,
+      "hitsAfterContextTwoSecondNavigation": 2
+    }
+  },
+  "harness": {
+    "origin": "http://127.0.0.1:61440",
+    "documentRequestCount": 11,
+    "scriptRequestCount": 7,
+    "scriptRequests": [
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "ctx1-repeat-cache",
+        "hit": 1,
+        "timestamp": "2026-02-22T22:55:37.289Z"
+      },
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "ctx1-repeat-cache",
+        "hit": 2,
+        "timestamp": "2026-02-22T22:55:38.080Z"
+      },
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "ctx1-repeat-cache",
+        "hit": 3,
+        "timestamp": "2026-02-22T22:55:38.119Z"
+      },
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "ctx2-ttl-override",
+        "hit": 1,
+        "timestamp": "2026-02-22T22:55:38.160Z"
+      },
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "ctx2-ttl-override",
+        "hit": 2,
+        "timestamp": "2026-02-22T22:55:41.190Z"
+      },
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "shared-partition-resource",
+        "hit": 1,
+        "timestamp": "2026-02-22T22:55:41.230Z"
+      },
+      {
+        "path": "/assets/cacheable.js",
+        "method": "GET",
+        "resourceKey": "shared-partition-resource",
+        "hit": 2,
+        "timestamp": "2026-02-22T22:55:42.013Z"
+      }
+    ]
+  }
+}

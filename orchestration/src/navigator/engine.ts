@@ -102,6 +102,7 @@ export interface NavigatorStructuredError {
   url: string;
   message: string;
   retryable: boolean;
+  errorType?: string | null;
 }
 
 export interface NavigatorDecisionRequest {
@@ -283,7 +284,8 @@ function buildNavigatorPrompt(
     "- taskSubtasks contains ordered subtasks and their statuses for checkpoint-aware execution.",
     "- activeSubtask is the current objective; prioritize actions that satisfy its verification condition.",
     "- checkpointState tracks completed subtasks and current retry attempt.",
-    "- structuredError, when present, is an orchestration-caught failure object: {type,status,url,message,retryable}.",
+    "- structuredError, when present, is an orchestration-caught failure object: {type,status,url,message,retryable,errorType?}.",
+    "- For NETWORK structuredError, errorType can be DNS_FAILURE, CONNECTION_TIMEOUT, TLS_ERROR, HTTP_4XX, HTTP_5XX, CONNECTION_FAILED, or UNKNOWN_NETWORK_ERROR.",
     "- If structuredError.retryable=true, prefer a concrete retry/recovery action before FAILED when plausible.",
     "- If structuredError.retryable=false and no alternative route is clear, return FAILED with concise reasoning.",
     "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",

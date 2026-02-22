@@ -1,0 +1,307 @@
+{
+  "taskId": "task-1771800066939",
+  "contextId": null,
+  "status": "FAILED",
+  "intent": "Open the page and recover only if the failure is retryable.",
+  "startUrl": "http://phase5-5-4-1771800066939.invalid/",
+  "finalUrl": "chrome-error://chromewebdata/",
+  "stepsTaken": 0,
+  "history": [],
+  "decomposition": {
+    "isDecomposed": false,
+    "impliedStepCount": 2,
+    "generatedBy": "HEURISTIC_V1",
+    "generatedAt": "2026-02-22T22:41:06.940Z"
+  },
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "intent": "Open the page and recover only if the failure is retryable.",
+      "startUrl": "http://phase5-5-4-1771800066939.invalid/",
+      "verification": {
+        "type": "action_confirmed",
+        "condition": "At least one meaningful action completed for the intent."
+      },
+      "status": "FAILED",
+      "attemptCount": 1,
+      "completedStep": null,
+      "failedStep": 0,
+      "lastUpdatedAt": "2026-02-22T22:41:07.160Z"
+    }
+  ],
+  "checkpoint": {
+    "lastCompletedSubtaskIndex": -1,
+    "currentSubtaskAttempt": 1,
+    "subtaskArtifacts": []
+  },
+  "subtaskStatusTimeline": [
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "subtaskId": "subtask-1",
+      "subtaskIntent": "Open the page and recover only if the failure is retryable.",
+      "status": "IN_PROGRESS",
+      "verificationType": "action_confirmed",
+      "verificationCondition": "At least one meaningful action completed for the intent.",
+      "currentSubtaskIndex": 1,
+      "totalSubtasks": 1,
+      "attempt": 1,
+      "checkpointLastCompletedSubtaskIndex": -1,
+      "reason": "DECOMPOSITION_INITIALIZED",
+      "timestamp": "2026-02-22T22:41:06.940Z"
+    },
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "subtaskId": "subtask-1",
+      "subtaskIntent": "Open the page and recover only if the failure is retryable.",
+      "status": "FAILED",
+      "verificationType": "action_confirmed",
+      "verificationCondition": "At least one meaningful action completed for the intent.",
+      "currentSubtaskIndex": 1,
+      "totalSubtasks": 1,
+      "attempt": 1,
+      "checkpointLastCompletedSubtaskIndex": -1,
+      "reason": "NAVIGATION_STRUCTURED_ERROR",
+      "timestamp": "2026-02-22T22:41:07.160Z"
+    }
+  ],
+  "structuredErrors": [
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "step": 0,
+      "source": "NAVIGATION",
+      "reason": "NAVIGATION_STRUCTURED_ERROR",
+      "error": {
+        "type": "NETWORK",
+        "status": null,
+        "url": "chrome-error://chromewebdata/",
+        "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+        "retryable": true,
+        "errorType": "DNS_FAILURE"
+      },
+      "navigatorDecision": {
+        "action": "WAIT",
+        "target": null,
+        "text": "1000",
+        "confidence": 0.82,
+        "reasoning": "Structured network error is retryable; prefer short wait/retry."
+      },
+      "decisionSource": "NAVIGATOR",
+      "timestamp": "2026-02-22T22:41:07.161Z"
+    }
+  ],
+  "escalations": [],
+  "axDeficientPages": [],
+  "prefetches": [],
+  "tierUsage": {
+    "tier1Calls": 0,
+    "tier2Calls": 0,
+    "tier3Scrolls": 0,
+    "axDeficientDetections": 0,
+    "lowConfidenceEscalations": 0,
+    "noProgressEscalations": 0,
+    "unsafeActionEscalations": 0,
+    "domBypassResolutions": 0,
+    "resolvedAtTier1": 0,
+    "resolvedAtTier2": 0,
+    "estimatedCostUsd": 0,
+    "estimatedVisionCostAvoidedUsd": 0
+  },
+  "contextWindow": {
+    "maxRecentPairCount": 0,
+    "maxSummarizedPairCount": 0,
+    "summaryRefreshCount": 0,
+    "latestSummary": null,
+    "summaryCharCount": 0,
+    "maxPromptCharCount": 0,
+    "maxEstimatedPromptTokens": 0,
+    "promptTokenAlertThreshold": 12000,
+    "tokenAlertCount": 0,
+    "tokenAlerts": []
+  },
+  "observationCache": {
+    "ttlMs": 60000,
+    "perceptionHits": 0,
+    "perceptionMisses": 0,
+    "decisionHits": 0,
+    "decisionMisses": 0,
+    "screenshotHits": 0,
+    "screenshotMisses": 0,
+    "entriesWritten": 0,
+    "expiredEntries": 0,
+    "invalidations": 0,
+    "finalEntryCount": 0
+  },
+  "finalAction": {
+    "action": "WAIT",
+    "target": null,
+    "text": "1000",
+    "confidence": 0.82,
+    "reasoning": "Structured network error is retryable; prefer short wait/retry."
+  },
+  "finalExecution": null,
+  "errorDetail": {
+    "type": "NETWORK",
+    "status": null,
+    "url": "chrome-error://chromewebdata/",
+    "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+    "retryable": true,
+    "errorType": "DNS_FAILURE",
+    "step": 0
+  },
+  "stateTransitions": [
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "from": "IDLE",
+      "to": "LOADING",
+      "timestamp": "2026-02-22T22:41:06.940Z",
+      "step": 0,
+      "url": "http://phase5-5-4-1771800066939.invalid/",
+      "reason": "TASK_ASSIGNED",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "from": "LOADING",
+      "to": "PERCEIVING",
+      "timestamp": "2026-02-22T22:41:07.161Z",
+      "step": 1,
+      "url": "chrome-error://chromewebdata/",
+      "reason": "NAVIGATION_STRUCTURED_ERROR:STRUCTURED_ERROR_CONTEXT",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "from": "PERCEIVING",
+      "to": "INFERRING",
+      "timestamp": "2026-02-22T22:41:07.161Z",
+      "step": 1,
+      "url": "chrome-error://chromewebdata/",
+      "reason": "NAVIGATION_STRUCTURED_ERROR:STRUCTURED_ERROR_DECISION",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "from": "INFERRING",
+      "to": "FAILED",
+      "timestamp": "2026-02-22T22:41:07.161Z",
+      "step": 0,
+      "url": "chrome-error://chromewebdata/",
+      "reason": "NAVIGATION_STRUCTURED_ERROR",
+      "errorDetail": {
+        "type": "NETWORK",
+        "status": null,
+        "url": "chrome-error://chromewebdata/",
+        "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+        "retryable": true,
+        "errorType": "DNS_FAILURE",
+        "step": 0
+      }
+    },
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "from": "FAILED",
+      "to": "IDLE",
+      "timestamp": "2026-02-22T22:41:07.161Z",
+      "step": 0,
+      "url": "chrome-error://chromewebdata/",
+      "reason": "TASK_CONTEXT_CLEANUP",
+      "errorDetail": null
+    }
+  ],
+  "runConfig": {
+    "phase": "5.4",
+    "scenario": {
+      "name": "dns-failure",
+      "intent": "Open the page and recover only if the failure is retryable.",
+      "kind": "DNS_FAILURE",
+      "expected": {
+        "source": "NAVIGATION",
+        "type": "NETWORK",
+        "status": null,
+        "retryable": true,
+        "errorType": "DNS_FAILURE"
+      }
+    },
+    "startUrl": "http://phase5-5-4-1771800066939.invalid/",
+    "remoteDebuggingPort": 9333,
+    "harnessPort": 60463
+  },
+  "structuredErrorCallbackEvents": [
+    {
+      "taskId": "task-1771800066939",
+      "contextId": null,
+      "step": 0,
+      "source": "NAVIGATION",
+      "reason": "NAVIGATION_STRUCTURED_ERROR",
+      "error": {
+        "type": "NETWORK",
+        "status": null,
+        "url": "chrome-error://chromewebdata/",
+        "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+        "retryable": true,
+        "errorType": "DNS_FAILURE"
+      },
+      "navigatorDecision": {
+        "action": "WAIT",
+        "target": null,
+        "text": "1000",
+        "confidence": 0.82,
+        "reasoning": "Structured network error is retryable; prefer short wait/retry."
+      },
+      "decisionSource": "NAVIGATOR",
+      "timestamp": "2026-02-22T22:41:07.161Z"
+    }
+  ],
+  "navigatorCalls": [
+    {
+      "timestamp": "2026-02-22T22:41:07.161Z",
+      "tier": "TIER_1_AX",
+      "hasScreenshot": false,
+      "structuredError": {
+        "type": "NETWORK",
+        "status": null,
+        "url": "chrome-error://chromewebdata/",
+        "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+        "retryable": true,
+        "errorType": "DNS_FAILURE"
+      }
+    }
+  ],
+  "summary": {
+    "status": "FAILED",
+    "stepsTaken": 0,
+    "finalUrl": "chrome-error://chromewebdata/",
+    "finalError": {
+      "type": "NETWORK",
+      "status": null,
+      "url": "chrome-error://chromewebdata/",
+      "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+      "retryable": true,
+      "errorType": "DNS_FAILURE",
+      "step": 0
+    },
+    "structuredErrorCount": 1,
+    "matchedEvent": {
+      "source": "NAVIGATION",
+      "error": {
+        "type": "NETWORK",
+        "status": null,
+        "url": "chrome-error://chromewebdata/",
+        "message": "Navigation failed for http://phase5-5-4-1771800066939.invalid/: net::ERR_NAME_NOT_RESOLVED (DNS_FAILURE)",
+        "retryable": true,
+        "errorType": "DNS_FAILURE"
+      },
+      "decisionSource": "NAVIGATOR",
+      "decisionAction": "WAIT"
+    },
+    "navigatorCallCount": 1
+  }
+}
