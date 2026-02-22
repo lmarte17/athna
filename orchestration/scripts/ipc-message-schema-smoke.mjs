@@ -297,6 +297,24 @@ async function main() {
         waitMs: null,
         wasQueued: true
       }
+    }),
+    indexModule.createGhostTabIpcMessage({
+      type: "TASK_STATUS",
+      taskId: "task-ipc-schema",
+      contextId: "ctx-1",
+      payload: {
+        kind: "SUBTASK",
+        subtaskId: "subtask-2",
+        subtaskIntent: "Populate departure and destination locations",
+        status: "IN_PROGRESS",
+        verificationType: "action_confirmed",
+        verificationCondition: "Origin and destination fields have been interacted with.",
+        currentSubtaskIndex: 2,
+        totalSubtasks: 5,
+        attempt: 1,
+        checkpointLastCompletedSubtaskIndex: 0,
+        reason: "CHECKPOINT_ADVANCE"
+      }
     })
   ];
 

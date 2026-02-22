@@ -4,7 +4,8 @@ import type {
 } from "../cdp/client.js";
 import {
   createGhostTabIpcMessage,
-  type GhostTabIpcTaskStatusMessage
+  type GhostTabIpcTaskStatusMessage,
+  type TaskStatusIpcPayload
 } from "../ipc/schema.js";
 import {
   createGhostTabPoolManager,
@@ -43,6 +44,7 @@ export interface ParallelTaskRunnerInput<TTaskInput> {
   input: TTaskInput;
   lease: GhostTabLease;
   cdpClient: GhostTabCdpClient;
+  emitTaskStatus: (payload: TaskStatusIpcPayload) => void;
 }
 
 export interface SubmitParallelTaskInput<TTaskInput> {
@@ -280,7 +282,14 @@ export class ParallelTaskScheduler<TTaskInput, TResult> {
           maxAttempts,
           input: input.input,
           lease,
-          cdpClient: lease.cdpClient
+          cdpClient: lease.cdpClient,
+          emitTaskStatus: (payload) => {
+            this.emitTaskStatusPayload({
+              taskId: input.taskId,
+              contextId,
+              payload
+            });
+          }
         });
       } catch (error) {
         runError = error;
@@ -530,6 +539,24 @@ export class ParallelTaskScheduler<TTaskInput, TResult> {
         url: event.url,
         reason: event.reason
       }
+    });
+    this.options.onStatusMessage(message);
+  }
+
+  private emitTaskStatusPayload(input: {
+    taskId: string;
+    contextId: string | null;
+    payload: TaskStatusIpcPayload;
+  }): void {
+    if (!this.options.onStatusMessage) {
+      return;
+    }
+
+    const message = createGhostTabIpcMessage({
+      type: "TASK_STATUS",
+      taskId: input.taskId,
+      contextId: input.contextId ?? UNKNOWN_CONTEXT_ID,
+      payload: input.payload
     });
     this.options.onStatusMessage(message);
   }

@@ -21,7 +21,7 @@ export const GHOST_TAB_IPC_RESPONSE_TYPES = ["TASK_RESULT", "TASK_ERROR", "TASK_
 
 const INPUT_EVENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"];
 const GHOST_TAB_TASK_PRIORITIES = ["FOREGROUND", "BACKGROUND"] as const;
-const TASK_STATUS_KINDS = ["QUEUE", "STATE", "SCHEDULER"] as const;
+const TASK_STATUS_KINDS = ["QUEUE", "STATE", "SCHEDULER", "SUBTASK"] as const;
 const TASK_STATUS_QUEUE_EVENTS = ["ENQUEUED", "DISPATCHED", "RELEASED"] as const;
 const TASK_STATUS_SCHEDULER_EVENTS = [
   "STARTED",
@@ -32,6 +32,7 @@ const TASK_STATUS_SCHEDULER_EVENTS = [
   "RESOURCE_BUDGET_EXCEEDED",
   "RESOURCE_BUDGET_KILLED"
 ] as const;
+const TASK_STATUS_SUBTASK_STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETE", "FAILED"] as const;
 const GHOST_TAB_TASK_STATES: readonly GhostTabTaskState[] = [
   "IDLE",
   "LOADING",
@@ -89,6 +90,7 @@ type GhostTabTaskPriority = (typeof GHOST_TAB_TASK_PRIORITIES)[number];
 type TaskStatusKind = (typeof TASK_STATUS_KINDS)[number];
 type TaskStatusQueueEvent = (typeof TASK_STATUS_QUEUE_EVENTS)[number];
 type TaskStatusSchedulerEvent = (typeof TASK_STATUS_SCHEDULER_EVENTS)[number];
+type TaskStatusSubtaskStatus = (typeof TASK_STATUS_SUBTASK_STATUSES)[number];
 
 export interface QueueTaskStatusIpcPayload {
   kind: "QUEUE";
@@ -121,10 +123,25 @@ export interface SchedulerTaskStatusIpcPayload {
   error: GhostTabTaskErrorDetail | null;
 }
 
+export interface SubtaskTaskStatusIpcPayload {
+  kind: "SUBTASK";
+  subtaskId: string;
+  subtaskIntent: string;
+  status: TaskStatusSubtaskStatus;
+  verificationType: string;
+  verificationCondition: string;
+  currentSubtaskIndex: number;
+  totalSubtasks: number;
+  attempt: number;
+  checkpointLastCompletedSubtaskIndex: number;
+  reason: string | null;
+}
+
 export type TaskStatusIpcPayload =
   | QueueTaskStatusIpcPayload
   | StateTaskStatusIpcPayload
-  | SchedulerTaskStatusIpcPayload;
+  | SchedulerTaskStatusIpcPayload
+  | SubtaskTaskStatusIpcPayload;
 
 export interface GhostTabIpcPayloadByType {
   NAVIGATE: NavigateIpcPayload;
@@ -465,6 +482,39 @@ function validatePayloadByType(
 
         validateNullableFiniteNumber(payload.step, "payload.step", details);
         validateNullableString(payload.url, "payload.url", details);
+        validateNullableString(payload.reason, "payload.reason", details);
+        return;
+      }
+
+      if (payload.kind === "SUBTASK") {
+        validateNonEmptyString(payload.subtaskId, "payload.subtaskId", details);
+        validateNonEmptyString(payload.subtaskIntent, "payload.subtaskIntent", details);
+        validateNonEmptyString(payload.status, "payload.status", details);
+        if (
+          typeof payload.status === "string" &&
+          !TASK_STATUS_SUBTASK_STATUSES.includes(payload.status as TaskStatusSubtaskStatus)
+        ) {
+          details.push(
+            `payload.status must be one of: ${TASK_STATUS_SUBTASK_STATUSES.join(", ")}`
+          );
+        }
+
+        validateNonEmptyString(payload.verificationType, "payload.verificationType", details);
+        validateNonEmptyString(payload.verificationCondition, "payload.verificationCondition", details);
+        validateNonNegativeFiniteNumber(payload.currentSubtaskIndex, "payload.currentSubtaskIndex", details);
+        validateNonNegativeFiniteNumber(payload.totalSubtasks, "payload.totalSubtasks", details);
+        validateNonNegativeFiniteNumber(payload.attempt, "payload.attempt", details);
+        validateRequiredFiniteNumber(
+          payload.checkpointLastCompletedSubtaskIndex,
+          "payload.checkpointLastCompletedSubtaskIndex",
+          details
+        );
+        if (
+          typeof payload.checkpointLastCompletedSubtaskIndex === "number" &&
+          payload.checkpointLastCompletedSubtaskIndex < -1
+        ) {
+          details.push("payload.checkpointLastCompletedSubtaskIndex must be >= -1");
+        }
         validateNullableString(payload.reason, "payload.reason", details);
         return;
       }

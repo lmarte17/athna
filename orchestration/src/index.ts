@@ -40,15 +40,28 @@ export {
   type NavigatorActionDecision,
   type NavigatorActionTarget,
   type NavigatorActionType,
+  type NavigatorActiveSubtask,
+  type NavigatorCheckpointState,
   type NavigatorDecisionRequest,
   type NavigatorEngineOptions,
   type NavigatorEngine,
   type NavigatorEscalationReason,
   type NavigatorInferenceTier,
+  type NavigatorObservationSubtask,
   type NavigatorObservationContextStats,
   type NavigatorObservationInput,
   type NavigatorPromptBudgetEstimate
 } from "./navigator/engine.js";
+
+export {
+  decomposeTaskIntent,
+  type DecomposeTaskIntentInput,
+  type TaskDecompositionPlan,
+  type TaskDecompositionSubtask,
+  type TaskSubtaskStatus,
+  type TaskSubtaskVerification,
+  type TaskSubtaskVerificationType
+} from "./navigator/decomposition.js";
 
 export {
   createNavigatorContextWindowManager,
@@ -70,9 +83,13 @@ export {
   type LoopStepRecord,
   type PerceptionActionLoopOptions,
   type PerceptionActionTaskCleanupContext,
+  type TaskCheckpointArtifact,
+  type TaskCheckpointState,
   type PerceptionActionTaskInput,
   type PerceptionActionTaskResult,
+  type RuntimeTaskSubtask,
   type ResolvedPerceptionTier,
+  type SubtaskStatusEvent,
   type TierUsageMetrics
 } from "./loop/orchestrator.js";
 
@@ -126,6 +143,7 @@ export {
   type SchedulerTaskStatusIpcPayload,
   type ScreenshotIpcPayload,
   type StateTaskStatusIpcPayload,
+  type SubtaskTaskStatusIpcPayload,
   type TaskErrorIpcPayload,
   type TaskResultIpcPayload,
   type TaskStatusIpcPayload

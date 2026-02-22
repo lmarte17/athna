@@ -13,10 +13,19 @@ import type { ToonEncodingResult } from "../ax-tree/toon-runtime.js";
 import {
   estimateNavigatorPromptBudget,
   type NavigatorActionDecision,
+  type NavigatorActiveSubtask,
   type NavigatorEngine,
+  type NavigatorObservationSubtask,
   type NavigatorEscalationReason,
   type NavigatorInferenceTier
 } from "../navigator/engine.js";
+import {
+  decomposeTaskIntent,
+  type TaskDecompositionPlan,
+  type TaskDecompositionSubtask,
+  type TaskSubtaskStatus,
+  type TaskSubtaskVerificationType
+} from "../navigator/decomposition.js";
 import {
   createNavigatorContextWindowManager,
   type NavigatorContextSnapshot,
@@ -37,6 +46,7 @@ const DEFAULT_AX_DEFICIENT_INTERACTIVE_THRESHOLD = 5;
 const DEFAULT_SCROLL_STEP_PX = 800;
 const DEFAULT_MAX_SCROLL_STEPS = 8;
 const DEFAULT_MAX_NO_PROGRESS_STEPS = 6;
+const DEFAULT_MAX_SUBTASK_RETRIES = 2;
 const DEFAULT_BELOW_FOLD_MARGIN_RATIO = 0.11;
 const ESTIMATED_TIER1_CALL_COST_USD = 0.00015;
 const ESTIMATED_TIER2_CALL_COST_USD = 0.003;
@@ -85,6 +95,45 @@ export interface PerceptionActionTaskInput {
   scrollStepPx?: number;
   maxScrollSteps?: number;
   maxNoProgressSteps?: number;
+  maxSubtaskRetries?: number;
+}
+
+export interface TaskCheckpointArtifact {
+  subtaskId: string;
+  step: number;
+  completionUrl: string;
+  resolvedTier: ResolvedPerceptionTier;
+  action: NavigatorActionDecision["action"];
+  timestamp: string;
+}
+
+export interface TaskCheckpointState {
+  lastCompletedSubtaskIndex: number;
+  currentSubtaskAttempt: number;
+  subtaskArtifacts: TaskCheckpointArtifact[];
+}
+
+export interface RuntimeTaskSubtask extends TaskDecompositionSubtask {
+  attemptCount: number;
+  completedStep: number | null;
+  failedStep: number | null;
+  lastUpdatedAt: string;
+}
+
+export interface SubtaskStatusEvent {
+  taskId: string;
+  contextId: string | null;
+  subtaskId: string;
+  subtaskIntent: string;
+  status: TaskSubtaskStatus;
+  verificationType: TaskSubtaskVerificationType;
+  verificationCondition: string;
+  currentSubtaskIndex: number;
+  totalSubtasks: number;
+  attempt: number;
+  checkpointLastCompletedSubtaskIndex: number;
+  reason: string;
+  timestamp: string;
 }
 
 export interface LoopStepRecord {
@@ -122,6 +171,16 @@ export interface LoopStepRecord {
   tier1EstimatedPromptTokens: number;
   tier2PromptCharCount: number;
   tier2EstimatedPromptTokens: number;
+  decompositionUsed: boolean;
+  decompositionImpliedStepCount: number;
+  activeSubtaskId: string | null;
+  activeSubtaskIntent: string | null;
+  activeSubtaskStatus: TaskSubtaskStatus | null;
+  activeSubtaskAttempt: number;
+  activeSubtaskIndex: number;
+  totalSubtasks: number;
+  checkpointLastCompletedSubtaskIndex: number;
+  checkpointCurrentSubtaskAttempt: number;
   contextRecentPairCount: number;
   contextSummarizedPairCount: number;
   contextTotalPairCount: number;
@@ -184,6 +243,15 @@ export interface PerceptionActionTaskResult {
   finalUrl: string;
   stepsTaken: number;
   history: LoopStepRecord[];
+  decomposition: {
+    isDecomposed: boolean;
+    impliedStepCount: number;
+    generatedBy: TaskDecompositionPlan["generatedBy"];
+    generatedAt: string;
+  };
+  subtasks: RuntimeTaskSubtask[];
+  checkpoint: TaskCheckpointState;
+  subtaskStatusTimeline: SubtaskStatusEvent[];
   escalations: EscalationEvent[];
   axDeficientPages: AXDeficientPageLog[];
   tierUsage: TierUsageMetrics;
@@ -216,7 +284,9 @@ export interface PerceptionActionLoopOptions {
   scrollStepPx?: number;
   maxScrollSteps?: number;
   maxNoProgressSteps?: number;
+  maxSubtaskRetries?: number;
   onStateTransition?: (event: GhostTabStateTransitionEvent) => void;
+  onSubtaskStatus?: (event: SubtaskStatusEvent) => void;
   onTaskCleanup?: (context: PerceptionActionTaskCleanupContext) => Promise<void> | void;
   logger?: (line: string) => void;
 }
@@ -228,6 +298,7 @@ class PerceptionActionLoop {
   private readonly scrollStepPx: number;
   private readonly maxScrollSteps: number;
   private readonly maxNoProgressSteps: number;
+  private readonly maxSubtaskRetries: number;
   private readonly logger: (line: string) => void;
 
   constructor(private readonly options: PerceptionActionLoopOptions) {
@@ -238,6 +309,7 @@ class PerceptionActionLoop {
     this.scrollStepPx = options.scrollStepPx ?? DEFAULT_SCROLL_STEP_PX;
     this.maxScrollSteps = options.maxScrollSteps ?? DEFAULT_MAX_SCROLL_STEPS;
     this.maxNoProgressSteps = options.maxNoProgressSteps ?? DEFAULT_MAX_NO_PROGRESS_STEPS;
+    this.maxSubtaskRetries = options.maxSubtaskRetries ?? DEFAULT_MAX_SUBTASK_RETRIES;
     this.logger = options.logger ?? ((line: string) => console.info(line));
   }
 
@@ -263,6 +335,7 @@ class PerceptionActionLoop {
     const scrollStepPx = input.scrollStepPx ?? this.scrollStepPx;
     const maxScrollSteps = input.maxScrollSteps ?? this.maxScrollSteps;
     const maxNoProgressSteps = input.maxNoProgressSteps ?? this.maxNoProgressSteps;
+    const maxSubtaskRetries = input.maxSubtaskRetries ?? this.maxSubtaskRetries;
 
     if (maxSteps <= 0) {
       throw new Error("maxSteps must be greater than zero.");
@@ -281,6 +354,9 @@ class PerceptionActionLoop {
     }
     if (maxNoProgressSteps <= 0) {
       throw new Error("maxNoProgressSteps must be greater than zero.");
+    }
+    if (!Number.isFinite(maxSubtaskRetries) || maxSubtaskRetries < 0) {
+      throw new Error("maxSubtaskRetries must be zero or greater.");
     }
 
     const stateMachine =
@@ -309,6 +385,17 @@ class PerceptionActionLoop {
     };
 
     const history: LoopStepRecord[] = [];
+    const decomposition = decomposeTaskIntent({
+      intent: input.intent,
+      startUrl: input.startUrl
+    });
+    const subtasks = initializeRuntimeSubtasks(decomposition.subtasks);
+    const checkpoint: TaskCheckpointState = {
+      lastCompletedSubtaskIndex: -1,
+      currentSubtaskAttempt: 0,
+      subtaskArtifacts: []
+    };
+    const subtaskStatusTimeline: SubtaskStatusEvent[] = [];
     const escalations: EscalationEvent[] = [];
     const axDeficientPages: AXDeficientPageLog[] = [];
     const contextWindow = createNavigatorContextWindowManager();
@@ -324,6 +411,160 @@ class PerceptionActionLoop {
     let currentUrl = input.startUrl;
     let finalAction: NavigatorActionDecision | null = null;
     let finalExecution: ActionExecutionResult | null = null;
+
+    const getActiveSubtaskIndex = (): number =>
+      subtasks.findIndex((subtask) => subtask.status === "IN_PROGRESS");
+
+    const getActiveSubtask = (): RuntimeTaskSubtask | null => {
+      const index = getActiveSubtaskIndex();
+      return index >= 0 ? subtasks[index] : null;
+    };
+
+    const emitSubtaskStatus = (subtaskIndex: number, reason: string): void => {
+      const subtask = subtasks[subtaskIndex];
+      if (!subtask) {
+        return;
+      }
+      const event: SubtaskStatusEvent = {
+        taskId,
+        contextId,
+        subtaskId: subtask.id,
+        subtaskIntent: subtask.intent,
+        status: subtask.status,
+        verificationType: subtask.verification.type,
+        verificationCondition: subtask.verification.condition,
+        currentSubtaskIndex: subtaskIndex + 1,
+        totalSubtasks: subtasks.length,
+        attempt: subtask.attemptCount,
+        checkpointLastCompletedSubtaskIndex: checkpoint.lastCompletedSubtaskIndex,
+        reason,
+        timestamp: new Date().toISOString()
+      };
+      subtaskStatusTimeline.push(event);
+      this.options.onSubtaskStatus?.(event);
+    };
+
+    const activateSubtask = (subtaskIndex: number, reason: string): void => {
+      const subtask = subtasks[subtaskIndex];
+      if (!subtask) {
+        return;
+      }
+      subtask.status = "IN_PROGRESS";
+      subtask.attemptCount = Math.max(1, subtask.attemptCount);
+      subtask.lastUpdatedAt = new Date().toISOString();
+      checkpoint.currentSubtaskAttempt = subtask.attemptCount;
+      emitSubtaskStatus(subtaskIndex, reason);
+    };
+
+    const completeActiveSubtask = (params: {
+      step: number;
+      url: string;
+      resolvedTier: ResolvedPerceptionTier;
+      action: NavigatorActionDecision;
+      reason: string;
+    }): boolean => {
+      const activeSubtaskIndex = getActiveSubtaskIndex();
+      if (activeSubtaskIndex < 0) {
+        return false;
+      }
+
+      const activeSubtask = subtasks[activeSubtaskIndex];
+      activeSubtask.status = "COMPLETE";
+      activeSubtask.completedStep = params.step;
+      activeSubtask.failedStep = null;
+      activeSubtask.lastUpdatedAt = new Date().toISOString();
+
+      checkpoint.lastCompletedSubtaskIndex = Math.max(
+        checkpoint.lastCompletedSubtaskIndex,
+        activeSubtaskIndex
+      );
+      checkpoint.currentSubtaskAttempt = 0;
+      checkpoint.subtaskArtifacts.push({
+        subtaskId: activeSubtask.id,
+        step: params.step,
+        completionUrl: params.url,
+        resolvedTier: params.resolvedTier,
+        action: params.action.action,
+        timestamp: new Date().toISOString()
+      });
+
+      emitSubtaskStatus(activeSubtaskIndex, params.reason);
+
+      const nextSubtaskIndex = subtasks.findIndex(
+        (subtask, index) => index > activeSubtaskIndex && subtask.status === "PENDING"
+      );
+      if (nextSubtaskIndex >= 0) {
+        activateSubtask(nextSubtaskIndex, "CHECKPOINT_ADVANCE");
+      }
+      return true;
+    };
+
+    const retryActiveSubtaskFromCheckpoint = (params: {
+      step: number;
+      reason: string;
+    }): boolean => {
+      const activeSubtaskIndex = getActiveSubtaskIndex();
+      if (activeSubtaskIndex < 0) {
+        return false;
+      }
+
+      const activeSubtask = subtasks[activeSubtaskIndex];
+      activeSubtask.status = "FAILED";
+      activeSubtask.failedStep = params.step;
+      activeSubtask.lastUpdatedAt = new Date().toISOString();
+      emitSubtaskStatus(activeSubtaskIndex, `${params.reason}:FAILED`);
+
+      const retriesUsed = Math.max(0, activeSubtask.attemptCount - 1);
+      if (retriesUsed >= maxSubtaskRetries) {
+        return false;
+      }
+
+      activeSubtask.attemptCount += 1;
+      activeSubtask.status = "IN_PROGRESS";
+      activeSubtask.lastUpdatedAt = new Date().toISOString();
+      checkpoint.currentSubtaskAttempt = activeSubtask.attemptCount;
+      emitSubtaskStatus(activeSubtaskIndex, `${params.reason}:RETRY_FROM_CHECKPOINT`);
+      return true;
+    };
+
+    const completeRemainingSubtasksForDone = (params: {
+      step: number;
+      url: string;
+      resolvedTier: ResolvedPerceptionTier;
+      action: NavigatorActionDecision["action"];
+    }): void => {
+      for (let index = 0; index < subtasks.length; index += 1) {
+        const subtask = subtasks[index];
+        if (subtask.status === "COMPLETE") {
+          continue;
+        }
+        subtask.status = "COMPLETE";
+        subtask.completedStep = params.step;
+        subtask.failedStep = null;
+        subtask.lastUpdatedAt = new Date().toISOString();
+        checkpoint.lastCompletedSubtaskIndex = Math.max(checkpoint.lastCompletedSubtaskIndex, index);
+        emitSubtaskStatus(index, "TASK_DONE_FINALIZATION");
+        checkpoint.subtaskArtifacts.push({
+          subtaskId: subtask.id,
+          step: params.step,
+          completionUrl: params.url,
+          resolvedTier: params.resolvedTier,
+          action: params.action,
+          timestamp: new Date().toISOString()
+        });
+      }
+      checkpoint.currentSubtaskAttempt = 0;
+    };
+
+    for (let index = 0; index < subtasks.length; index += 1) {
+      const subtask = subtasks[index];
+      if (subtask.status === "IN_PROGRESS") {
+        subtask.attemptCount = Math.max(1, subtask.attemptCount);
+        checkpoint.currentSubtaskAttempt = subtask.attemptCount;
+      }
+      emitSubtaskStatus(index, "DECOMPOSITION_INITIALIZED");
+    }
+
     const buildTaskResult = (params: {
       status: PerceptionActionTaskResult["status"];
       finalUrl: string;
@@ -341,6 +582,15 @@ class PerceptionActionLoop {
         finalUrl: params.finalUrl,
         stepsTaken: params.stepsTaken,
         history,
+        decomposition: {
+          isDecomposed: decomposition.isDecomposed,
+          impliedStepCount: decomposition.impliedStepCount,
+          generatedBy: decomposition.generatedBy,
+          generatedAt: decomposition.generatedAt
+        },
+        subtasks,
+        checkpoint,
+        subtaskStatusTimeline,
         escalations,
         axDeficientPages,
         tierUsage: finalizeTierUsageMetrics(tierUsage),
@@ -454,6 +704,17 @@ class PerceptionActionLoop {
           signals: axDeficiencySignals
         });
         const contextSnapshot = contextWindow.buildSnapshot();
+        const activeSubtaskIndex = getActiveSubtaskIndex();
+        const activeSubtask = activeSubtaskIndex >= 0 ? subtasks[activeSubtaskIndex] : null;
+        const taskSubtasksForNavigator: NavigatorObservationSubtask[] =
+          subtasks.map(toNavigatorObservationSubtask);
+        const activeSubtaskForNavigator: NavigatorActiveSubtask | null = activeSubtask
+          ? toNavigatorActiveSubtask({
+              subtask: activeSubtask,
+              index: activeSubtaskIndex,
+              totalSubtasks: subtasks.length
+            })
+          : null;
         const observation = {
           currentUrl: urlAtPerception,
           interactiveElementIndex: indexResult.elements,
@@ -466,6 +727,12 @@ class PerceptionActionLoop {
             summarizedPairCount: contextSnapshot.summarizedPairCount,
             totalPairCount: contextSnapshot.totalPairCount,
             summaryCharCount: contextSnapshot.summaryCharCount
+          },
+          taskSubtasks: taskSubtasksForNavigator,
+          activeSubtask: activeSubtaskForNavigator,
+          checkpointState: {
+            lastCompletedSubtaskIndex: checkpoint.lastCompletedSubtaskIndex,
+            currentSubtaskAttempt: checkpoint.currentSubtaskAttempt
           }
         };
         const tier1ObservationCharCount = JSON.stringify(observation).length;
@@ -823,6 +1090,25 @@ class PerceptionActionLoop {
           cachedPerception = null;
         }
 
+        if (activeSubtask) {
+          const subtaskVerification = evaluateSubtaskVerification({
+            subtask: activeSubtask,
+            execution,
+            action: actionToExecute,
+            currentUrl,
+            indexResult
+          });
+          if (subtaskVerification.satisfied) {
+            completeActiveSubtask({
+              step,
+              url: currentUrl,
+              resolvedTier,
+              action: actionToExecute,
+              reason: `VERIFIED:${subtaskVerification.reason}`
+            });
+          }
+        }
+
         history.push(
           createStepRecord({
             step,
@@ -857,6 +1143,11 @@ class PerceptionActionLoop {
             tier1EstimatedPromptTokens,
             tier2PromptCharCount,
             tier2EstimatedPromptTokens,
+            decompositionUsed: decomposition.isDecomposed,
+            decompositionImpliedStepCount: decomposition.impliedStepCount,
+            activeSubtask: activeSubtaskForNavigator,
+            totalSubtasks: subtasks.length,
+            checkpoint,
             contextSnapshot,
             promptTokenAlertTriggered,
             usedToonEncoding: treeEncoding.usedToonEncoding
@@ -872,6 +1163,12 @@ class PerceptionActionLoop {
         });
 
         if (actionToExecute.action === "DONE" || execution.status === "done") {
+          completeRemainingSubtasksForDone({
+            step,
+            url: currentUrl,
+            resolvedTier,
+            action: actionToExecute.action
+          });
           transitionState("COMPLETE", {
             step,
             url: currentUrl,
@@ -897,6 +1194,25 @@ class PerceptionActionLoop {
         }
 
         if (actionToExecute.action === "FAILED" || execution.status === "failed") {
+          const retriedFromCheckpoint = retryActiveSubtaskFromCheckpoint({
+            step,
+            reason: "TASK_FAILED"
+          });
+          if (retriedFromCheckpoint) {
+            this.logger(
+              `[loop][step ${step}] subtask-retry status=IN_PROGRESS active=${getActiveSubtask()?.id ?? "none"} attempt=${checkpoint.currentSubtaskAttempt} lastComplete=${checkpoint.lastCompletedSubtaskIndex}`
+            );
+            noProgressStreak = 0;
+            pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
+            cachedPerception = null;
+            transitionState("PERCEIVING", {
+              step: step + 1,
+              url: currentUrl,
+              reason: "SUBTASK_RETRY"
+            });
+            continue;
+          }
+
           const errorDetail = createGhostTabTaskErrorDetail({
             error: new Error(execution.message ?? `Execution failed for action ${actionToExecute.action}.`),
             url: currentUrl,
@@ -928,6 +1244,25 @@ class PerceptionActionLoop {
         }
 
         if (noProgressStreak >= maxNoProgressSteps) {
+          const retriedFromCheckpoint = retryActiveSubtaskFromCheckpoint({
+            step,
+            reason: "NO_PROGRESS_LOOP_GUARD"
+          });
+          if (retriedFromCheckpoint) {
+            this.logger(
+              `[loop][step ${step}] subtask-retry reason=NO_PROGRESS active=${getActiveSubtask()?.id ?? "none"} attempt=${checkpoint.currentSubtaskAttempt} lastComplete=${checkpoint.lastCompletedSubtaskIndex}`
+            );
+            noProgressStreak = 0;
+            pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
+            cachedPerception = null;
+            transitionState("PERCEIVING", {
+              step: step + 1,
+              url: currentUrl,
+              reason: "SUBTASK_RETRY"
+            });
+            continue;
+          }
+
           const loopGuardFailure: NavigatorActionDecision = {
             action: "FAILED",
             target: null,
@@ -977,6 +1312,15 @@ class PerceptionActionLoop {
         });
       }
 
+      const activeSubtaskAtMaxSteps = getActiveSubtaskIndex();
+      if (activeSubtaskAtMaxSteps >= 0) {
+        const subtask = subtasks[activeSubtaskAtMaxSteps];
+        subtask.status = "FAILED";
+        subtask.failedStep = maxSteps;
+        subtask.lastUpdatedAt = new Date().toISOString();
+        emitSubtaskStatus(activeSubtaskAtMaxSteps, "MAX_STEPS_REACHED");
+      }
+
       const maxStepErrorDetail = createGhostTabTaskErrorDetail({
         error: new Error(`Reached max steps (${maxSteps}) without terminal completion.`),
         url: currentUrl,
@@ -1007,6 +1351,14 @@ class PerceptionActionLoop {
         errorDetail: maxStepErrorDetail
       });
     } catch (error) {
+      const activeSubtaskOnException = getActiveSubtaskIndex();
+      if (activeSubtaskOnException >= 0) {
+        const subtask = subtasks[activeSubtaskOnException];
+        subtask.status = "FAILED";
+        subtask.lastUpdatedAt = new Date().toISOString();
+        emitSubtaskStatus(activeSubtaskOnException, "UNHANDLED_EXCEPTION");
+      }
+
       const errorDetail = createGhostTabTaskErrorDetail({
         error,
         url: currentUrl,
@@ -1096,6 +1448,11 @@ function createStepRecord(input: {
   tier1EstimatedPromptTokens: number;
   tier2PromptCharCount: number;
   tier2EstimatedPromptTokens: number;
+  decompositionUsed: boolean;
+  decompositionImpliedStepCount: number;
+  activeSubtask: NavigatorActiveSubtask | null;
+  totalSubtasks: number;
+  checkpoint: TaskCheckpointState;
   contextSnapshot: NavigatorContextSnapshot;
   promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
@@ -1135,6 +1492,16 @@ function createStepRecord(input: {
     tier1EstimatedPromptTokens: input.tier1EstimatedPromptTokens,
     tier2PromptCharCount: input.tier2PromptCharCount,
     tier2EstimatedPromptTokens: input.tier2EstimatedPromptTokens,
+    decompositionUsed: input.decompositionUsed,
+    decompositionImpliedStepCount: input.decompositionImpliedStepCount,
+    activeSubtaskId: input.activeSubtask?.id ?? null,
+    activeSubtaskIntent: input.activeSubtask?.intent ?? null,
+    activeSubtaskStatus: input.activeSubtask?.status ?? null,
+    activeSubtaskAttempt: input.activeSubtask?.attempt ?? 0,
+    activeSubtaskIndex: input.activeSubtask?.currentSubtaskIndex ?? 0,
+    totalSubtasks: input.totalSubtasks,
+    checkpointLastCompletedSubtaskIndex: input.checkpoint.lastCompletedSubtaskIndex,
+    checkpointCurrentSubtaskAttempt: input.checkpoint.currentSubtaskAttempt,
     contextRecentPairCount: input.contextSnapshot.recentPairCount,
     contextSummarizedPairCount: input.contextSnapshot.summarizedPairCount,
     contextTotalPairCount: input.contextSnapshot.totalPairCount,
@@ -1144,6 +1511,156 @@ function createStepRecord(input: {
     usedToonEncoding: input.usedToonEncoding,
     timestamp: new Date().toISOString()
   };
+}
+
+function initializeRuntimeSubtasks(subtasks: TaskDecompositionSubtask[]): RuntimeTaskSubtask[] {
+  return subtasks.map((subtask) => ({
+    ...subtask,
+    attemptCount: subtask.status === "IN_PROGRESS" ? 1 : 0,
+    completedStep: null,
+    failedStep: null,
+    lastUpdatedAt: new Date().toISOString()
+  }));
+}
+
+function toNavigatorObservationSubtask(subtask: RuntimeTaskSubtask): NavigatorObservationSubtask {
+  return {
+    id: subtask.id,
+    intent: subtask.intent,
+    status: subtask.status,
+    verification: {
+      type: subtask.verification.type,
+      condition: subtask.verification.condition
+    }
+  };
+}
+
+function toNavigatorActiveSubtask(input: {
+  subtask: RuntimeTaskSubtask;
+  index: number;
+  totalSubtasks: number;
+}): NavigatorActiveSubtask {
+  return {
+    id: input.subtask.id,
+    intent: input.subtask.intent,
+    status: input.subtask.status,
+    verification: {
+      type: input.subtask.verification.type,
+      condition: input.subtask.verification.condition
+    },
+    currentSubtaskIndex: input.index + 1,
+    totalSubtasks: input.totalSubtasks,
+    attempt: input.subtask.attemptCount
+  };
+}
+
+function evaluateSubtaskVerification(input: {
+  subtask: RuntimeTaskSubtask;
+  action: NavigatorActionDecision;
+  execution: ActionExecutionResult;
+  currentUrl: string;
+  indexResult: InteractiveElementIndexResult;
+}): { satisfied: boolean; reason: string } {
+  if (input.action.action === "FAILED" || input.execution.status === "failed") {
+    return {
+      satisfied: false,
+      reason: "action_or_execution_failed"
+    };
+  }
+
+  if (input.action.action === "DONE" || input.execution.status === "done") {
+    return {
+      satisfied: true,
+      reason: "task_done_action"
+    };
+  }
+
+  const verification = input.subtask.verification;
+  switch (verification.type) {
+    case "url_matches": {
+      const condition = normalizeForComparison(verification.condition);
+      const url = normalizeForComparison(input.currentUrl);
+      const matched = condition.length > 0 && url.includes(condition);
+      return {
+        satisfied: matched || input.execution.navigationObserved,
+        reason: matched ? "url_matches_condition" : "navigation_observed"
+      };
+    }
+    case "element_present": {
+      const conditionTokens = tokenizeCondition(verification.condition);
+      const hasTokenMatch =
+        conditionTokens.length > 0 &&
+        input.indexResult.elements.some((element) => {
+          const label = normalizeForComparison(
+            `${element.name ?? ""} ${element.role ?? ""} ${element.value ?? ""}`
+          );
+          return conditionTokens.every((token) => label.includes(token));
+        });
+      return {
+        satisfied: hasTokenMatch || input.execution.domMutationObserved,
+        reason: hasTokenMatch ? "element_condition_matched" : "dom_mutation_observed"
+      };
+    }
+    case "data_extracted": {
+      const hasExtractedData = hasStructuredData(input.execution.extractedData);
+      return {
+        satisfied: hasExtractedData || input.action.action === "EXTRACT",
+        reason: hasExtractedData ? "data_extracted" : "extract_action_executed"
+      };
+    }
+    case "human_review":
+      return {
+        satisfied: false,
+        reason: "human_review_required"
+      };
+    case "action_confirmed":
+    default: {
+      const confirmed =
+        input.execution.navigationObserved ||
+        input.execution.domMutationObserved ||
+        input.action.action !== "WAIT";
+      return {
+        satisfied: confirmed,
+        reason: confirmed ? "meaningful_action_confirmed" : "no_meaningful_action"
+      };
+    }
+  }
+}
+
+function tokenizeCondition(condition: string): string[] {
+  const normalized = normalizeForComparison(condition);
+  if (!normalized) {
+    return [];
+  }
+  return normalized
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3 && !INTENT_STOP_WORDS.has(token));
+}
+
+function normalizeForComparison(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/https?:\/\//g, " ")
+    .replace(/[^a-z0-9/.\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasStructuredData(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  if (typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>).length > 0;
+  }
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return true;
 }
 
 function evaluateAXDeficiency(input: {

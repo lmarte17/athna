@@ -1,0 +1,63 @@
+{
+  "ok": true,
+  "phase": "4.2",
+  "summary": {
+    "scenarioCount": 2,
+    "scenarios": [
+      {
+        "name": "flight-intent-decomposition",
+        "status": "FAILED",
+        "stepsTaken": 4,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 4,
+          "totalSubtasks": 5,
+          "completedSubtasks": 0,
+          "failedSubtasks": 1,
+          "retryFromCheckpointEvents": 1,
+          "checkpoint": {
+            "lastCompletedSubtaskIndex": -1,
+            "currentSubtaskAttempt": 2,
+            "subtaskArtifacts": []
+          },
+          "decomposition": {
+            "isDecomposed": true,
+            "impliedStepCount": 8,
+            "generatedBy": "HEURISTIC_V1",
+            "generatedAt": "2026-02-22T20:23:23.977Z"
+          }
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.2/scenarios/flight-intent-decomposition-task-decomposition-checkpointing-result.json"
+      },
+      {
+        "name": "checkpoint-retry-pressure",
+        "status": "FAILED",
+        "stepsTaken": 3,
+        "summary": {
+          "status": "FAILED",
+          "stepsTaken": 3,
+          "totalSubtasks": 5,
+          "completedSubtasks": 0,
+          "failedSubtasks": 1,
+          "retryFromCheckpointEvents": 2,
+          "checkpoint": {
+            "lastCompletedSubtaskIndex": -1,
+            "currentSubtaskAttempt": 3,
+            "subtaskArtifacts": []
+          },
+          "decomposition": {
+            "isDecomposed": true,
+            "impliedStepCount": 8,
+            "generatedBy": "HEURISTIC_V1",
+            "generatedAt": "2026-02-22T20:24:13.898Z"
+          }
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.2/scenarios/checkpoint-retry-pressure-task-decomposition-checkpointing-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "remoteDebuggingPort": 9333,
+    "headful": false
+  }
+}

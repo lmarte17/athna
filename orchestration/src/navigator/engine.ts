@@ -52,6 +52,9 @@ export interface NavigatorObservationInput {
   previousObservations?: string[];
   historySummary?: string | null;
   contextWindowStats?: NavigatorObservationContextStats | null;
+  taskSubtasks?: NavigatorObservationSubtask[] | null;
+  activeSubtask?: NavigatorActiveSubtask | null;
+  checkpointState?: NavigatorCheckpointState | null;
   screenshot?: NavigatorScreenshotInput | null;
 }
 
@@ -60,6 +63,34 @@ export interface NavigatorObservationContextStats {
   summarizedPairCount: number;
   totalPairCount: number;
   summaryCharCount: number;
+}
+
+export interface NavigatorObservationSubtask {
+  id: string;
+  intent: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETE" | "FAILED";
+  verification: {
+    type: string;
+    condition: string;
+  };
+}
+
+export interface NavigatorActiveSubtask {
+  id: string;
+  intent: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETE" | "FAILED";
+  verification: {
+    type: string;
+    condition: string;
+  };
+  currentSubtaskIndex: number;
+  totalSubtasks: number;
+  attempt: number;
+}
+
+export interface NavigatorCheckpointState {
+  lastCompletedSubtaskIndex: number;
+  currentSubtaskAttempt: number;
 }
 
 export interface NavigatorDecisionRequest {
@@ -168,7 +199,10 @@ function buildNavigatorUserPayload(
     previousActions,
     previousObservations: input.observation.previousObservations ?? [],
     historySummary: input.observation.historySummary ?? null,
-    contextWindowStats: input.observation.contextWindowStats ?? null
+    contextWindowStats: input.observation.contextWindowStats ?? null,
+    taskSubtasks: input.observation.taskSubtasks ?? [],
+    activeSubtask: input.observation.activeSubtask ?? null,
+    checkpointState: input.observation.checkpointState ?? null
   };
 
   if (input.observation.interactiveElementIndex && input.observation.interactiveElementIndex.length > 0) {
@@ -234,6 +268,9 @@ function buildNavigatorPrompt(
     "- previousActions/previousObservations contain only the most recent context window.",
     "- historySummary compresses older steps; use it to preserve continuity without repeating stale actions.",
     "- Prioritize recent context-window entries when they conflict with older historySummary details.",
+    "- taskSubtasks contains ordered subtasks and their statuses for checkpoint-aware execution.",
+    "- activeSubtask is the current objective; prioritize actions that satisfy its verification condition.",
+    "- checkpointState tracks completed subtasks and current retry attempt.",
     "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",
     "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
     "- Keep reasoning concise.",
