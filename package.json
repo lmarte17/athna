@@ -16,6 +16,7 @@
     "action:smoke": "npm run action:smoke -w @ghost-browser/orchestration",
     "loop:smoke": "npm run loop:smoke -w @ghost-browser/orchestration",
     "tiered:smoke": "npm run tiered:smoke -w @ghost-browser/orchestration",
+    "context-window:smoke": "npm run context-window:smoke -w @ghost-browser/orchestration",
     "context:smoke": "npm run context:smoke -w @ghost-browser/orchestration",
     "pool:smoke": "npm run pool:smoke -w @ghost-browser/orchestration",
     "state:smoke": "npm run state:smoke -w @ghost-browser/orchestration",

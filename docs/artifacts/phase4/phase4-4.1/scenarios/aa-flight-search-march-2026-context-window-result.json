@@ -1,0 +1,267 @@
+{
+  "taskId": "task-1771784938637",
+  "contextId": null,
+  "status": "FAILED",
+  "intent": "Search round-trip flights on aa.com from JFK to LAX. Use departure date March 18, 2026 and return date March 25, 2026. Fill departure airport, arrival airport, and both dates, then execute the search.",
+  "startUrl": "https://www.aa.com/",
+  "finalUrl": "https://www.aa.com/",
+  "stepsTaken": 1,
+  "history": [
+    {
+      "step": 1,
+      "urlAtPerception": "https://www.aa.com/",
+      "urlAfterAction": "https://www.aa.com/",
+      "state": "FAILED",
+      "currentUrl": "https://www.aa.com/",
+      "inferredAction": {
+        "action": "FAILED",
+        "target": null,
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The page is an 'Access Denied' error page, and no flight search form is available."
+      },
+      "action": {
+        "action": "FAILED",
+        "target": null,
+        "text": null,
+        "confidence": 1,
+        "reasoning": "The page is an 'Access Denied' error page, and no flight search form is available."
+      },
+      "execution": {
+        "status": "failed",
+        "action": "FAILED",
+        "currentUrl": "https://www.aa.com/",
+        "navigationObserved": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": null,
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 3,
+        "textCharCount": 190,
+        "mediaElementCount": 0,
+        "domInteractiveCandidateCount": 0
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "INITIAL",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 900,
+        "maxScrollY": 0,
+        "remainingScrollPx": 0,
+        "atTop": true,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
+      "scrollCount": 0,
+      "noProgressStreak": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": null,
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 0,
+      "normalizedNodeCount": 8,
+      "normalizedCharCount": 1445,
+      "navigatorNormalizedTreeCharCount": 782,
+      "navigatorObservationCharCount": 1126,
+      "tier1PromptCharCount": 0,
+      "tier1EstimatedPromptTokens": 0,
+      "tier2PromptCharCount": 2866,
+      "tier2EstimatedPromptTokens": 717,
+      "contextRecentPairCount": 0,
+      "contextSummarizedPairCount": 0,
+      "contextTotalPairCount": 0,
+      "contextSummaryIncluded": false,
+      "contextSummaryCharCount": 0,
+      "promptTokenAlertTriggered": false,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-22T18:29:02.137Z"
+    }
+  ],
+  "escalations": [
+    {
+      "step": 1,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://www.aa.com/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 1,
+      "timestamp": "2026-02-22T18:28:58.824Z"
+    }
+  ],
+  "axDeficientPages": [
+    {
+      "step": 1,
+      "urlAtPerception": "https://www.aa.com/",
+      "interactiveElementCount": 0,
+      "threshold": 5,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 3,
+      "textCharCount": 190,
+      "mediaElementCount": 0,
+      "domInteractiveCandidateCount": 0,
+      "timestamp": "2026-02-22T18:28:58.824Z"
+    }
+  ],
+  "tierUsage": {
+    "tier1Calls": 0,
+    "tier2Calls": 1,
+    "tier3Scrolls": 0,
+    "axDeficientDetections": 1,
+    "lowConfidenceEscalations": 0,
+    "noProgressEscalations": 0,
+    "unsafeActionEscalations": 0,
+    "domBypassResolutions": 0,
+    "resolvedAtTier1": 0,
+    "resolvedAtTier2": 1,
+    "estimatedCostUsd": 0.003,
+    "estimatedVisionCostAvoidedUsd": 0
+  },
+  "contextWindow": {
+    "maxRecentPairCount": 0,
+    "maxSummarizedPairCount": 0,
+    "summaryRefreshCount": 0,
+    "latestSummary": null,
+    "summaryCharCount": 0,
+    "maxPromptCharCount": 2866,
+    "maxEstimatedPromptTokens": 717,
+    "promptTokenAlertThreshold": 12000,
+    "tokenAlertCount": 0,
+    "tokenAlerts": []
+  },
+  "finalAction": {
+    "action": "FAILED",
+    "target": null,
+    "text": null,
+    "confidence": 1,
+    "reasoning": "The page is an 'Access Denied' error page, and no flight search form is available."
+  },
+  "finalExecution": {
+    "status": "failed",
+    "action": "FAILED",
+    "currentUrl": "https://www.aa.com/",
+    "navigationObserved": false,
+    "domMutationObserved": false,
+    "significantDomMutationObserved": false,
+    "domMutationSummary": null,
+    "extractedData": null,
+    "message": null
+  },
+  "errorDetail": {
+    "type": "UNKNOWN",
+    "status": null,
+    "url": "https://www.aa.com/",
+    "message": "Execution failed for action FAILED.",
+    "retryable": false,
+    "step": 1
+  },
+  "stateTransitions": [
+    {
+      "taskId": "task-1771784938637",
+      "contextId": null,
+      "from": "IDLE",
+      "to": "LOADING",
+      "timestamp": "2026-02-22T18:28:58.637Z",
+      "step": 0,
+      "url": "https://www.aa.com/",
+      "reason": "TASK_ASSIGNED",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771784938637",
+      "contextId": null,
+      "from": "LOADING",
+      "to": "PERCEIVING",
+      "timestamp": "2026-02-22T18:28:58.803Z",
+      "step": 1,
+      "url": "https://www.aa.com/",
+      "reason": "NAVIGATION_COMPLETE",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771784938637",
+      "contextId": null,
+      "from": "PERCEIVING",
+      "to": "INFERRING",
+      "timestamp": "2026-02-22T18:28:58.824Z",
+      "step": 1,
+      "url": "https://www.aa.com/",
+      "reason": null,
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771784938637",
+      "contextId": null,
+      "from": "INFERRING",
+      "to": "ACTING",
+      "timestamp": "2026-02-22T18:29:02.135Z",
+      "step": 1,
+      "url": "https://www.aa.com/",
+      "reason": "ACTION_FAILED",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771784938637",
+      "contextId": null,
+      "from": "ACTING",
+      "to": "FAILED",
+      "timestamp": "2026-02-22T18:29:02.138Z",
+      "step": 1,
+      "url": "https://www.aa.com/",
+      "reason": "TASK_FAILED",
+      "errorDetail": {
+        "type": "UNKNOWN",
+        "status": null,
+        "url": "https://www.aa.com/",
+        "message": "Execution failed for action FAILED.",
+        "retryable": false,
+        "step": 1
+      }
+    },
+    {
+      "taskId": "task-1771784938637",
+      "contextId": null,
+      "from": "FAILED",
+      "to": "IDLE",
+      "timestamp": "2026-02-22T18:29:02.138Z",
+      "step": 1,
+      "url": "https://www.aa.com/",
+      "reason": "TASK_CONTEXT_CLEANUP",
+      "errorDetail": null
+    }
+  ],
+  "runConfig": {
+    "milestone": "4.1",
+    "suite": "aa+delta",
+    "scenario": {
+      "name": "aa-flight-search-march-2026",
+      "intent": "Search round-trip flights on aa.com from JFK to LAX. Use departure date March 18, 2026 and return date March 25, 2026. Fill departure airport, arrival airport, and both dates, then execute the search.",
+      "startUrl": "https://www.aa.com/",
+      "maxSteps": 15,
+      "expectations": {
+        "minimumHistoryForSummaryCheck": 7
+      }
+    },
+    "runHeadfulGhostTab": true,
+    "globalOverrides": {}
+  }
+}

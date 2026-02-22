@@ -10,12 +10,18 @@ import type {
 } from "../cdp/client.js";
 import { encodeNormalizedAXTreeForNavigator } from "../ax-tree/toon-runtime.js";
 import type { ToonEncodingResult } from "../ax-tree/toon-runtime.js";
-import type {
-  NavigatorActionDecision,
-  NavigatorEngine,
-  NavigatorEscalationReason,
-  NavigatorInferenceTier
+import {
+  estimateNavigatorPromptBudget,
+  type NavigatorActionDecision,
+  type NavigatorEngine,
+  type NavigatorEscalationReason,
+  type NavigatorInferenceTier
 } from "../navigator/engine.js";
+import {
+  createNavigatorContextWindowManager,
+  type NavigatorContextSnapshot,
+  type NavigatorContextWindowMetrics
+} from "../navigator/context-window.js";
 import {
   createGhostTabTaskErrorDetail,
   createGhostTabTaskStateMachine,
@@ -26,7 +32,6 @@ import {
 } from "../task/state-machine.js";
 
 const DEFAULT_MAX_STEPS = 20;
-const DEFAULT_HISTORY_WINDOW = 5;
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.75;
 const DEFAULT_AX_DEFICIENT_INTERACTIVE_THRESHOLD = 5;
 const DEFAULT_SCROLL_STEP_PX = 800;
@@ -113,6 +118,16 @@ export interface LoopStepRecord {
   normalizedCharCount: number;
   navigatorNormalizedTreeCharCount: number;
   navigatorObservationCharCount: number;
+  tier1PromptCharCount: number;
+  tier1EstimatedPromptTokens: number;
+  tier2PromptCharCount: number;
+  tier2EstimatedPromptTokens: number;
+  contextRecentPairCount: number;
+  contextSummarizedPairCount: number;
+  contextTotalPairCount: number;
+  contextSummaryIncluded: boolean;
+  contextSummaryCharCount: number;
+  promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
   timestamp: string;
 }
@@ -172,6 +187,7 @@ export interface PerceptionActionTaskResult {
   escalations: EscalationEvent[];
   axDeficientPages: AXDeficientPageLog[];
   tierUsage: TierUsageMetrics;
+  contextWindow: NavigatorContextWindowMetrics;
   finalAction: NavigatorActionDecision | null;
   finalExecution: ActionExecutionResult | null;
   errorDetail: GhostTabTaskErrorDetail | null;
@@ -295,8 +311,7 @@ class PerceptionActionLoop {
     const history: LoopStepRecord[] = [];
     const escalations: EscalationEvent[] = [];
     const axDeficientPages: AXDeficientPageLog[] = [];
-    const previousActions: NavigatorActionDecision[] = [];
-    const previousObservations: string[] = [];
+    const contextWindow = createNavigatorContextWindowManager();
     const tierUsage = createInitialTierUsageMetrics();
     let scrollCount = 0;
     let noProgressStreak = 0;
@@ -329,6 +344,7 @@ class PerceptionActionLoop {
         escalations,
         axDeficientPages,
         tierUsage: finalizeTierUsageMetrics(tierUsage),
+        contextWindow: contextWindow.getMetrics(),
         finalAction: params.finalAction,
         finalExecution: params.finalExecution,
         errorDetail: params.errorDetail,
@@ -437,12 +453,20 @@ class PerceptionActionLoop {
           threshold: axDeficientInteractiveThreshold,
           signals: axDeficiencySignals
         });
+        const contextSnapshot = contextWindow.buildSnapshot();
         const observation = {
           currentUrl: urlAtPerception,
           interactiveElementIndex: indexResult.elements,
           normalizedAXTree: treeEncoding.payload,
-          previousActions: previousActions.slice(-DEFAULT_HISTORY_WINDOW),
-          previousObservations: previousObservations.slice(-DEFAULT_HISTORY_WINDOW)
+          previousActions: contextSnapshot.previousActions,
+          previousObservations: contextSnapshot.previousObservations,
+          historySummary: contextSnapshot.historySummary,
+          contextWindowStats: {
+            recentPairCount: contextSnapshot.recentPairCount,
+            summarizedPairCount: contextSnapshot.summarizedPairCount,
+            totalPairCount: contextSnapshot.totalPairCount,
+            summaryCharCount: contextSnapshot.summaryCharCount
+          }
         };
         const tier1ObservationCharCount = JSON.stringify(observation).length;
         const tiersAttempted: NavigatorInferenceTier[] = [];
@@ -457,6 +481,11 @@ class PerceptionActionLoop {
         let domExtractionElementCount = 0;
         let domBypassUsed = false;
         let domBypassMatchedText: string | null = null;
+        let tier1PromptCharCount = 0;
+        let tier1EstimatedPromptTokens = 0;
+        let tier2PromptCharCount = 0;
+        let tier2EstimatedPromptTokens = 0;
+        let promptTokenAlertTriggered = false;
 
         transitionState("INFERRING", {
           step,
@@ -487,6 +516,26 @@ class PerceptionActionLoop {
           this.logger(
             `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
           );
+          const tier1PromptBudget = estimateNavigatorPromptBudget({
+            intent: input.intent,
+            observation,
+            tier: "TIER_1_AX"
+          });
+          tier1PromptCharCount = tier1PromptBudget.promptCharCount;
+          tier1EstimatedPromptTokens = tier1PromptBudget.estimatedPromptTokens;
+          const tier1TokenAlert = contextWindow.recordPromptBudget({
+            step,
+            tier: "TIER_1_AX",
+            promptCharCount: tier1PromptBudget.promptCharCount,
+            estimatedPromptTokens: tier1PromptBudget.estimatedPromptTokens,
+            threshold: tier1PromptBudget.alertThreshold
+          });
+          if (tier1TokenAlert) {
+            promptTokenAlertTriggered = true;
+            this.logger(
+              `[loop][step ${step}] context-window-alert tier=TIER_1_AX promptTokens=${tier1PromptBudget.estimatedPromptTokens} threshold=${tier1PromptBudget.alertThreshold} url=${urlAtPerception}`
+            );
+          }
           const tier1Action = await this.options.navigatorEngine.decideNextAction({
             intent: input.intent,
             observation,
@@ -639,6 +688,27 @@ class PerceptionActionLoop {
           this.logger(
             `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
           );
+          const tier2PromptBudget = estimateNavigatorPromptBudget({
+            intent: input.intent,
+            observation: tier2Observation,
+            tier: "TIER_2_VISION",
+            escalationReason
+          });
+          tier2PromptCharCount = tier2PromptBudget.promptCharCount;
+          tier2EstimatedPromptTokens = tier2PromptBudget.estimatedPromptTokens;
+          const tier2TokenAlert = contextWindow.recordPromptBudget({
+            step,
+            tier: "TIER_2_VISION",
+            promptCharCount: tier2PromptBudget.promptCharCount,
+            estimatedPromptTokens: tier2PromptBudget.estimatedPromptTokens,
+            threshold: tier2PromptBudget.alertThreshold
+          });
+          if (tier2TokenAlert) {
+            promptTokenAlertTriggered = true;
+            this.logger(
+              `[loop][step ${step}] context-window-alert tier=TIER_2_VISION promptTokens=${tier2PromptBudget.estimatedPromptTokens} threshold=${tier2PromptBudget.alertThreshold} url=${urlAtPerception}`
+            );
+          }
           inferredAction = await this.options.navigatorEngine.decideNextAction({
             intent: input.intent,
             observation: tier2Observation,
@@ -783,14 +853,23 @@ class PerceptionActionLoop {
             indexResult,
             navigatorNormalizedTreeCharCount: treeEncoding.encodedCharCount,
             navigatorObservationCharCount: observationCharCount,
+            tier1PromptCharCount,
+            tier1EstimatedPromptTokens,
+            tier2PromptCharCount,
+            tier2EstimatedPromptTokens,
+            contextSnapshot,
+            promptTokenAlertTriggered,
             usedToonEncoding: treeEncoding.usedToonEncoding
           })
         );
 
-        previousActions.push(actionToExecute);
-        previousObservations.push(
-          `step=${step} tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} nav=${execution.navigationObserved} dom=${execution.domMutationObserved} sigDom=${execution.significantDomMutationObserved} url=${currentUrl}`
-        );
+        contextWindow.appendPair({
+          step,
+          action: actionToExecute,
+          observation: `step=${step} tier=${resolvedTier} action=${actionToExecute.action} confidence=${actionToExecute.confidence.toFixed(2)} nav=${execution.navigationObserved} dom=${execution.domMutationObserved} sigDom=${execution.significantDomMutationObserved} url=${currentUrl}`,
+          url: currentUrl,
+          resolvedTier
+        });
 
         if (actionToExecute.action === "DONE" || execution.status === "done") {
           transitionState("COMPLETE", {
@@ -1013,6 +1092,12 @@ function createStepRecord(input: {
   indexResult: InteractiveElementIndexResult;
   navigatorNormalizedTreeCharCount: number;
   navigatorObservationCharCount: number;
+  tier1PromptCharCount: number;
+  tier1EstimatedPromptTokens: number;
+  tier2PromptCharCount: number;
+  tier2EstimatedPromptTokens: number;
+  contextSnapshot: NavigatorContextSnapshot;
+  promptTokenAlertTriggered: boolean;
   usedToonEncoding: boolean;
 }): LoopStepRecord {
   return {
@@ -1046,6 +1131,16 @@ function createStepRecord(input: {
     normalizedCharCount: input.indexResult.normalizedCharCount,
     navigatorNormalizedTreeCharCount: input.navigatorNormalizedTreeCharCount,
     navigatorObservationCharCount: input.navigatorObservationCharCount,
+    tier1PromptCharCount: input.tier1PromptCharCount,
+    tier1EstimatedPromptTokens: input.tier1EstimatedPromptTokens,
+    tier2PromptCharCount: input.tier2PromptCharCount,
+    tier2EstimatedPromptTokens: input.tier2EstimatedPromptTokens,
+    contextRecentPairCount: input.contextSnapshot.recentPairCount,
+    contextSummarizedPairCount: input.contextSnapshot.summarizedPairCount,
+    contextTotalPairCount: input.contextSnapshot.totalPairCount,
+    contextSummaryIncluded: input.contextSnapshot.historySummary !== null,
+    contextSummaryCharCount: input.contextSnapshot.summaryCharCount,
+    promptTokenAlertTriggered: input.promptTokenAlertTriggered,
     usedToonEncoding: input.usedToonEncoding,
     timestamp: new Date().toISOString()
   };

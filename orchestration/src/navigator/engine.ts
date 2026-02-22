@@ -6,6 +6,7 @@ import {
 } from "@google/genai";
 
 import type { InteractiveElementIndexEntry } from "../cdp/client.js";
+import { resolvePromptTokenAlertThresholdFromEnv } from "./context-window.js";
 
 const DEFAULT_FLASH_MODEL = "gemini-2.5-flash";
 const DEFAULT_PRO_MODEL = "gemini-2.5-pro";
@@ -49,7 +50,16 @@ export interface NavigatorObservationInput {
   normalizedAXTree?: unknown[];
   previousActions?: NavigatorActionDecision[];
   previousObservations?: string[];
+  historySummary?: string | null;
+  contextWindowStats?: NavigatorObservationContextStats | null;
   screenshot?: NavigatorScreenshotInput | null;
+}
+
+export interface NavigatorObservationContextStats {
+  recentPairCount: number;
+  summarizedPairCount: number;
+  totalPairCount: number;
+  summaryCharCount: number;
 }
 
 export interface NavigatorDecisionRequest {
@@ -66,6 +76,13 @@ export interface NavigatorEngine {
 export interface NavigatorEngineOptions {
   flashModel?: string;
   proModel?: string;
+}
+
+export interface NavigatorPromptBudgetEstimate {
+  promptCharCount: number;
+  estimatedPromptTokens: number;
+  alertThreshold: number;
+  exceedsAlertThreshold: boolean;
 }
 
 interface GeminiClientContext {
@@ -149,7 +166,9 @@ function buildNavigatorUserPayload(
   const observation: Record<string, unknown> = {
     currentUrl: input.observation.currentUrl ?? null,
     previousActions,
-    previousObservations: input.observation.previousObservations ?? []
+    previousObservations: input.observation.previousObservations ?? [],
+    historySummary: input.observation.historySummary ?? null,
+    contextWindowStats: input.observation.contextWindowStats ?? null
   };
 
   if (input.observation.interactiveElementIndex && input.observation.interactiveElementIndex.length > 0) {
@@ -212,6 +231,9 @@ function buildNavigatorPrompt(
     "- For TYPE, text must be non-empty; target may be null if typing into focused input.",
     "- If isInitialStep=true for a search intent, the first action MUST be CLICK on the best input/search field before any TYPE action.",
     "- normalizedAXTree may be raw normalized nodes OR a compact encoded array where index 0 is a legend string. Use the legend to decode.",
+    "- previousActions/previousObservations contain only the most recent context window.",
+    "- historySummary compresses older steps; use it to preserve continuity without repeating stale actions.",
+    "- Prioritize recent context-window entries when they conflict with older historySummary details.",
     "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",
     "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
     "- Keep reasoning concise.",
@@ -428,4 +450,32 @@ export function resolveNavigatorProModelFromEnv(): string {
     process.env.GEMINI_PRO_MODEL ??
     DEFAULT_PRO_MODEL
   );
+}
+
+export function estimateNavigatorPromptBudget(
+  input: NavigatorDecisionRequest
+): NavigatorPromptBudgetEstimate {
+  const tier = input.tier ?? "TIER_1_AX";
+  const payload = buildNavigatorUserPayload(input, tier);
+  const challengeMode = shouldUseChallengeMode(input);
+  const prompt = buildNavigatorPrompt(payload, null, 0, challengeMode);
+  const promptCharCount = prompt.length;
+  const estimatedPromptTokens = estimateTokensFromChars(promptCharCount);
+  const alertThreshold = resolvePromptTokenAlertThresholdFromEnv();
+
+  return {
+    promptCharCount,
+    estimatedPromptTokens,
+    alertThreshold,
+    exceedsAlertThreshold: estimatedPromptTokens > alertThreshold
+  };
+}
+
+function estimateTokensFromChars(charCount: number): number {
+  if (!Number.isFinite(charCount) || charCount <= 0) {
+    return 0;
+  }
+
+  // Coarse fallback estimate: ~4 characters per token for mixed JSON+English payloads.
+  return Math.ceil(charCount / 4);
 }

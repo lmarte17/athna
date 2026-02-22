@@ -34,6 +34,7 @@ export {
 
 export {
   createNavigatorEngine,
+  estimateNavigatorPromptBudget,
   resolveNavigatorModelFromEnv,
   resolveNavigatorProModelFromEnv,
   type NavigatorActionDecision,
@@ -44,8 +45,22 @@ export {
   type NavigatorEngine,
   type NavigatorEscalationReason,
   type NavigatorInferenceTier,
-  type NavigatorObservationInput
+  type NavigatorObservationContextStats,
+  type NavigatorObservationInput,
+  type NavigatorPromptBudgetEstimate
 } from "./navigator/engine.js";
+
+export {
+  createNavigatorContextWindowManager,
+  resolvePromptTokenAlertThresholdFromEnv,
+  type NavigatorContextHistoryPair,
+  type NavigatorContextSnapshot,
+  type NavigatorContextWindowManager,
+  type NavigatorContextWindowManagerOptions,
+  type NavigatorContextWindowMetrics,
+  type NavigatorPromptBudgetSample,
+  type NavigatorPromptTokenAlert
+} from "./navigator/context-window.js";
 
 export {
   type AXDeficientPageLog,

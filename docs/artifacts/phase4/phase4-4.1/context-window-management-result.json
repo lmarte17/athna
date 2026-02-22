@@ -1,0 +1,80 @@
+{
+  "ok": true,
+  "phase": "4.1",
+  "suiteName": "music",
+  "summary": {
+    "scenarioCount": 2,
+    "runHeadfulGhostTab": true,
+    "contextWindowSummary": {
+      "maxRecentPairCount": 5,
+      "maxSummarizedPairCount": 2,
+      "maxEstimatedPromptTokens": 3112,
+      "tokenAlertCount": 0,
+      "summaryRefreshCount": 3
+    },
+    "scenarios": [
+      {
+        "name": "guitarcenter-guitar-search",
+        "status": "FAILED",
+        "stepsTaken": 8,
+        "finalUrl": "https://www.guitarcenter.com/",
+        "contextWindow": {
+          "maxRecentPairCount": 5,
+          "maxSummarizedPairCount": 2,
+          "summaryRefreshCount": 2,
+          "latestSummary": "Archived steps 1-2 covered guitarcenter.com. Action mix: 2 SCROLL. Latest archived state: step=2 tier=TIER_1_AX action=SCROLL confidence=0.90 nav=false dom=false sigDom=false url=https://www.guitarcenter.com/.",
+          "summaryCharCount": 209,
+          "maxPromptCharCount": 12445,
+          "maxEstimatedPromptTokens": 3112,
+          "promptTokenAlertThreshold": 12000,
+          "tokenAlertCount": 0,
+          "tokenAlerts": []
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.1/scenarios/guitarcenter-guitar-search-context-window-result.json"
+      },
+      {
+        "name": "themusiczoo-guitar-search",
+        "status": "FAILED",
+        "stepsTaken": 7,
+        "finalUrl": "https://www.themusiczoo.com/",
+        "contextWindow": {
+          "maxRecentPairCount": 5,
+          "maxSummarizedPairCount": 1,
+          "summaryRefreshCount": 1,
+          "latestSummary": "Archived steps 1-1 covered themusiczoo.com. Action mix: 1 CLICK. Latest archived state: step=1 tier=TIER_1_AX action=CLICK confidence=1.00 nav=false dom=true sigDom=true url=https://www.themusiczoo.com/.",
+          "summaryCharCount": 203,
+          "maxPromptCharCount": 10959,
+          "maxEstimatedPromptTokens": 2740,
+          "promptTokenAlertThreshold": 12000,
+          "tokenAlertCount": 0,
+          "tokenAlerts": []
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.1/scenarios/themusiczoo-guitar-search-context-window-result.json"
+      }
+    ]
+  },
+  "runConfig": {
+    "scenarios": [
+      {
+        "name": "guitarcenter-guitar-search",
+        "intent": "Search for Fender Stratocaster electric guitar, open one product result, and extract the listed price.",
+        "startUrl": "https://www.guitarcenter.com/",
+        "maxSteps": 15,
+        "expectations": {
+          "minimumHistoryForSummaryCheck": 7
+        }
+      },
+      {
+        "name": "themusiczoo-guitar-search",
+        "intent": "Search for Fender Stratocaster electric guitar, open one product result, and extract the listed price.",
+        "startUrl": "https://www.themusiczoo.com/",
+        "maxSteps": 15,
+        "expectations": {
+          "minimumHistoryForSummaryCheck": 7
+        }
+      }
+    ],
+    "runHeadfulGhostTab": true,
+    "globalOverrides": {}
+  }
+}
