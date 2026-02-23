@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "phase": "6.2",
+  "scenario": {
+    "name": "override-make-forces-generate",
+    "input": {
+      "text": "google.com",
+      "mode": "MAKE",
+      "source": "TOP_BAR"
+    },
+    "expected": {
+      "intent": "GENERATE",
+      "route": "MAKER_GENERATE",
+      "source": "MODE_OVERRIDE",
+      "taskExpected": true
+    },
+    "passed": true,
+    "observed": {
+      "accepted": true,
+      "clearInput": true,
+      "error": null,
+      "dispatch": {
+        "source": "TOP_BAR",
+        "mode": "MAKE",
+        "modeOverride": "MAKE",
+        "workspaceContextId": "tab-2",
+        "rawInput": "google.com",
+        "normalizedUrl": "https://google.com/",
+        "intent": "GENERATE",
+        "classificationSource": "MODE_OVERRIDE",
+        "confidence": 1,
+        "route": "MAKER_GENERATE",
+        "runInTopTab": false,
+        "spawnGhostTabs": false,
+        "primaryEngine": "MAKER",
+        "taskId": "task-cb8d62f2-5191-4369-950c-8a83a3ee4e5c"
+      }
+    },
+    "stateSnapshot": {
+      "activeTabId": "tab-2",
+      "tabCount": 3,
+      "taskCount": 5
+    }
+  }
+}

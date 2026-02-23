@@ -1,0 +1,104 @@
+{
+  "ok": true,
+  "phase": "6.3",
+  "validatedAt": "2026-02-23T07:27:10.520Z",
+  "runConfig": {
+    "remoteDebuggingPort": 9335,
+    "mode": "headful",
+    "runtime": "live-electron"
+  },
+  "checks": {
+    "secondRowGhostStripPresent": true,
+    "sidebarFeedPresent": true,
+    "contextSwitchScopesStatusFeed": true,
+    "contextSwitchScopesGhostStrip": true,
+    "tabBadgesForInactiveContexts": true,
+    "sidebarCollapsible": true,
+    "ipcUpdateRateCappedAt2Hz": true
+  },
+  "evidence": {
+    "stateSnapshot": {
+      "activeTabId": "tab-2",
+      "tabCount": 3,
+      "taskCount": 2
+    },
+    "tabButtons": [
+      {
+        "text": "Start Page",
+        "isActive": false,
+        "badgeText": null
+      },
+      {
+        "text": "Amazon.com. Spend less. Smile more.C1x",
+        "isActive": false,
+        "badgeText": "C1"
+      },
+      {
+        "text": "about:blankx",
+        "isActive": true,
+        "badgeText": null
+      }
+    ],
+    "ghostStripItems": [
+      {
+        "text": "Ghost 1 TRANSACT 15462e14FAILED",
+        "isChip": true
+      }
+    ],
+    "statusItems": [
+      {
+        "text": "TRANSACT task-a654d3f5-0683-4c88-9fb1-15462e1406cbFAILED / FAILEDAction: Task failedURL: https://www.google.com/Elapsed: 0msProgress: n/aError: Navigator engine auth is not configured. Set GEMINI_API_KEY or PROJECT_ID/REGION with Vertex auth.",
+        "isTask": true
+      }
+    ],
+    "sidebar": {
+      "collapsed": false,
+      "contextLabel": "about:blank (tab-2)",
+      "toggleProbe": {
+        "before": false,
+        "afterCollapse": true,
+        "afterExpand": false,
+        "ariaExpanded": "true"
+      }
+    },
+    "contextSwitchProbe": [
+      {
+        "tabId": "tab-1",
+        "contextTaskIds": [
+          "task-4c583577-26a9-4e10-92e0-84a6e66143f2"
+        ],
+        "statusRowTaskTitles": [
+          "RESEARCH task-4c583577-26a9-4e10-92e0-84a6e66143f2"
+        ],
+        "ghostStripRows": [
+          "Ghost 1 RESEARCH 84a6e661FAILED"
+        ],
+        "sidebarContextLabel": "Amazon.com. Spend less. Smile more. (tab-1)"
+      },
+      {
+        "tabId": "tab-2",
+        "contextTaskIds": [
+          "task-a654d3f5-0683-4c88-9fb1-15462e1406cb"
+        ],
+        "statusRowTaskTitles": [
+          "TRANSACT task-a654d3f5-0683-4c88-9fb1-15462e1406cb"
+        ],
+        "ghostStripRows": [
+          "Ghost 1 TRANSACT 15462e14FAILED"
+        ],
+        "sidebarContextLabel": "about:blank (tab-2)"
+      }
+    ],
+    "throttleProbe": {
+      "skipped": false,
+      "eventCount": 2,
+      "durationMs": 1445.6999998092651,
+      "approxEventsPerSecond": 1.383412879756426,
+      "maxEventsInAnySecond": 2
+    },
+    "screenshots": {
+      "start": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.3/status-feed-start.png",
+      "contextSwitch": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.3/status-feed-context-switch.png"
+    }
+  }
+}

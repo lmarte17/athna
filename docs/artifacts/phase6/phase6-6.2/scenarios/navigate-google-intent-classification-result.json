@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "phase": "6.2",
+  "scenario": {
+    "name": "navigate-google",
+    "input": {
+      "text": "google.com",
+      "mode": "AUTO",
+      "source": "START_PAGE"
+    },
+    "expected": {
+      "intent": "NAVIGATE",
+      "route": "FOREGROUND_NAVIGATION",
+      "source": "AUTO_RULES",
+      "taskExpected": false
+    },
+    "passed": true,
+    "observed": {
+      "accepted": true,
+      "clearInput": true,
+      "error": null,
+      "dispatch": {
+        "source": "START_PAGE",
+        "mode": "AUTO",
+        "modeOverride": null,
+        "workspaceContextId": "tab-2",
+        "rawInput": "google.com",
+        "normalizedUrl": "https://google.com/",
+        "intent": "NAVIGATE",
+        "classificationSource": "AUTO_RULES",
+        "confidence": 0.99,
+        "route": "FOREGROUND_NAVIGATION",
+        "runInTopTab": true,
+        "spawnGhostTabs": false,
+        "primaryEngine": "NAVIGATOR",
+        "taskId": null
+      }
+    },
+    "stateSnapshot": {
+      "activeTabId": "tab-2",
+      "tabCount": 3,
+      "taskCount": 1
+    }
+  }
+}

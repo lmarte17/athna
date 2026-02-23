@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "phase": "6.2",
+  "scenario": {
+    "name": "generate-comparison-chart",
+    "input": {
+      "text": "Show me a comparison chart of these products",
+      "mode": "AUTO",
+      "source": "TOP_BAR"
+    },
+    "expected": {
+      "intent": "GENERATE",
+      "route": "MAKER_GENERATE",
+      "source": "AUTO_RULES",
+      "taskExpected": true
+    },
+    "passed": true,
+    "observed": {
+      "accepted": true,
+      "clearInput": true,
+      "error": null,
+      "dispatch": {
+        "source": "TOP_BAR",
+        "mode": "AUTO",
+        "modeOverride": null,
+        "workspaceContextId": "tab-2",
+        "rawInput": "Show me a comparison chart of these products",
+        "normalizedUrl": null,
+        "intent": "GENERATE",
+        "classificationSource": "AUTO_RULES",
+        "confidence": 0.86,
+        "route": "MAKER_GENERATE",
+        "runInTopTab": false,
+        "spawnGhostTabs": false,
+        "primaryEngine": "MAKER",
+        "taskId": "task-f7568737-bd6b-4d22-a2d1-95a0116b135d"
+      }
+    },
+    "stateSnapshot": {
+      "activeTabId": "tab-2",
+      "tabCount": 3,
+      "taskCount": 4
+    }
+  }
+}

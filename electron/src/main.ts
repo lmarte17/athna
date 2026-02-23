@@ -1,17 +1,32 @@
-import { app, BrowserWindow } from "electron";
+import path from "node:path";
+
+import { app, BrowserWindow, type BrowserWindowConstructorOptions } from "electron";
 
 import { GhostContextManager } from "./ghost-context-manager.js";
+import { WorkspaceController } from "./workspace-controller.js";
 
 const FOREGROUND_WINDOW_SIZE = { width: 1280, height: 900 };
 const GHOST_TAB_PROTOTYPE_URL = "https://google.com/";
 const SMOKE_TEST_URL = "about:blank";
 const DEFAULT_REMOTE_DEBUGGING_PORT = "9333";
 const DEFAULT_GHOST_CONTEXT_COUNT = 1;
+const FOREGROUND_SHELL_HTML_PATH = path.resolve(__dirname, "..", "src", "renderer", "index.html");
+const PRELOAD_SCRIPT_PATH = path.resolve(__dirname, "preload.js");
+const ROOT_ENV_PATH = path.resolve(__dirname, "..", "..", ".env");
+const ROOT_ENV_LOCAL_PATH = path.resolve(__dirname, "..", "..", ".env.local");
+
+loadWorkspaceEnvFile(ROOT_ENV_PATH);
+loadWorkspaceEnvFile(ROOT_ENV_LOCAL_PATH);
 
 const isSmokeTest = app.commandLine.hasSwitch("smoke-test");
 const keepAlive = app.commandLine.hasSwitch("keep-alive");
 const isCdpHost = app.commandLine.hasSwitch("cdp-host");
 const showGhostTab = app.commandLine.hasSwitch("show-ghost-tab");
+
+if (!app.commandLine.hasSwitch("remote-debugging-port")) {
+  const requestedPort = process.env.GHOST_REMOTE_DEBUGGING_PORT ?? DEFAULT_REMOTE_DEBUGGING_PORT;
+  app.commandLine.appendSwitch("remote-debugging-port", requestedPort);
+}
 
 if (isCdpHost) {
   app.disableHardwareAcceleration();
@@ -19,18 +34,33 @@ if (isCdpHost) {
   if (!app.commandLine.hasSwitch("disable-gpu")) {
     app.commandLine.appendSwitch("disable-gpu");
   }
-
-  if (!app.commandLine.hasSwitch("remote-debugging-port")) {
-    const requestedPort = process.env.GHOST_REMOTE_DEBUGGING_PORT ?? DEFAULT_REMOTE_DEBUGGING_PORT;
-    app.commandLine.appendSwitch("remote-debugging-port", requestedPort);
-  }
 }
 
 let foregroundWindow: BrowserWindow | null = null;
 let ghostContextManager: GhostContextManager | null = null;
+let workspaceController: WorkspaceController | null = null;
 let isQuitting = false;
 let cleanupInProgress = false;
 let cleanupCompleted = false;
+
+function loadWorkspaceEnvFile(filePath: string): void {
+  const loadEnvFile =
+    (process as NodeJS.Process & { loadEnvFile?: (path?: string) => void }).loadEnvFile ?? null;
+  if (!loadEnvFile) {
+    return;
+  }
+
+  try {
+    loadEnvFile(filePath);
+  } catch (error) {
+    const errorWithCode = error as NodeJS.ErrnoException;
+    if (errorWithCode.code !== "ENOENT") {
+      console.warn(
+        `[electron] Failed to load env file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+}
 
 function getRemoteDebuggingPort(): string | null {
   const configuredPort = app.commandLine.getSwitchValue("remote-debugging-port");
@@ -96,23 +126,53 @@ function buildGhostContextBootstrapUrl(baseUrl: string, contextId: string): stri
   }
 }
 
-async function createForegroundWindow(): Promise<BrowserWindow> {
-  const window = new BrowserWindow({
+function createForegroundWindow(): BrowserWindow {
+  const windowOptions: BrowserWindowConstructorOptions = {
     ...FOREGROUND_WINDOW_SIZE,
     show: !isSmokeTest,
     title: "Ghost Browser"
-  });
+  };
 
-  await window.loadURL("about:blank");
-  return window;
+  if (!isSmokeTest) {
+    windowOptions.webPreferences = {
+      preload: PRELOAD_SCRIPT_PATH,
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false
+    };
+  }
+
+  return new BrowserWindow(windowOptions);
 }
 
 async function bootstrap(): Promise<void> {
   logHeadlessModeStatus();
 
   if (!isCdpHost) {
-    foregroundWindow = await createForegroundWindow();
+    foregroundWindow = createForegroundWindow();
+
+    if (!isSmokeTest) {
+      const remoteDebuggingPort = getRemoteDebuggingPort() ?? DEFAULT_REMOTE_DEBUGGING_PORT;
+      workspaceController = new WorkspaceController({
+        window: foregroundWindow,
+        remoteDebuggingPort,
+        logger: (line) => console.info(line)
+      });
+      workspaceController.initialize();
+      await foregroundWindow.loadFile(FOREGROUND_SHELL_HTML_PATH);
+      workspaceController.emitState();
+    } else {
+      await foregroundWindow.loadURL(SMOKE_TEST_URL);
+    }
+
     foregroundWindow.on("closed", () => {
+      const latestController = workspaceController;
+      workspaceController = null;
+      if (latestController) {
+        void latestController.shutdown().catch((error: unknown) => {
+          console.error("[electron] Workspace shutdown failed on window close.", error);
+        });
+      }
       foregroundWindow = null;
     });
   }
@@ -176,22 +236,38 @@ app.on("window-all-closed", () => {
 app.on("before-quit", (event) => {
   isQuitting = true;
 
-  if (cleanupCompleted || cleanupInProgress || !ghostContextManager) {
+  if (cleanupCompleted || cleanupInProgress) {
     return;
   }
 
   cleanupInProgress = true;
   event.preventDefault();
 
-  void ghostContextManager
-    .shutdown()
-    .catch((error: unknown) => {
-      console.error("[electron] Ghost context shutdown failed.", error);
-    })
-    .finally(() => {
-      cleanupInProgress = false;
-      cleanupCompleted = true;
-      ghostContextManager = null;
-      app.quit();
-    });
+  const cleanupTasks: Promise<unknown>[] = [];
+  const latestWorkspaceController = workspaceController;
+  const latestGhostContextManager = ghostContextManager;
+  workspaceController = null;
+  ghostContextManager = null;
+
+  if (latestWorkspaceController) {
+    cleanupTasks.push(
+      latestWorkspaceController.shutdown().catch((error: unknown) => {
+        console.error("[electron] Workspace shutdown failed.", error);
+      })
+    );
+  }
+
+  if (latestGhostContextManager) {
+    cleanupTasks.push(
+      latestGhostContextManager.shutdown().catch((error: unknown) => {
+        console.error("[electron] Ghost context shutdown failed.", error);
+      })
+    );
+  }
+
+  void Promise.allSettled(cleanupTasks).finally(() => {
+    cleanupInProgress = false;
+    cleanupCompleted = true;
+    app.quit();
+  });
 });

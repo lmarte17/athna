@@ -1,0 +1,102 @@
+{
+  "ok": true,
+  "phase": "6.1",
+  "validatedAt": "2026-02-23T07:09:14.481Z",
+  "runConfig": {
+    "remoteDebuggingPort": 9335,
+    "mode": "headful",
+    "runtime": "live-electron"
+  },
+  "checks": {
+    "defaultStartPageTab": true,
+    "mirroredCommandBar": true,
+    "placeholderGuidancePresent": true,
+    "modeDropdownPresent": true,
+    "directUrlNavigation": true,
+    "autoClearAfterSubmit": true,
+    "commandBarAccessibleAfterSubmit": true,
+    "modeOverrideRespected": true,
+    "focusPathViaCreateTab": true,
+    "focusPathViaShortcut": true
+  },
+  "evidence": {
+    "initial": {
+      "tabTitles": [
+        "Start Page"
+      ],
+      "startPageVisible": true,
+      "topPlaceholder": "Enter search or web address",
+      "startPlaceholder": "Try: find the best rated coffee maker under $50 on Amazon",
+      "topModeOptions": [
+        "AUTO",
+        "BROWSE",
+        "DO",
+        "MAKE",
+        "RESEARCH"
+      ],
+      "startModeOptions": [
+        "AUTO",
+        "BROWSE",
+        "DO",
+        "MAKE",
+        "RESEARCH"
+      ],
+      "state": {
+        "activeTabId": "start-page",
+        "tabCount": 1,
+        "taskCount": 0
+      }
+    },
+    "afterUrlSubmit": {
+      "dispatch": {
+        "source": "START_PAGE",
+        "mode": "AUTO",
+        "modeOverride": null,
+        "workspaceContextId": "tab-1",
+        "rawInput": "amazon.com",
+        "normalizedUrl": "https://amazon.com/",
+        "intent": "NAVIGATE",
+        "classificationSource": "AUTO_RULES",
+        "confidence": 0.99,
+        "route": "FOREGROUND_NAVIGATION",
+        "runInTopTab": true,
+        "spawnGhostTabs": false,
+        "primaryEngine": "NAVIGATOR",
+        "taskId": null
+      },
+      "topInputValue": "",
+      "startInputValue": "",
+      "startPageVisible": false,
+      "activeTabId": "tab-1",
+      "tabCount": 2
+    },
+    "focusAfterCreateTab": {
+      "activeElement": "top-command-input",
+      "topFocused": true
+    },
+    "focusAfterShortcut": {
+      "activeElement": "top-command-input",
+      "topFocused": true
+    },
+    "modeOverrideDispatch": {
+      "source": "TOP_BAR",
+      "mode": "BROWSE",
+      "modeOverride": "BROWSE",
+      "workspaceContextId": "tab-2",
+      "rawInput": "example.com",
+      "normalizedUrl": "https://example.com/",
+      "intent": "RESEARCH",
+      "classificationSource": "MODE_OVERRIDE",
+      "confidence": 1,
+      "route": "GHOST_RESEARCH",
+      "runInTopTab": false,
+      "spawnGhostTabs": true,
+      "primaryEngine": "NAVIGATOR",
+      "taskId": "task-df894ef7-6e8f-4db2-bf90-b976990e9238"
+    },
+    "screenshots": {
+      "initial": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.1/start-page-initial.png",
+      "afterUrlSubmit": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.1/after-url-submit.png"
+    }
+  }
+}

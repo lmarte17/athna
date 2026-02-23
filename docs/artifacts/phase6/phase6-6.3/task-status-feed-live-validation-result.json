@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "phase": "6.3",
+  "validatedAt": "2026-02-23T07:42:20Z",
+  "runConfig": {
+    "runtime": "live-electron-headful",
+    "remoteDebuggingPort": 9335,
+    "smokeCommandsExecutedOutsideSandbox": true
+  },
+  "checks": {
+    "workspaceEnvAutoloadedForElectron": true,
+    "schedulerPoolSizeBoundToGhostContextCount": true,
+    "taskTransitionsPastQueueWithSingleGhostContext": true,
+    "navigatorProModelNoLongerUsesVisionModelByDefault": true,
+    "statusFeedShowsLiveRunningState": true
+  },
+  "evidence": {
+    "liveTaskDispatch": {
+      "intent": "RESEARCH",
+      "route": "GHOST_RESEARCH",
+      "workspaceContextId": "tab-1"
+    },
+    "liveTaskState": {
+      "status": "RUNNING",
+      "currentState": "INFERRING",
+      "currentAction": "Planning next action",
+      "errorMessage": null
+    },
+    "schedulerLogSignals": [
+      "[pool] initialized min=1 max=1",
+      "[pool] assigned taskId=... context=ctx-1"
+    ],
+    "previousFailureResolved": [
+      "Navigator engine auth is not configured",
+      "Timed out waiting ... #ghost-context=ctx-2",
+      "JSON mode is not enabled for this model"
+    ],
+    "artifacts": {
+      "liveScreenshot": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.3/status-feed-live-running.png"
+    }
+  }
+}

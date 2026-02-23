@@ -500,8 +500,8 @@ export function resolveNavigatorModelFromEnv(): string {
 export function resolveNavigatorProModelFromEnv(): string {
   return (
     process.env.GEMINI_NAVIGATOR_PRO_MODEL ??
-    process.env.GEMINI_VISION_MODEL ??
     process.env.GEMINI_PRO_MODEL ??
+    process.env.GEMINI_VISION_MODEL ??
     DEFAULT_PRO_MODEL
   );
 }

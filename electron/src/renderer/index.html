@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ghost Browser</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="window-shell">
+      <header class="top-shell">
+        <div class="tab-strip-row">
+          <div id="tab-strip" class="tab-strip" aria-label="Workspace tabs"></div>
+          <button id="new-tab-button" class="new-tab-button" type="button">+ Add page</button>
+        </div>
+        <div class="ghost-strip-row">
+          <div id="ghost-strip" class="ghost-strip" aria-label="Ghost task strip"></div>
+        </div>
+        <form id="top-command-form" class="command-form compact" autocomplete="off">
+          <input
+            id="top-command-input"
+            class="command-input"
+            type="text"
+            spellcheck="false"
+            placeholder="Enter search or web address"
+            aria-label="Command input"
+          />
+          <select id="top-mode-select" class="mode-select" aria-label="Mode override">
+            <option value="AUTO">Auto</option>
+            <option value="BROWSE">Browse</option>
+            <option value="DO">Do</option>
+            <option value="MAKE">Make</option>
+            <option value="RESEARCH">Research</option>
+          </select>
+          <button id="top-submit-button" class="submit-button" type="submit">Go</button>
+        </form>
+      </header>
+
+      <main id="start-page" class="start-page">
+        <div class="start-content">
+          <p class="kicker">Ghost Browser</p>
+          <h1>Your browsing starts here.<br />What can I do for you?</h1>
+          <form id="start-command-form" class="command-form hero" autocomplete="off">
+            <input
+              id="start-command-input"
+              class="command-input"
+              type="text"
+              spellcheck="false"
+              placeholder="Try: find the best rated coffee maker under $50 on Amazon"
+              aria-label="Start page command input"
+            />
+            <div class="hero-controls">
+              <select id="start-mode-select" class="mode-select" aria-label="Mode override">
+                <option value="AUTO">Auto</option>
+                <option value="BROWSE">Browse</option>
+                <option value="DO">Do</option>
+                <option value="MAKE">Make</option>
+                <option value="RESEARCH">Research</option>
+              </select>
+              <button id="start-submit-button" class="submit-button" type="submit">Run</button>
+            </div>
+          </form>
+          <div id="dispatch-surface" class="dispatch-surface" aria-live="polite"></div>
+        </div>
+      </main>
+
+      <aside id="status-sidebar" class="status-sidebar" aria-label="Task status feed">
+        <div class="status-sidebar-header">
+          <div class="status-header-text">
+            <p class="status-title">Task Status</p>
+            <p id="sidebar-context-label" class="status-context">No active context</p>
+          </div>
+          <button
+            id="sidebar-toggle"
+            class="sidebar-toggle"
+            type="button"
+            aria-expanded="true"
+            aria-label="Collapse task status sidebar"
+          >
+            >>
+          </button>
+        </div>
+        <div id="status-feed" class="status-feed" aria-live="polite"></div>
+      </aside>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

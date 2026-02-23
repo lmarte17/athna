@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "phase": "6.2",
+  "scenario": {
+    "name": "transact-contact-form",
+    "input": {
+      "text": "Fill out this contact form",
+      "mode": "AUTO",
+      "source": "TOP_BAR"
+    },
+    "expected": {
+      "intent": "TRANSACT",
+      "route": "GHOST_TRANSACT",
+      "source": "AUTO_RULES",
+      "taskExpected": true
+    },
+    "passed": true,
+    "observed": {
+      "accepted": true,
+      "clearInput": true,
+      "error": null,
+      "dispatch": {
+        "source": "TOP_BAR",
+        "mode": "AUTO",
+        "modeOverride": null,
+        "workspaceContextId": "tab-2",
+        "rawInput": "Fill out this contact form",
+        "normalizedUrl": null,
+        "intent": "TRANSACT",
+        "classificationSource": "AUTO_RULES",
+        "confidence": 0.84,
+        "route": "GHOST_TRANSACT",
+        "runInTopTab": false,
+        "spawnGhostTabs": true,
+        "primaryEngine": "NAVIGATOR",
+        "taskId": "task-d02bd962-c338-4a20-878f-8d8e7c146fe3"
+      }
+    },
+    "stateSnapshot": {
+      "activeTabId": "tab-2",
+      "tabCount": 3,
+      "taskCount": 3
+    }
+  }
+}
