@@ -1,0 +1,85 @@
+{
+  "ok": true,
+  "phase": "6.5",
+  "validatedAt": "2026-02-24T02:29:54.321Z",
+  "runConfig": {
+    "remoteDebuggingPort": 9333,
+    "ghostContextCount": 2,
+    "mode": "headful",
+    "runtime": "live-electron"
+  },
+  "checks": {
+    "ghostContextScreenshotCapture": true,
+    "screenshotIsValidJpeg": true,
+    "screenshotDimensionsMatch": true,
+    "screenshotIsNonTrivial": true,
+    "multipleContextsIsolated": true,
+    "poolReturnedToIdle": true
+  },
+  "evidence": {
+    "context1": {
+      "contextId": "ctx-1",
+      "url": "data:text/html,<html><body style='background:%23e8f4f8;font:48px sans-serif;disp…",
+      "screenshotBytes": 13259,
+      "screenshotMimeType": "image/jpeg",
+      "width": 1280,
+      "height": 900,
+      "screenshotPath": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.5/ghost-context-1-screenshot.jpg"
+    },
+    "context2": {
+      "contextId": "ctx-2",
+      "url": "data:text/html,<html><body style='background:%231a1a2e;color:%23e0e0ff;font:48px…",
+      "screenshotBytes": 13306,
+      "screenshotMimeType": "image/jpeg",
+      "width": 1280,
+      "height": 900,
+      "screenshotPath": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.5/ghost-context-2-screenshot.jpg"
+    },
+    "poolSnapshots": {
+      "afterInit": {
+        "minSize": 2,
+        "maxSize": 2,
+        "totalSlots": 2,
+        "cold": 0,
+        "replenishing": 0,
+        "available": 2,
+        "inUse": 0,
+        "queued": 0,
+        "slotStates": [
+          {
+            "contextId": "ctx-1",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 43
+          },
+          {
+            "contextId": "ctx-2",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 17
+          }
+        ]
+      },
+      "final": {
+        "minSize": 2,
+        "maxSize": 2,
+        "totalSlots": 2,
+        "cold": 0,
+        "replenishing": 0,
+        "available": 2,
+        "inUse": 0,
+        "queued": 0,
+        "slotStates": [
+          {
+            "contextId": "ctx-1",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 43
+          },
+          {
+            "contextId": "ctx-2",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 17
+          }
+        ]
+      }
+    }
+  }
+}
