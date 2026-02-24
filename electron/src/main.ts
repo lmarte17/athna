@@ -158,6 +158,11 @@ async function bootstrap(): Promise<void> {
         remoteDebuggingPort,
         ghostPageCapturer: async (contextId) =>
           ghostContextManager?.captureGhostPage(contextId) ?? null,
+        ghostContextDestroyer: async (contextId) => {
+          if (ghostContextManager) {
+            await ghostContextManager.destroyContext(contextId, true);
+          }
+        },
         logger: (line) => console.info(line)
       });
       workspaceController.initialize();

@@ -254,7 +254,9 @@ body {
 .new-tab-button:focus,
 .sidebar-toggle:focus,
 .ghost-chip:focus,
-.status-item:focus {
+.status-item:focus,
+.ghost-chip-cancel:focus,
+.status-item-cancel:focus {
   outline: 1px solid var(--field-focus);
   outline-offset: 1px;
 }
@@ -553,4 +555,58 @@ h1 {
   padding: 24px;
   text-align: center;
   margin: 0;
+}
+
+/* ── Cancel controls (Phase 6.6) ── */
+
+.ghost-chip-cancel {
+  border: 0;
+  background: transparent;
+  color: rgba(244, 100, 100, 0.72);
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  padding: 0;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ghost-chip-cancel:hover {
+  background: rgba(220, 60, 60, 0.22);
+  color: rgba(255, 140, 140, 0.95);
+}
+
+.status-item-cancel {
+  border: 1px solid rgba(220, 80, 80, 0.48);
+  background: transparent;
+  color: rgba(245, 152, 152, 0.88);
+  cursor: pointer;
+  border-radius: 6px;
+  height: 18px;
+  padding: 0 7px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-item-cancel:hover {
+  background: rgba(220, 60, 60, 0.18);
+  border-color: rgba(220, 80, 80, 0.72);
+  color: rgba(255, 180, 180, 0.95);
+}
+
+.ghost-chip.cancelled {
+  opacity: 0.55;
+  border-color: rgba(180, 180, 180, 0.38);
+}
+
+.status-item.cancelled {
+  opacity: 0.72;
+  border-color: rgba(180, 180, 180, 0.28);
 }
