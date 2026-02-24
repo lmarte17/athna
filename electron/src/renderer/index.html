@@ -10,11 +10,11 @@
     <div class="window-shell">
       <header class="top-shell">
         <div class="tab-strip-row">
-          <div id="tab-strip" class="tab-strip" aria-label="Workspace tabs"></div>
+          <div id="tab-strip" class="tab-strip" aria-label="Context tabs"></div>
           <button id="new-tab-button" class="new-tab-button" type="button">+ Add page</button>
         </div>
         <div class="ghost-strip-row">
-          <div id="ghost-strip" class="ghost-strip" aria-label="Ghost task strip"></div>
+          <div id="ghost-strip" class="ghost-strip" aria-label="Ghost tabs"></div>
         </div>
         <form id="top-command-form" class="command-form compact" autocomplete="off">
           <input
@@ -82,17 +82,6 @@
         </div>
         <div id="status-feed" class="status-feed" aria-live="polite"></div>
       </aside>
-    </div>
-
-    <div id="ghost-viewer" class="ghost-viewer hidden" aria-label="Ghost Tab read-only view">
-      <div class="ghost-viewer-header">
-        <span id="ghost-viewer-label" class="ghost-viewer-label"></span>
-        <button id="ghost-viewer-close" class="ghost-viewer-close" type="button" aria-label="Close Ghost viewer">×</button>
-      </div>
-      <div class="ghost-viewer-body">
-        <img id="ghost-viewer-img" class="ghost-viewer-img hidden" alt="" aria-label="Ghost Tab screenshot" />
-        <p id="ghost-viewer-empty" class="ghost-viewer-empty">No screenshot available yet.</p>
-      </div>
     </div>
 
     <script src="./app.js"></script>

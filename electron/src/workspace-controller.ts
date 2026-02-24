@@ -13,11 +13,13 @@ import {
   COMMAND_MODES,
   type CommandDispatchRecord,
   type CommandMode,
+  type WorkspaceGhostTabState,
   type WorkspaceTaskSummary,
   type WorkspaceCommandSubmission,
   type WorkspaceCommandSubmissionResult,
   type WorkspaceState,
   type WorkspaceTabState,
+  type WorkspaceActiveSurfaceKind,
   WORKSPACE_CHANNELS
 } from "./workspace-types.js";
 import { buildExecutionPlan, classifyCommandIntent } from "./intent-classifier.js";
@@ -38,12 +40,14 @@ const COMMAND_FOCUS_ACCELERATOR = "CommandOrControl+L";
 const STATE_EVENT_MAX_HZ = 2;
 const STATE_EMIT_WINDOW_MS = 1000;
 const MAX_STATE_EMITS_PER_WINDOW = STATE_EVENT_MAX_HZ;
+const GHOST_TAB_ID_PREFIX = "ghost-tab-";
 
 interface WorkspaceControllerOptions {
   window: BrowserWindow;
   remoteDebuggingPort: string;
   topChromeHeight?: number;
   ghostPageCapturer?: (contextId: string) => Promise<string | null>;
+  ghostContextViewResolver?: (contextId: string) => BrowserView | null;
   ghostContextDestroyer?: (contextId: string) => Promise<void>;
   logger?: (line: string) => void;
 }
@@ -90,17 +94,30 @@ interface ManagedWorkspaceTask {
   ghostContextId: string | null;
 }
 
+type ActiveViewDescriptor =
+  | {
+      kind: "TAB";
+      tabId: string;
+    }
+  | {
+      kind: "GHOST";
+      contextId: string;
+    };
+
 export class WorkspaceController {
   private readonly window: BrowserWindow;
   private readonly topChromeHeight: number;
   private readonly logger: (line: string) => void;
   private readonly remoteDebuggingPort: string;
   private readonly ghostPageCapturer: ((contextId: string) => Promise<string | null>) | undefined;
+  private readonly ghostContextViewResolver: ((contextId: string) => BrowserView | null) | undefined;
   private readonly ghostContextDestroyer: ((contextId: string) => Promise<void>) | undefined;
   private readonly tabs = new Map<string, WorkspaceTabInternal>();
   private readonly tabOrder: string[] = [];
   private readonly tasks = new Map<string, ManagedWorkspaceTask>();
   private readonly taskOrder: string[] = [];
+  private readonly dismissedGhostTaskIds = new Set<string>();
+  private readonly selectedGhostTabByContext = new Map<string, string>();
   private readonly orchestrationRuntime: OrchestrationRuntime;
   private readonly onWindowResize = (): void => {
     this.layoutActiveView();
@@ -134,6 +151,24 @@ export class WorkspaceController {
   ): Promise<WorkspaceState> => {
     this.assertInvokeSender(event);
     this.setActiveTab(tabId);
+    this.emitState();
+    return this.serializeState();
+  };
+  private readonly handleSwitchGhostTab = async (
+    event: IpcMainInvokeEvent,
+    ghostTabId: string
+  ): Promise<WorkspaceState> => {
+    this.assertInvokeSender(event);
+    this.switchGhostTab(ghostTabId);
+    this.emitState();
+    return this.serializeState();
+  };
+  private readonly handleDismissGhostTab = async (
+    event: IpcMainInvokeEvent,
+    ghostTabId: string
+  ): Promise<WorkspaceState> => {
+    this.assertInvokeSender(event);
+    this.dismissGhostTab(ghostTabId);
     this.emitState();
     return this.serializeState();
   };
@@ -178,7 +213,9 @@ export class WorkspaceController {
 
   private nextTabOrdinal = 1;
   private activeTabId = START_PAGE_TAB_ID;
-  private attachedViewTabId: string | null = null;
+  private activeSurfaceIntent: WorkspaceActiveSurfaceKind = "CONTEXT";
+  private attachedView: BrowserView | null = null;
+  private attachedViewDescriptor: ActiveViewDescriptor | null = null;
   private initialized = false;
   private lastDispatch: CommandDispatchRecord | null = null;
   private focusShortcutRegistered = false;
@@ -194,6 +231,7 @@ export class WorkspaceController {
     this.logger = options.logger ?? ((line: string) => console.info(line));
     this.remoteDebuggingPort = options.remoteDebuggingPort;
     this.ghostPageCapturer = options.ghostPageCapturer;
+    this.ghostContextViewResolver = options.ghostContextViewResolver;
     this.ghostContextDestroyer = options.ghostContextDestroyer;
     this.orchestrationRuntime = new OrchestrationRuntime({
       remoteDebuggingPort: this.remoteDebuggingPort,
@@ -219,6 +257,8 @@ export class WorkspaceController {
     ipcMain.handle(WORKSPACE_CHANNELS.getState, this.handleGetState);
     ipcMain.handle(WORKSPACE_CHANNELS.createTab, this.handleCreateTab);
     ipcMain.handle(WORKSPACE_CHANNELS.switchTab, this.handleSwitchTab);
+    ipcMain.handle(WORKSPACE_CHANNELS.switchGhostTab, this.handleSwitchGhostTab);
+    ipcMain.handle(WORKSPACE_CHANNELS.dismissGhostTab, this.handleDismissGhostTab);
     ipcMain.handle(WORKSPACE_CHANNELS.closeTab, this.handleCloseTab);
     ipcMain.handle(WORKSPACE_CHANNELS.submitCommand, this.handleSubmitCommand);
     ipcMain.handle(WORKSPACE_CHANNELS.getTaskScreenshot, this.handleGetTaskScreenshot);
@@ -235,6 +275,8 @@ export class WorkspaceController {
     ipcMain.removeHandler(WORKSPACE_CHANNELS.getState);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.createTab);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.switchTab);
+    ipcMain.removeHandler(WORKSPACE_CHANNELS.switchGhostTab);
+    ipcMain.removeHandler(WORKSPACE_CHANNELS.dismissGhostTab);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.closeTab);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.submitCommand);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.getTaskScreenshot);
@@ -250,6 +292,8 @@ export class WorkspaceController {
     this.tabOrder.splice(0, this.tabOrder.length);
     this.tasks.clear();
     this.taskOrder.splice(0, this.taskOrder.length);
+    this.dismissedGhostTaskIds.clear();
+    this.selectedGhostTabByContext.clear();
     if (this.pendingStateEmitTimer) {
       clearTimeout(this.pendingStateEmitTimer);
       this.pendingStateEmitTimer = null;
@@ -337,6 +381,8 @@ export class WorkspaceController {
     let taskId: string | null = null;
     if (classified.classification.intent === "NAVIGATE" && classified.normalizedUrl) {
       this.queueNavigation(contextTab, classified.normalizedUrl);
+      this.activeSurfaceIntent = "CONTEXT";
+      this.refreshActiveSurfaceView();
     } else {
       taskId = this.enqueueRuntimeTask({
         workspaceContextId: contextTab.id,
@@ -421,6 +467,10 @@ export class WorkspaceController {
     this.tasks.set(taskId, task);
     this.taskOrder.unshift(taskId);
 
+    if (isGhostRoute(task.route) && !this.selectedGhostTabByContext.has(task.workspaceContextId)) {
+      this.selectedGhostTabByContext.set(task.workspaceContextId, toGhostTabId(task.taskId));
+    }
+
     void this.orchestrationRuntime
       .submitTask({
         taskId,
@@ -464,27 +514,32 @@ export class WorkspaceController {
       return;
     }
 
-    // If already cancelled, capture the contextId for deferred destroy
-    // (handles the QUEUED→DISPATCHED race where cancel was called before
-    // the first status message arrived), then bail out.
+    const normalizedContextId = normalizeRuntimeContextId(message.contextId);
+
     if (task.status === "CANCELLED") {
-      if (!task.ghostContextId && message.contextId) {
-        task.ghostContextId = message.contextId;
+      if (!task.ghostContextId && normalizedContextId) {
+        task.ghostContextId = normalizedContextId;
         if (this.ghostContextDestroyer) {
-          void this.ghostContextDestroyer(message.contextId).catch((error: unknown) => {
-            this.logger(
-              `[workspace] deferred-cancel destroy-failed taskId=${message.taskId} error=${
-                error instanceof Error ? error.message : String(error)
-              }`
-            );
-          });
+          void this.ghostContextDestroyer(normalizedContextId)
+            .then(() => {
+              task.ghostContextId = null;
+              this.refreshActiveSurfaceView();
+              this.emitState();
+            })
+            .catch((error: unknown) => {
+              this.logger(
+                `[workspace] deferred-cancel destroy-failed taskId=${message.taskId} error=${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            });
         }
       }
       return;
     }
 
-    if (!task.ghostContextId && message.contextId) {
-      task.ghostContextId = message.contextId;
+    if (!task.ghostContextId && normalizedContextId) {
+      task.ghostContextId = normalizedContextId;
     }
 
     switch (message.payload.kind) {
@@ -539,6 +594,8 @@ export class WorkspaceController {
       }
     }
 
+    this.reconcileGhostSelectionForContext(task.workspaceContextId);
+    this.refreshActiveSurfaceView();
     this.emitState();
   }
 
@@ -548,7 +605,6 @@ export class WorkspaceController {
       return;
     }
 
-    // Do not overwrite a CANCELLED terminal state.
     if (task.status === "CANCELLED") {
       return;
     }
@@ -562,6 +618,10 @@ export class WorkspaceController {
     task.finalUrl = result.finalUrl;
     task.currentUrl = result.finalUrl ?? task.currentUrl;
     task.errorMessage = result.errorMessage;
+    task.ghostContextId = null;
+
+    this.reconcileGhostSelectionForContext(task.workspaceContextId);
+    this.refreshActiveSurfaceView();
     this.emitState();
   }
 
@@ -571,8 +631,6 @@ export class WorkspaceController {
       return;
     }
 
-    // Do not overwrite a CANCELLED terminal state. The error is expected —
-    // it is the result of destroying the BrowserContext on cancellation.
     if (task.status === "CANCELLED") {
       return;
     }
@@ -582,6 +640,10 @@ export class WorkspaceController {
     task.currentAction = "Task failed";
     task.finishedAt = new Date().toISOString();
     task.errorMessage = error instanceof Error ? error.message : String(error);
+    task.ghostContextId = null;
+
+    this.reconcileGhostSelectionForContext(task.workspaceContextId);
+    this.refreshActiveSurfaceView();
     this.emitState();
   }
 
@@ -595,29 +657,29 @@ export class WorkspaceController {
       return false;
     }
 
-    // Freeze partial result state before mutating status.
-    // currentUrl, currentState, currentAction, and progressLabel are left as-is —
-    // they represent the partial result snapshot available to the user.
     task.status = "CANCELLED";
     task.finishedAt = new Date().toISOString();
     task.durationMs = task.startedAt ? Date.now() - Date.parse(task.startedAt) : null;
 
     this.logger(`[workspace] cancel taskId=${taskId} ghostContextId=${task.ghostContextId ?? "none"}`);
 
-    // Destroy the ghost BrowserContext immediately if one is assigned.
-    // This closes the BrowserWindow, causing every in-flight CDP call to throw,
-    // which cascades to failRuntimeTask() — which then silently returns due to
-    // the CANCELLED guard above.
     if (task.ghostContextId && this.ghostContextDestroyer) {
-      await this.ghostContextDestroyer(task.ghostContextId).catch((error: unknown) => {
-        this.logger(
-          `[workspace] cancel destroy-failed taskId=${taskId} error=${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      });
+      const contextIdToDestroy = task.ghostContextId;
+      await this.ghostContextDestroyer(contextIdToDestroy)
+        .then(() => {
+          task.ghostContextId = null;
+        })
+        .catch((error: unknown) => {
+          this.logger(
+            `[workspace] cancel destroy-failed taskId=${taskId} error=${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        });
     }
 
+    this.reconcileGhostSelectionForContext(task.workspaceContextId);
+    this.refreshActiveSurfaceView();
     return true;
   }
 
@@ -749,14 +811,36 @@ export class WorkspaceController {
     }
 
     this.activeTabId = tabId;
-    this.detachActiveView();
+    this.activeSurfaceIntent = "CONTEXT";
+    this.reconcileGhostSelectionForContext(tabId);
+    this.refreshActiveSurfaceView();
+  }
 
-    if (tab.kind === "WEB" && tab.view) {
-      this.window.addBrowserView(tab.view);
-      this.attachedViewTabId = tabId;
-      this.layoutActiveView();
-      tab.view.webContents.focus();
+  private switchGhostTab(ghostTabId: string): void {
+    const activeContextId = this.resolveActiveWebContextId();
+    if (!activeContextId) {
+      return;
     }
+
+    const task = this.getTaskForGhostTabId(ghostTabId);
+    if (!task || task.workspaceContextId !== activeContextId || !isGhostRoute(task.route)) {
+      return;
+    }
+
+    this.selectedGhostTabByContext.set(activeContextId, ghostTabId);
+    this.activeSurfaceIntent = "GHOST";
+    this.refreshActiveSurfaceView();
+  }
+
+  private dismissGhostTab(ghostTabId: string): void {
+    const task = this.getTaskForGhostTabId(ghostTabId);
+    if (!task || !isGhostRoute(task.route) || !isDismissableGhostTask(task)) {
+      return;
+    }
+
+    this.dismissedGhostTaskIds.add(task.taskId);
+    this.reconcileGhostSelectionForContext(task.workspaceContextId);
+    this.refreshActiveSurfaceView();
   }
 
   private closeTab(tabId: string): void {
@@ -764,6 +848,29 @@ export class WorkspaceController {
     if (!tab || tab.kind === "START") {
       return;
     }
+
+    const contextTaskIds = this.taskOrder.filter((taskId) => {
+      return this.tasks.get(taskId)?.workspaceContextId === tabId;
+    });
+
+    for (const taskId of contextTaskIds) {
+      const task = this.tasks.get(taskId);
+      if (!task) {
+        continue;
+      }
+
+      if (task.status === "QUEUED" || task.status === "RUNNING") {
+        void this.cancelTask(taskId).finally(() => {
+          this.removeTask(taskId);
+          this.refreshActiveSurfaceView();
+          this.emitState();
+        });
+      } else {
+        this.removeTask(taskId);
+      }
+    }
+
+    this.selectedGhostTabByContext.delete(tabId);
 
     const tabIndex = this.tabOrder.indexOf(tabId);
     if (tabIndex >= 0) {
@@ -775,16 +882,35 @@ export class WorkspaceController {
     if (wasActive) {
       const fallbackTabId = this.tabOrder[Math.max(0, tabIndex - 1)] ?? START_PAGE_TAB_ID;
       this.setActiveTab(fallbackTabId);
-    } else if (this.attachedViewTabId === tabId) {
-      this.detachActiveView();
+    } else {
+      this.refreshActiveSurfaceView();
     }
 
     this.destroyTabView(tab);
   }
 
+  private removeTask(taskId: string): void {
+    this.tasks.delete(taskId);
+    const taskIndex = this.taskOrder.indexOf(taskId);
+    if (taskIndex >= 0) {
+      this.taskOrder.splice(taskIndex, 1);
+    }
+    this.dismissedGhostTaskIds.delete(taskId);
+
+    for (const [contextId, ghostTabId] of this.selectedGhostTabByContext.entries()) {
+      if (fromGhostTabId(ghostTabId) === taskId) {
+        this.selectedGhostTabByContext.delete(contextId);
+      }
+    }
+  }
+
   private destroyTabView(tab: WorkspaceTabInternal): void {
     if (!tab.view) {
       return;
+    }
+
+    if (this.attachedView === tab.view) {
+      this.detachActiveView();
     }
 
     const { webContents } = tab.view;
@@ -806,36 +932,134 @@ export class WorkspaceController {
     return created;
   }
 
-  private detachActiveView(): void {
-    if (!this.attachedViewTabId) {
+  private resolveActiveWebContextId(): string | null {
+    const active = this.tabs.get(this.activeTabId);
+    if (!active || active.kind !== "WEB") {
+      return null;
+    }
+    return active.id;
+  }
+
+  private getTaskForGhostTabId(ghostTabId: string): ManagedWorkspaceTask | null {
+    const taskId = fromGhostTabId(ghostTabId);
+    if (!taskId) {
+      return null;
+    }
+    return this.tasks.get(taskId) ?? null;
+  }
+
+  private listVisibleGhostTasksForContext(contextId: string): ManagedWorkspaceTask[] {
+    return this.taskOrder
+      .map((taskId) => this.tasks.get(taskId))
+      .filter((task): task is ManagedWorkspaceTask => Boolean(task))
+      .filter((task) => task.workspaceContextId === contextId)
+      .filter((task) => isGhostRoute(task.route))
+      .filter((task) => task.status !== "CANCELLED")
+      .filter((task) => !this.dismissedGhostTaskIds.has(task.taskId));
+  }
+
+  private reconcileGhostSelectionForContext(contextId: string): void {
+    const tasks = this.listVisibleGhostTasksForContext(contextId);
+    const current = this.selectedGhostTabByContext.get(contextId) ?? null;
+    const currentTaskId = current ? fromGhostTabId(current) : null;
+    const hasCurrent = Boolean(currentTaskId && tasks.some((task) => task.taskId === currentTaskId));
+
+    if (hasCurrent) {
       return;
     }
 
-    const attachedTab = this.tabs.get(this.attachedViewTabId);
-    if (attachedTab?.view) {
-      this.window.removeBrowserView(attachedTab.view);
+    const nextTask = tasks[0] ?? null;
+    if (nextTask) {
+      this.selectedGhostTabByContext.set(contextId, toGhostTabId(nextTask.taskId));
+      return;
     }
-    this.attachedViewTabId = null;
+
+    this.selectedGhostTabByContext.delete(contextId);
+
+    if (this.resolveActiveWebContextId() === contextId) {
+      this.activeSurfaceIntent = "CONTEXT";
+    }
+  }
+
+  private refreshActiveSurfaceView(): void {
+    const activeTab = this.tabs.get(this.activeTabId);
+    if (!activeTab || activeTab.kind !== "WEB" || !activeTab.view) {
+      this.detachActiveView();
+      return;
+    }
+
+    if (this.activeSurfaceIntent === "GHOST") {
+      const selectedGhostTabId = this.selectedGhostTabByContext.get(activeTab.id) ?? null;
+      const selectedTask = selectedGhostTabId ? this.getTaskForGhostTabId(selectedGhostTabId) : null;
+      if (selectedTask && isLiveGhostEligible(selectedTask)) {
+        const contextId = selectedTask.ghostContextId;
+        if (contextId && this.ghostContextViewResolver) {
+          const ghostView = this.ghostContextViewResolver(contextId);
+          if (ghostView && !ghostView.webContents.isDestroyed()) {
+            this.attachView(ghostView, {
+              kind: "GHOST",
+              contextId
+            });
+            return;
+          }
+        }
+      }
+    }
+
+    this.attachView(activeTab.view, {
+      kind: "TAB",
+      tabId: activeTab.id
+    });
+  }
+
+  private attachView(view: BrowserView, descriptor: ActiveViewDescriptor): void {
+    const alreadyAttached = this.attachedView === view;
+    if (!alreadyAttached) {
+      if (this.attachedView) {
+        try {
+          this.window.removeBrowserView(this.attachedView);
+        } catch {
+          // best effort detach
+        }
+      }
+      this.window.addBrowserView(view);
+      this.attachedView = view;
+    }
+
+    this.attachedViewDescriptor = descriptor;
+    this.layoutActiveView();
+    view.webContents.focus();
+  }
+
+  private detachActiveView(): void {
+    if (!this.attachedView) {
+      return;
+    }
+
+    try {
+      this.window.removeBrowserView(this.attachedView);
+    } catch {
+      // best effort detach
+    }
+
+    this.attachedView = null;
+    this.attachedViewDescriptor = null;
   }
 
   private layoutActiveView(): void {
-    if (!this.attachedViewTabId) {
-      return;
-    }
-    const tab = this.tabs.get(this.attachedViewTabId);
-    if (!tab?.view) {
+    if (!this.attachedView) {
       return;
     }
 
     const [width, height] = this.window.getContentSize();
     const boundedHeight = Math.max(0, height - this.topChromeHeight);
-    tab.view.setBounds({
+    this.attachedView.setBounds({
       x: 0,
       y: this.topChromeHeight,
       width: Math.max(0, width),
       height: boundedHeight
     });
-    tab.view.setAutoResize({
+    this.attachedView.setAutoResize({
       width: true,
       height: true
     });
@@ -902,6 +1126,8 @@ export class WorkspaceController {
       }));
 
     const activeTab = this.tabs.get(this.activeTabId);
+    const activeContextId = activeTab?.kind === "WEB" ? activeTab.id : null;
+
     const tasks: WorkspaceTaskSummary[] = this.taskOrder
       .map((taskId) => this.tasks.get(taskId))
       .filter((task): task is ManagedWorkspaceTask => Boolean(task))
@@ -925,14 +1151,53 @@ export class WorkspaceController {
         finalUrl: task.finalUrl
       }));
 
+    const ghostTabs: WorkspaceGhostTabState[] = this.taskOrder
+      .map((taskId) => this.tasks.get(taskId))
+      .filter((task): task is ManagedWorkspaceTask => Boolean(task))
+      .filter((task) => isGhostRoute(task.route))
+      .filter((task) => task.status !== "CANCELLED")
+      .filter((task) => !this.dismissedGhostTaskIds.has(task.taskId))
+      .map((task) => ({
+        ghostTabId: toGhostTabId(task.taskId),
+        taskId: task.taskId,
+        workspaceContextId: task.workspaceContextId,
+        intent: task.intent,
+        status: task.status,
+        currentState: task.currentState,
+        currentUrl: task.currentUrl,
+        progressLabel: task.progressLabel,
+        canCancel: task.status === "QUEUED" || task.status === "RUNNING",
+        canDismiss: isDismissableGhostTask(task),
+        ghostContextId: task.ghostContextId
+      }));
+
+    const selectedActiveGhostTabId =
+      activeContextId !== null ? (this.selectedGhostTabByContext.get(activeContextId) ?? null) : null;
+
     return {
       tabs,
       activeTabId: this.activeTabId,
+      activeSurface: this.attachedViewDescriptor?.kind === "GHOST" ? "GHOST" : "CONTEXT",
+      activeGhostTabId: selectedActiveGhostTabId,
       isStartPageActive: activeTab?.kind !== "WEB",
       lastDispatch: this.lastDispatch,
+      ghostTabs,
       tasks
     };
   }
+}
+
+function toGhostTabId(taskId: string): string {
+  return `${GHOST_TAB_ID_PREFIX}${taskId}`;
+}
+
+function fromGhostTabId(ghostTabId: string): string | null {
+  if (!ghostTabId.startsWith(GHOST_TAB_ID_PREFIX)) {
+    return null;
+  }
+
+  const taskId = ghostTabId.slice(GHOST_TAB_ID_PREFIX.length);
+  return taskId.length > 0 ? taskId : null;
 }
 
 function safeGetCurrentUrl(
@@ -1078,4 +1343,33 @@ function isHttpUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isGhostRoute(route: WorkspaceTaskSummary["route"]): boolean {
+  return route === "GHOST_RESEARCH" || route === "GHOST_TRANSACT";
+}
+
+function isDismissableGhostTask(task: ManagedWorkspaceTask): boolean {
+  return task.status === "SUCCEEDED" || task.status === "FAILED";
+}
+
+function isLiveGhostEligible(task: ManagedWorkspaceTask): boolean {
+  return (
+    isGhostRoute(task.route) &&
+    (task.status === "QUEUED" || task.status === "RUNNING") &&
+    Boolean(task.ghostContextId)
+  );
+}
+
+function normalizeRuntimeContextId(rawContextId: string | null | undefined): string | null {
+  if (!rawContextId) {
+    return null;
+  }
+
+  const normalized = rawContextId.trim();
+  if (!normalized || normalized.toLowerCase() === "unknown-context") {
+    return null;
+  }
+
+  return normalized;
 }

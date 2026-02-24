@@ -2,6 +2,8 @@ export const WORKSPACE_CHANNELS = {
   getState: "workspace:get-state",
   createTab: "workspace:create-tab",
   switchTab: "workspace:switch-tab",
+  switchGhostTab: "workspace:switch-ghost-tab",
+  dismissGhostTab: "workspace:dismiss-ghost-tab",
   closeTab: "workspace:close-tab",
   submitCommand: "workspace:submit-command",
   stateEvent: "workspace:state",
@@ -86,11 +88,30 @@ export interface WorkspaceTaskSummary {
   finalUrl: string | null;
 }
 
+export interface WorkspaceGhostTabState {
+  ghostTabId: string;
+  taskId: string;
+  workspaceContextId: string;
+  intent: CommandIntent;
+  status: WorkspaceTaskStatus;
+  currentState: string | null;
+  currentUrl: string | null;
+  progressLabel: string | null;
+  canCancel: boolean;
+  canDismiss: boolean;
+  ghostContextId: string | null;
+}
+
+export type WorkspaceActiveSurfaceKind = "CONTEXT" | "GHOST";
+
 export interface WorkspaceState {
   tabs: WorkspaceTabState[];
   activeTabId: string;
+  activeSurface: WorkspaceActiveSurfaceKind;
+  activeGhostTabId: string | null;
   isStartPageActive: boolean;
   lastDispatch: CommandDispatchRecord | null;
+  ghostTabs: WorkspaceGhostTabState[];
   tasks: WorkspaceTaskSummary[];
 }
 

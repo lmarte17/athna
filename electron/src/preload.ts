@@ -11,6 +11,8 @@ const WORKSPACE_CHANNELS = {
   getState: "workspace:get-state",
   createTab: "workspace:create-tab",
   switchTab: "workspace:switch-tab",
+  switchGhostTab: "workspace:switch-ghost-tab",
+  dismissGhostTab: "workspace:dismiss-ghost-tab",
   closeTab: "workspace:close-tab",
   submitCommand: "workspace:submit-command",
   stateEvent: "workspace:state",
@@ -23,6 +25,8 @@ export interface WorkspaceBridgeApi {
   getState: () => Promise<WorkspaceState>;
   createTab: () => Promise<WorkspaceState>;
   switchTab: (tabId: string) => Promise<WorkspaceState>;
+  switchGhostTab: (ghostTabId: string) => Promise<WorkspaceState>;
+  dismissGhostTab: (ghostTabId: string) => Promise<WorkspaceState>;
   closeTab: (tabId: string) => Promise<WorkspaceState>;
   submitCommand: (submission: WorkspaceCommandSubmission) => Promise<WorkspaceCommandSubmissionResult>;
   onState: (listener: (state: WorkspaceState) => void) => () => void;
@@ -35,6 +39,10 @@ const workspaceBridgeApi: WorkspaceBridgeApi = {
   getState: async () => ipcRenderer.invoke(WORKSPACE_CHANNELS.getState),
   createTab: async () => ipcRenderer.invoke(WORKSPACE_CHANNELS.createTab),
   switchTab: async (tabId: string) => ipcRenderer.invoke(WORKSPACE_CHANNELS.switchTab, tabId),
+  switchGhostTab: async (ghostTabId: string) =>
+    ipcRenderer.invoke(WORKSPACE_CHANNELS.switchGhostTab, ghostTabId),
+  dismissGhostTab: async (ghostTabId: string) =>
+    ipcRenderer.invoke(WORKSPACE_CHANNELS.dismissGhostTab, ghostTabId),
   closeTab: async (tabId: string) => ipcRenderer.invoke(WORKSPACE_CHANNELS.closeTab, tabId),
   submitCommand: async (submission: WorkspaceCommandSubmission) =>
     ipcRenderer.invoke(WORKSPACE_CHANNELS.submitCommand, submission),

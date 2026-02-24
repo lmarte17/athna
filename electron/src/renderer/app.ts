@@ -4,6 +4,7 @@ import type {
   CommandDispatchRecord,
   WorkspaceCommandSubmission,
   WorkspaceCommandSubmissionResult,
+  WorkspaceGhostTabState,
   WorkspaceState,
   WorkspaceTabState,
   WorkspaceTaskSummary
@@ -13,11 +14,12 @@ interface WorkspaceBridgeApi {
   getState: () => Promise<WorkspaceState>;
   createTab: () => Promise<WorkspaceState>;
   switchTab: (tabId: string) => Promise<WorkspaceState>;
+  switchGhostTab: (ghostTabId: string) => Promise<WorkspaceState>;
+  dismissGhostTab: (ghostTabId: string) => Promise<WorkspaceState>;
   closeTab: (tabId: string) => Promise<WorkspaceState>;
   submitCommand: (submission: WorkspaceCommandSubmission) => Promise<WorkspaceCommandSubmissionResult>;
   onState: (listener: (state: WorkspaceState) => void) => () => void;
   onCommandFocus: (listener: (target: CommandFocusTarget) => void) => () => void;
-  getTaskScreenshot: (taskId: string) => Promise<string | null>;
   cancelTask: (taskId: string) => Promise<{ cancelled: boolean }>;
 }
 
@@ -33,8 +35,12 @@ interface ContextTaskStats {
 }
 
 const RUNNING_TASK_STATUSES = new Set<WorkspaceTaskSummary["status"]>(["QUEUED", "RUNNING"]);
-const COMPLETED_TASK_STATUSES = new Set<WorkspaceTaskSummary["status"]>(["SUCCEEDED", "FAILED", "CANCELLED"]);
-const MAX_VISIBLE_TASKS = 16;
+const COMPLETED_TASK_STATUSES = new Set<WorkspaceTaskSummary["status"]>([
+  "SUCCEEDED",
+  "FAILED",
+  "CANCELLED"
+]);
+const MAX_VISIBLE_TASKS = 24;
 
 const bridge = window.workspaceBridge;
 if (!bridge) {
@@ -56,11 +62,6 @@ const statusSidebarElement = getElement<HTMLElement>("status-sidebar");
 const statusSidebarToggleElement = getElement<HTMLButtonElement>("sidebar-toggle");
 const statusSidebarContextElement = getElement<HTMLParagraphElement>("sidebar-context-label");
 const statusFeedElement = getElement<HTMLDivElement>("status-feed");
-const ghostViewerElement = getElement<HTMLDivElement>("ghost-viewer");
-const ghostViewerLabelElement = getElement<HTMLSpanElement>("ghost-viewer-label");
-const ghostViewerCloseElement = getElement<HTMLButtonElement>("ghost-viewer-close");
-const ghostViewerImgElement = getElement<HTMLImageElement>("ghost-viewer-img");
-const ghostViewerEmptyElement = getElement<HTMLParagraphElement>("ghost-viewer-empty");
 
 let currentState: WorkspaceState | null = null;
 let draftCommand = "";
@@ -71,8 +72,6 @@ let activeContextId: string | null = null;
 let selectedTaskId: string | null = null;
 let sidebarCollapsed = false;
 let elapsedTickerHandle: number | null = null;
-let viewerTaskId: string | null = null;
-let viewerPollHandle: number | null = null;
 
 initializeUi().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
@@ -93,10 +92,6 @@ async function initializeUi(): Promise<void> {
     renderSidebarState();
   });
 
-  ghostViewerCloseElement.addEventListener("click", () => {
-    closeGhostViewer();
-  });
-
   newTabButtonElement.addEventListener("click", () => {
     void bridge.createTab().then(applyState).catch(renderTransientError);
   });
@@ -114,7 +109,8 @@ async function initializeUi(): Promise<void> {
       return;
     }
     const tasks = getTasksForContext(currentState.tasks, activeContextId);
-    renderStatusFeed(activeContextId, tasks);
+    const ghostTabs = getGhostTabsForContext(currentState.ghostTabs, activeContextId);
+    renderStatusFeed(activeContextId, tasks, ghostTabs);
   }, 1000);
 
   const initialState = await bridge.getState();
@@ -192,30 +188,16 @@ function applyState(state: WorkspaceState): void {
 
   const nextContextId = resolveActiveContextId(state);
   const contextTasks = getTasksForContext(state.tasks, nextContextId);
-  synchronizeTaskSelection(nextContextId, contextTasks);
+  const contextGhostTabs = getGhostTabsForContext(state.ghostTabs, nextContextId);
+  synchronizeTaskSelection(state, nextContextId, contextTasks, contextGhostTabs);
 
   renderTabStrip(state.tabs, state.activeTabId, state.tasks);
-  renderGhostStrip(nextContextId, contextTasks);
+  renderGhostStrip(state, nextContextId, contextGhostTabs);
   renderSidebarState();
-  renderStatusFeed(nextContextId, contextTasks);
+  renderStatusFeed(nextContextId, contextTasks, contextGhostTabs);
 
   startPageElement.classList.toggle("hidden", !state.isStartPageActive);
   renderDispatchSurface();
-
-  // Close viewer if its task no longer belongs to the active context (context switch).
-  if (viewerTaskId) {
-    const viewerTask = state.tasks.find((t) => t.taskId === viewerTaskId);
-    if (!viewerTask || viewerTask.workspaceContextId !== nextContextId) {
-      closeGhostViewer();
-    } else if (
-      viewerPollHandle !== null &&
-      (viewerTask.status === "SUCCEEDED" || viewerTask.status === "FAILED" || viewerTask.status === "CANCELLED")
-    ) {
-      // Task finished or was cancelled — stop polling and take one final screenshot.
-      stopGhostViewerPolling();
-      refreshGhostViewerScreenshot();
-    }
-  }
 }
 
 function renderTabStrip(
@@ -269,71 +251,87 @@ function renderTabStrip(
 }
 
 function renderGhostStrip(
+  state: WorkspaceState,
   contextId: string | null,
-  contextTasks: WorkspaceState["tasks"]
+  contextGhostTabs: WorkspaceGhostTabState[]
 ): void {
   ghostStripElement.replaceChildren();
 
   if (!contextId) {
     ghostStripElement.appendChild(
-      createGhostPlaceholder("Open a page tab to create and view Ghost tasks for that context.")
+      createGhostPlaceholder("Open a page tab to create and view Ghost tabs for that context.")
     );
     return;
   }
 
-  // CANCELLED tasks are removed from the Ghost Strip per spec; they remain in the Status Feed.
-  const activeContextTasks = contextTasks.filter((t) => t.status !== "CANCELLED");
-
-  if (activeContextTasks.length === 0) {
-    ghostStripElement.appendChild(createGhostPlaceholder("No Ghost tasks yet for this context."));
+  if (contextGhostTabs.length === 0) {
+    ghostStripElement.appendChild(createGhostPlaceholder("No Ghost tabs yet for this context."));
     return;
   }
 
-  const visibleTasks = activeContextTasks.slice(0, MAX_VISIBLE_TASKS);
-  for (const [index, task] of visibleTasks.entries()) {
-    const chip = document.createElement("div");
-    chip.role = "button";
-    chip.tabIndex = 0;
-    chip.className = `ghost-chip ${task.status.toLowerCase()}${task.taskId === selectedTaskId ? " active" : ""}`;
-    
-    // Add keyboard handler for accessibility
-    chip.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter" || ev.key === " ") {
-        ev.preventDefault();
-        chip.click();
+  const visibleGhostTabs = contextGhostTabs.slice(0, MAX_VISIBLE_TASKS);
+
+  for (const [index, ghostTab] of visibleGhostTabs.entries()) {
+    const tab = document.createElement("div");
+    tab.role = "button";
+    tab.tabIndex = 0;
+
+    const isGhostSurfaceActive =
+      state.activeGhostTabId === ghostTab.ghostTabId && state.activeSurface === "GHOST";
+    const isSelected = state.activeGhostTabId === ghostTab.ghostTabId;
+    tab.className = `ghost-tab ${ghostTab.status.toLowerCase()}${isSelected ? " active" : ""}${
+      isGhostSurfaceActive ? " live" : ""
+    }`;
+
+    tab.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        tab.click();
       }
     });
 
-    chip.addEventListener("click", () => {
-      selectedTaskId = task.taskId;
-      renderGhostStrip(contextId, contextTasks);
-      renderStatusFeed(contextId, contextTasks);
-      openGhostViewer(task);
+    tab.addEventListener("click", () => {
+      selectedTaskId = ghostTab.taskId;
+      void bridge.switchGhostTab(ghostTab.ghostTabId).then(applyState).catch(renderTransientError);
     });
 
-    const label = document.createElement("span");
-    label.textContent = `Ghost ${index + 1} ${task.intent} ${shortTaskId(task.taskId)}`;
-    chip.appendChild(label);
+    const left = document.createElement("span");
+    left.className = "ghost-tab-title";
+    left.textContent = `Ghost ${index + 1} ${ghostTab.intent}`;
+    tab.appendChild(left);
 
-    const state = document.createElement("span");
-    state.className = "ghost-state";
-    state.textContent = task.progressLabel ?? task.status;
-    chip.appendChild(state);
+    const right = document.createElement("span");
+    right.className = "ghost-tab-meta";
+    right.textContent = ghostTab.progressLabel ?? ghostTab.currentState ?? ghostTab.status;
+    tab.appendChild(right);
 
-    if (task.status === "QUEUED" || task.status === "RUNNING") {
-      const cancelBtn = document.createElement("button");
-      cancelBtn.type = "button";
-      cancelBtn.className = "ghost-chip-cancel";
-      cancelBtn.textContent = "×";
-      cancelBtn.setAttribute("aria-label", `Cancel ${task.intent} task`);
-      cancelBtn.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        void bridge.cancelTask(task.taskId).catch(renderTransientError);
+    if (ghostTab.canCancel) {
+      const cancelButton = document.createElement("button");
+      cancelButton.type = "button";
+      cancelButton.className = "ghost-tab-action cancel";
+      cancelButton.textContent = "x";
+      cancelButton.setAttribute("aria-label", `Cancel ${ghostTab.intent} task`);
+      cancelButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void bridge.cancelTask(ghostTab.taskId).catch(renderTransientError);
       });
-      chip.appendChild(cancelBtn);
+      tab.appendChild(cancelButton);
     }
 
-    ghostStripElement.appendChild(chip);
+    if (ghostTab.canDismiss) {
+      const dismissButton = document.createElement("button");
+      dismissButton.type = "button";
+      dismissButton.className = "ghost-tab-action dismiss";
+      dismissButton.textContent = "-";
+      dismissButton.setAttribute("aria-label", `Dismiss completed ${ghostTab.intent} tab`);
+      dismissButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void bridge.dismissGhostTab(ghostTab.ghostTabId).then(applyState).catch(renderTransientError);
+      });
+      tab.appendChild(dismissButton);
+    }
+
+    ghostStripElement.appendChild(tab);
   }
 }
 
@@ -393,7 +391,8 @@ function renderSidebarState(): void {
 
 function renderStatusFeed(
   contextId: string | null,
-  contextTasks: WorkspaceState["tasks"]
+  contextTasks: WorkspaceState["tasks"],
+  contextGhostTabs: WorkspaceGhostTabState[]
 ): void {
   statusFeedElement.replaceChildren();
 
@@ -411,25 +410,33 @@ function renderStatusFeed(
     return;
   }
 
+  const ghostTabByTaskId = new Map<string, WorkspaceGhostTabState>(
+    contextGhostTabs.map((ghostTab) => [ghostTab.taskId, ghostTab])
+  );
+
   const visibleTasks = contextTasks.slice(0, MAX_VISIBLE_TASKS);
   for (const task of visibleTasks) {
     const item = document.createElement("div");
     item.role = "button";
     item.tabIndex = 0;
     item.className = `status-item${task.taskId === selectedTaskId ? " active" : ""}`;
-    
-    // Add keyboard handler for accessibility
-    item.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter" || ev.key === " ") {
-        ev.preventDefault();
+
+    item.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
         item.click();
       }
     });
 
     item.addEventListener("click", () => {
       selectedTaskId = task.taskId;
-      renderStatusFeed(contextId, contextTasks);
-      renderGhostStrip(contextId, contextTasks);
+      const ghostTab = ghostTabByTaskId.get(task.taskId) ?? null;
+      if (ghostTab) {
+        void bridge.switchGhostTab(ghostTab.ghostTabId).then(applyState).catch(renderTransientError);
+        return;
+      }
+
+      renderStatusFeed(contextId, contextTasks, contextGhostTabs);
     });
 
     const head = document.createElement("div");
@@ -451,8 +458,8 @@ function renderStatusFeed(
       cancelBtn.className = "status-item-cancel";
       cancelBtn.textContent = "Cancel";
       cancelBtn.setAttribute("aria-label", `Cancel task ${task.taskId}`);
-      cancelBtn.addEventListener("click", (ev) => {
-        ev.stopPropagation();
+      cancelBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
         void bridge.cancelTask(task.taskId).catch(renderTransientError);
       });
       head.appendChild(cancelBtn);
@@ -514,11 +521,23 @@ function resolveActiveContextId(state: WorkspaceState): string | null {
 }
 
 function synchronizeTaskSelection(
+  state: WorkspaceState,
   nextContextId: string | null,
-  contextTasks: WorkspaceState["tasks"]
+  contextTasks: WorkspaceState["tasks"],
+  contextGhostTabs: WorkspaceGhostTabState[]
 ): void {
   const contextChanged = nextContextId !== activeContextId;
   activeContextId = nextContextId;
+
+  const selectedGhostTaskId =
+    state.activeGhostTabId !== null
+      ? contextGhostTabs.find((ghostTab) => ghostTab.ghostTabId === state.activeGhostTabId)?.taskId ?? null
+      : null;
+
+  if (selectedGhostTaskId) {
+    selectedTaskId = selectedGhostTaskId;
+    return;
+  }
 
   if (contextChanged) {
     selectedTaskId = contextTasks[0]?.taskId ?? null;
@@ -542,6 +561,16 @@ function getTasksForContext(
     return [];
   }
   return tasks.filter((task) => task.workspaceContextId === contextId);
+}
+
+function getGhostTabsForContext(
+  ghostTabs: WorkspaceState["ghostTabs"],
+  contextId: string | null
+): WorkspaceState["ghostTabs"] {
+  if (!contextId) {
+    return [];
+  }
+  return ghostTabs.filter((ghostTab) => ghostTab.workspaceContextId === contextId);
 }
 
 function buildContextTaskStats(tasks: WorkspaceState["tasks"]): Map<string, ContextTaskStats> {
@@ -628,14 +657,6 @@ function formatElapsed(task: WorkspaceTaskSummary): string {
   return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 }
 
-function shortTaskId(taskId: string): string {
-  const dashIndex = taskId.lastIndexOf("-");
-  if (dashIndex >= 0 && dashIndex + 1 < taskId.length) {
-    return taskId.slice(dashIndex + 1, dashIndex + 9);
-  }
-  return taskId.slice(0, 8);
-}
-
 function focusCommandInput(target: CommandFocusTarget): void {
   if (target === "START_PAGE" && currentState?.isStartPageActive) {
     startCommandInputElement.focus();
@@ -696,63 +717,9 @@ function getElement<TElement extends HTMLElement>(id: string): TElement {
   return element as TElement;
 }
 
-function openGhostViewer(task: WorkspaceTaskSummary): void {
-  viewerTaskId = task.taskId;
-  ghostViewerLabelElement.textContent = `Ghost ${shortTaskId(task.taskId)} · ${task.intent}`;
-  ghostViewerElement.classList.remove("hidden");
-  refreshGhostViewerScreenshot();
-  startGhostViewerPolling(task);
-}
-
-function closeGhostViewer(): void {
-  stopGhostViewerPolling();
-  viewerTaskId = null;
-  ghostViewerElement.classList.add("hidden");
-  ghostViewerImgElement.src = "";
-  ghostViewerImgElement.classList.add("hidden");
-  ghostViewerEmptyElement.classList.remove("hidden");
-}
-
-function startGhostViewerPolling(task: WorkspaceTaskSummary): void {
-  stopGhostViewerPolling();
-  if (task.status === "RUNNING" || task.status === "QUEUED") {
-    viewerPollHandle = window.setInterval(() => {
-      refreshGhostViewerScreenshot();
-    }, 500);
-  }
-}
-
-function stopGhostViewerPolling(): void {
-  if (viewerPollHandle !== null) {
-    clearInterval(viewerPollHandle);
-    viewerPollHandle = null;
-  }
-}
-
-function refreshGhostViewerScreenshot(): void {
-  const taskId = viewerTaskId;
-  if (!taskId) {
-    return;
-  }
-  void bridge.getTaskScreenshot(taskId).then((base64) => {
-    if (viewerTaskId !== taskId) {
-      return; // viewer was closed or switched while request was in flight
-    }
-    if (base64) {
-      ghostViewerImgElement.src = `data:image/png;base64,${base64}`;
-      ghostViewerImgElement.classList.remove("hidden");
-      ghostViewerEmptyElement.classList.add("hidden");
-    } else {
-      ghostViewerImgElement.classList.add("hidden");
-      ghostViewerEmptyElement.classList.remove("hidden");
-    }
-  });
-}
-
 window.addEventListener("beforeunload", () => {
   if (elapsedTickerHandle !== null) {
     window.clearInterval(elapsedTickerHandle);
     elapsedTickerHandle = null;
   }
-  stopGhostViewerPolling();
 });

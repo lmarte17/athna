@@ -158,6 +158,8 @@ async function bootstrap(): Promise<void> {
         remoteDebuggingPort,
         ghostPageCapturer: async (contextId) =>
           ghostContextManager?.captureGhostPage(contextId) ?? null,
+        ghostContextViewResolver: (contextId) =>
+          ghostContextManager?.getContextView(contextId) ?? null,
         ghostContextDestroyer: async (contextId) => {
           if (ghostContextManager) {
             await ghostContextManager.destroyContext(contextId, true);
