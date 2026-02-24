@@ -156,6 +156,8 @@ async function bootstrap(): Promise<void> {
       workspaceController = new WorkspaceController({
         window: foregroundWindow,
         remoteDebuggingPort,
+        ghostPageCapturer: async (contextId) =>
+          ghostContextManager?.captureGhostPage(contextId) ?? null,
         logger: (line) => console.info(line)
       });
       workspaceController.initialize();

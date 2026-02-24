@@ -5,7 +5,8 @@ export const WORKSPACE_CHANNELS = {
   closeTab: "workspace:close-tab",
   submitCommand: "workspace:submit-command",
   stateEvent: "workspace:state",
-  focusEvent: "workspace:command-focus"
+  focusEvent: "workspace:command-focus",
+  getTaskScreenshot: "workspace:get-task-screenshot"
 } as const;
 
 export const COMMAND_MODES = ["AUTO", "BROWSE", "DO", "MAKE", "RESEARCH"] as const;

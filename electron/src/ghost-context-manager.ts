@@ -101,6 +101,21 @@ export class GhostContextManager {
     await context.destroyPromise;
   }
 
+  async captureGhostPage(contextId: string): Promise<string | null> {
+    const context = this.contexts.get(contextId);
+    if (!context || context.status === "DESTROYING" || context.ghostWindow.isDestroyed()) {
+      return null;
+    }
+
+    try {
+      const nativeImage = await context.ghostWindow.webContents.capturePage();
+      const pngBuffer = nativeImage.toPNG();
+      return pngBuffer.toString("base64");
+    } catch {
+      return null;
+    }
+  }
+
   async shutdown(): Promise<void> {
     this.shuttingDown = true;
     const activeContextIds = [...this.contexts.keys()];

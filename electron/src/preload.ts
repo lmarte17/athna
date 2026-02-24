@@ -14,7 +14,8 @@ const WORKSPACE_CHANNELS = {
   closeTab: "workspace:close-tab",
   submitCommand: "workspace:submit-command",
   stateEvent: "workspace:state",
-  focusEvent: "workspace:command-focus"
+  focusEvent: "workspace:command-focus",
+  getTaskScreenshot: "workspace:get-task-screenshot"
 } as const;
 
 export interface WorkspaceBridgeApi {
@@ -25,6 +26,7 @@ export interface WorkspaceBridgeApi {
   submitCommand: (submission: WorkspaceCommandSubmission) => Promise<WorkspaceCommandSubmissionResult>;
   onState: (listener: (state: WorkspaceState) => void) => () => void;
   onCommandFocus: (listener: (target: CommandFocusTarget) => void) => () => void;
+  getTaskScreenshot: (taskId: string) => Promise<string | null>;
 }
 
 const workspaceBridgeApi: WorkspaceBridgeApi = {
@@ -34,6 +36,8 @@ const workspaceBridgeApi: WorkspaceBridgeApi = {
   closeTab: async (tabId: string) => ipcRenderer.invoke(WORKSPACE_CHANNELS.closeTab, tabId),
   submitCommand: async (submission: WorkspaceCommandSubmission) =>
     ipcRenderer.invoke(WORKSPACE_CHANNELS.submitCommand, submission),
+  getTaskScreenshot: async (taskId: string) =>
+    ipcRenderer.invoke(WORKSPACE_CHANNELS.getTaskScreenshot, taskId),
   onState: (listener: (state: WorkspaceState) => void) => {
     const wrapped = (_event: IpcRendererEvent, state: WorkspaceState): void => {
       listener(state);
