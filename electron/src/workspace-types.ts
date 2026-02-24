@@ -6,7 +6,8 @@ export const WORKSPACE_CHANNELS = {
   submitCommand: "workspace:submit-command",
   stateEvent: "workspace:state",
   focusEvent: "workspace:command-focus",
-  getTaskScreenshot: "workspace:get-task-screenshot"
+  getTaskScreenshot: "workspace:get-task-screenshot",
+  cancelTask: "workspace:cancel-task"
 } as const;
 
 export const COMMAND_MODES = ["AUTO", "BROWSE", "DO", "MAKE", "RESEARCH"] as const;
@@ -63,7 +64,7 @@ export interface CommandDispatchRecord {
   taskId: string | null;
 }
 
-export type WorkspaceTaskStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
+export type WorkspaceTaskStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 
 export interface WorkspaceTaskSummary {
   taskId: string;

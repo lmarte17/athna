@@ -28,6 +28,7 @@
     "resource:smoke": "npm run build && node scripts/resource-budgets-smoke.mjs",
     "crash:smoke": "npm run build && node scripts/crash-recovery-smoke.mjs",
     "ghost-visibility:smoke": "npm run build && node scripts/ghost-tab-visibility-smoke.mjs",
+    "cancellation:smoke": "npm run build && node scripts/task-cancellation-smoke.mjs",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"

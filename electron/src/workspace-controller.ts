@@ -44,6 +44,7 @@ interface WorkspaceControllerOptions {
   remoteDebuggingPort: string;
   topChromeHeight?: number;
   ghostPageCapturer?: (contextId: string) => Promise<string | null>;
+  ghostContextDestroyer?: (contextId: string) => Promise<void>;
   logger?: (line: string) => void;
 }
 
@@ -95,6 +96,7 @@ export class WorkspaceController {
   private readonly logger: (line: string) => void;
   private readonly remoteDebuggingPort: string;
   private readonly ghostPageCapturer: ((contextId: string) => Promise<string | null>) | undefined;
+  private readonly ghostContextDestroyer: ((contextId: string) => Promise<void>) | undefined;
   private readonly tabs = new Map<string, WorkspaceTabInternal>();
   private readonly tabOrder: string[] = [];
   private readonly tasks = new Map<string, ManagedWorkspaceTask>();
@@ -164,6 +166,15 @@ export class WorkspaceController {
     }
     return this.ghostPageCapturer(ghostContextId);
   };
+  private readonly handleCancelTask = async (
+    event: IpcMainInvokeEvent,
+    taskId: string
+  ): Promise<{ cancelled: boolean }> => {
+    this.assertInvokeSender(event);
+    const cancelled = await this.cancelTask(taskId);
+    this.emitState();
+    return { cancelled };
+  };
 
   private nextTabOrdinal = 1;
   private activeTabId = START_PAGE_TAB_ID;
@@ -183,6 +194,7 @@ export class WorkspaceController {
     this.logger = options.logger ?? ((line: string) => console.info(line));
     this.remoteDebuggingPort = options.remoteDebuggingPort;
     this.ghostPageCapturer = options.ghostPageCapturer;
+    this.ghostContextDestroyer = options.ghostContextDestroyer;
     this.orchestrationRuntime = new OrchestrationRuntime({
       remoteDebuggingPort: this.remoteDebuggingPort,
       logger: (line) => this.logger(line),
@@ -210,6 +222,7 @@ export class WorkspaceController {
     ipcMain.handle(WORKSPACE_CHANNELS.closeTab, this.handleCloseTab);
     ipcMain.handle(WORKSPACE_CHANNELS.submitCommand, this.handleSubmitCommand);
     ipcMain.handle(WORKSPACE_CHANNELS.getTaskScreenshot, this.handleGetTaskScreenshot);
+    ipcMain.handle(WORKSPACE_CHANNELS.cancelTask, this.handleCancelTask);
   }
 
   async shutdown(): Promise<void> {
@@ -225,6 +238,7 @@ export class WorkspaceController {
     ipcMain.removeHandler(WORKSPACE_CHANNELS.closeTab);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.submitCommand);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.getTaskScreenshot);
+    ipcMain.removeHandler(WORKSPACE_CHANNELS.cancelTask);
 
     this.window.removeListener("resize", this.onWindowResize);
     this.window.webContents.removeListener("before-input-event", this.onShortcutBeforeInput);
@@ -450,6 +464,25 @@ export class WorkspaceController {
       return;
     }
 
+    // If already cancelled, capture the contextId for deferred destroy
+    // (handles the QUEUED→DISPATCHED race where cancel was called before
+    // the first status message arrived), then bail out.
+    if (task.status === "CANCELLED") {
+      if (!task.ghostContextId && message.contextId) {
+        task.ghostContextId = message.contextId;
+        if (this.ghostContextDestroyer) {
+          void this.ghostContextDestroyer(message.contextId).catch((error: unknown) => {
+            this.logger(
+              `[workspace] deferred-cancel destroy-failed taskId=${message.taskId} error=${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          });
+        }
+      }
+      return;
+    }
+
     if (!task.ghostContextId && message.contextId) {
       task.ghostContextId = message.contextId;
     }
@@ -515,6 +548,11 @@ export class WorkspaceController {
       return;
     }
 
+    // Do not overwrite a CANCELLED terminal state.
+    if (task.status === "CANCELLED") {
+      return;
+    }
+
     task.status = result.status === "DONE" ? "SUCCEEDED" : "FAILED";
     task.currentState = result.status;
     task.currentAction =
@@ -533,12 +571,54 @@ export class WorkspaceController {
       return;
     }
 
+    // Do not overwrite a CANCELLED terminal state. The error is expected —
+    // it is the result of destroying the BrowserContext on cancellation.
+    if (task.status === "CANCELLED") {
+      return;
+    }
+
     task.status = "FAILED";
     task.currentState = "FAILED";
     task.currentAction = "Task failed";
     task.finishedAt = new Date().toISOString();
     task.errorMessage = error instanceof Error ? error.message : String(error);
     this.emitState();
+  }
+
+  private async cancelTask(taskId: string): Promise<boolean> {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      return false;
+    }
+
+    if (task.status !== "QUEUED" && task.status !== "RUNNING") {
+      return false;
+    }
+
+    // Freeze partial result state before mutating status.
+    // currentUrl, currentState, currentAction, and progressLabel are left as-is —
+    // they represent the partial result snapshot available to the user.
+    task.status = "CANCELLED";
+    task.finishedAt = new Date().toISOString();
+    task.durationMs = task.startedAt ? Date.now() - Date.parse(task.startedAt) : null;
+
+    this.logger(`[workspace] cancel taskId=${taskId} ghostContextId=${task.ghostContextId ?? "none"}`);
+
+    // Destroy the ghost BrowserContext immediately if one is assigned.
+    // This closes the BrowserWindow, causing every in-flight CDP call to throw,
+    // which cascades to failRuntimeTask() — which then silently returns due to
+    // the CANCELLED guard above.
+    if (task.ghostContextId && this.ghostContextDestroyer) {
+      await this.ghostContextDestroyer(task.ghostContextId).catch((error: unknown) => {
+        this.logger(
+          `[workspace] cancel destroy-failed taskId=${taskId} error=${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      });
+    }
+
+    return true;
   }
 
   private ensureStartPageTab(): void {

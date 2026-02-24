@@ -18,6 +18,7 @@ interface WorkspaceBridgeApi {
   onState: (listener: (state: WorkspaceState) => void) => () => void;
   onCommandFocus: (listener: (target: CommandFocusTarget) => void) => () => void;
   getTaskScreenshot: (taskId: string) => Promise<string | null>;
+  cancelTask: (taskId: string) => Promise<{ cancelled: boolean }>;
 }
 
 declare global {
@@ -32,7 +33,7 @@ interface ContextTaskStats {
 }
 
 const RUNNING_TASK_STATUSES = new Set<WorkspaceTaskSummary["status"]>(["QUEUED", "RUNNING"]);
-const COMPLETED_TASK_STATUSES = new Set<WorkspaceTaskSummary["status"]>(["SUCCEEDED", "FAILED"]);
+const COMPLETED_TASK_STATUSES = new Set<WorkspaceTaskSummary["status"]>(["SUCCEEDED", "FAILED", "CANCELLED"]);
 const MAX_VISIBLE_TASKS = 16;
 
 const bridge = window.workspaceBridge;
@@ -208,9 +209,9 @@ function applyState(state: WorkspaceState): void {
       closeGhostViewer();
     } else if (
       viewerPollHandle !== null &&
-      (viewerTask.status === "SUCCEEDED" || viewerTask.status === "FAILED")
+      (viewerTask.status === "SUCCEEDED" || viewerTask.status === "FAILED" || viewerTask.status === "CANCELLED")
     ) {
-      // Task finished — stop polling and take one final screenshot.
+      // Task finished or was cancelled — stop polling and take one final screenshot.
       stopGhostViewerPolling();
       refreshGhostViewerScreenshot();
     }
@@ -280,12 +281,15 @@ function renderGhostStrip(
     return;
   }
 
-  if (contextTasks.length === 0) {
+  // CANCELLED tasks are removed from the Ghost Strip per spec; they remain in the Status Feed.
+  const activeContextTasks = contextTasks.filter((t) => t.status !== "CANCELLED");
+
+  if (activeContextTasks.length === 0) {
     ghostStripElement.appendChild(createGhostPlaceholder("No Ghost tasks yet for this context."));
     return;
   }
 
-  const visibleTasks = contextTasks.slice(0, MAX_VISIBLE_TASKS);
+  const visibleTasks = activeContextTasks.slice(0, MAX_VISIBLE_TASKS);
   for (const [index, task] of visibleTasks.entries()) {
     const chip = document.createElement("button");
     chip.type = "button";
@@ -305,6 +309,19 @@ function renderGhostStrip(
     state.className = "ghost-state";
     state.textContent = task.progressLabel ?? task.status;
     chip.appendChild(state);
+
+    if (task.status === "QUEUED" || task.status === "RUNNING") {
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "ghost-chip-cancel";
+      cancelBtn.textContent = "×";
+      cancelBtn.setAttribute("aria-label", `Cancel ${task.intent} task`);
+      cancelBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        void bridge.cancelTask(task.taskId).catch(renderTransientError);
+      });
+      chip.appendChild(cancelBtn);
+    }
 
     ghostStripElement.appendChild(chip);
   }
@@ -407,6 +424,19 @@ function renderStatusFeed(
     state.className = "status-item-state";
     state.textContent = `${task.status} / ${task.currentState ?? "UNKNOWN"}`;
     head.appendChild(state);
+
+    if (task.status === "QUEUED" || task.status === "RUNNING") {
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "status-item-cancel";
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.setAttribute("aria-label", `Cancel task ${task.taskId}`);
+      cancelBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        void bridge.cancelTask(task.taskId).catch(renderTransientError);
+      });
+      head.appendChild(cancelBtn);
+    }
 
     const action = document.createElement("p");
     action.className = "status-item-meta";
