@@ -1,0 +1,126 @@
+{
+  "ok": true,
+  "phase": "6.6",
+  "validatedAt": "2026-02-24T17:19:21.747Z",
+  "runConfig": {
+    "remoteDebuggingPort": 9333,
+    "ghostContextCount": 2,
+    "autoReplenish": true,
+    "mode": "headless",
+    "runtime": "live-electron"
+  },
+  "checks": {
+    "ghostContextAcquiredForTask": true,
+    "partialScreenshotCaptured": true,
+    "earlyReleaseCompletedWithoutError": true,
+    "poolReplenishedAfterCancel": true,
+    "secondTaskRunsAfterCancel": true,
+    "poolReturnedToIdle": true
+  },
+  "evidence": {
+    "cancelledTask": {
+      "contextId": "ctx-1",
+      "taskId": "cancel-task-1",
+      "url": "data:text/html,<html><body style='background:%23f0e8d0;font:48px sans-serif;disp…",
+      "partialScreenshotBytes": 13952,
+      "partialScreenshotMimeType": "image/jpeg",
+      "partialScreenshotPath": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase6/phase6-6.6/partial-result-screenshot.jpg"
+    },
+    "secondTask": {
+      "contextId": "ctx-2",
+      "taskId": "cancel-task-2",
+      "url": "data:text/html,<html><body style='background:%23d0e8f0;font:48px sans-serif;disp…",
+      "screenshotBytes": 16527
+    },
+    "poolSnapshots": {
+      "afterInit": {
+        "minSize": 2,
+        "maxSize": 2,
+        "totalSlots": 2,
+        "cold": 0,
+        "replenishing": 0,
+        "available": 2,
+        "inUse": 0,
+        "queued": 0,
+        "slotStates": [
+          {
+            "contextId": "ctx-1",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 44
+          },
+          {
+            "contextId": "ctx-2",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 10
+          }
+        ]
+      },
+      "afterCancel": {
+        "minSize": 2,
+        "maxSize": 2,
+        "totalSlots": 2,
+        "cold": 0,
+        "replenishing": 0,
+        "available": 2,
+        "inUse": 0,
+        "queued": 0,
+        "slotStates": [
+          {
+            "contextId": "ctx-1",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 44
+          },
+          {
+            "contextId": "ctx-2",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 10
+          }
+        ]
+      },
+      "afterReplenish": {
+        "minSize": 2,
+        "maxSize": 2,
+        "totalSlots": 2,
+        "cold": 0,
+        "replenishing": 0,
+        "available": 2,
+        "inUse": 0,
+        "queued": 0,
+        "slotStates": [
+          {
+            "contextId": "ctx-1",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 44
+          },
+          {
+            "contextId": "ctx-2",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 10
+          }
+        ]
+      },
+      "final": {
+        "minSize": 2,
+        "maxSize": 2,
+        "totalSlots": 2,
+        "cold": 0,
+        "replenishing": 0,
+        "available": 2,
+        "inUse": 0,
+        "queued": 0,
+        "slotStates": [
+          {
+            "contextId": "ctx-1",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 44
+          },
+          {
+            "contextId": "ctx-2",
+            "state": "AVAILABLE",
+            "lastWarmDurationMs": 10
+          }
+        ]
+      }
+    }
+  }
+}
