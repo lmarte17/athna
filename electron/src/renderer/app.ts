@@ -291,9 +291,19 @@ function renderGhostStrip(
 
   const visibleTasks = activeContextTasks.slice(0, MAX_VISIBLE_TASKS);
   for (const [index, task] of visibleTasks.entries()) {
-    const chip = document.createElement("button");
-    chip.type = "button";
+    const chip = document.createElement("div");
+    chip.role = "button";
+    chip.tabIndex = 0;
     chip.className = `ghost-chip ${task.status.toLowerCase()}${task.taskId === selectedTaskId ? " active" : ""}`;
+    
+    // Add keyboard handler for accessibility
+    chip.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        chip.click();
+      }
+    });
+
     chip.addEventListener("click", () => {
       selectedTaskId = task.taskId;
       renderGhostStrip(contextId, contextTasks);
@@ -403,9 +413,19 @@ function renderStatusFeed(
 
   const visibleTasks = contextTasks.slice(0, MAX_VISIBLE_TASKS);
   for (const task of visibleTasks) {
-    const item = document.createElement("button");
-    item.type = "button";
+    const item = document.createElement("div");
+    item.role = "button";
+    item.tabIndex = 0;
     item.className = `status-item${task.taskId === selectedTaskId ? " active" : ""}`;
+    
+    // Add keyboard handler for accessibility
+    item.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        item.click();
+      }
+    });
+
     item.addEventListener("click", () => {
       selectedTaskId = task.taskId;
       renderStatusFeed(contextId, contextTasks);
