@@ -9,6 +9,8 @@
     "cdp:host:headful": "npm run build && electron dist/main.js --cdp-host --smoke-test --keep-alive --show-ghost-tab",
     "smoke": "npm run build && electron dist/main.js --smoke-test",
     "smoke:headless": "npm run build && electron dist/main.js --headless=new --smoke-test",
+    "tabs-shell:smoke": "npm run build && node scripts/workspace-tabs-shell-smoke.mjs",
+    "ghost-live:smoke": "npm run build && node scripts/ghost-live-view-smoke.mjs",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json"

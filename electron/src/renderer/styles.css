@@ -1,16 +1,23 @@
 :root {
-  --shell-height: 132px;
-  --shell-bg: rgba(16, 18, 23, 0.94);
-  --shell-border: rgba(255, 255, 255, 0.12);
-  --text-primary: #f4f6fb;
-  --text-secondary: rgba(244, 246, 251, 0.72);
-  --tab-bg: rgba(255, 255, 255, 0.08);
-  --tab-active-bg: rgba(255, 255, 255, 0.17);
-  --field-bg: rgba(21, 25, 35, 0.92);
-  --field-border: rgba(255, 255, 255, 0.18);
-  --field-focus: #8ab4ff;
-  --button-bg: #2f6df4;
-  --button-bg-hover: #3f7bfd;
+  --shell-height: 126px;
+  --shell-bg: linear-gradient(180deg, rgba(9, 12, 19, 0.97) 0%, rgba(10, 13, 20, 0.94) 100%);
+  --shell-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #eff4ff;
+  --text-secondary: rgba(228, 236, 255, 0.68);
+  --tab-idle-bg: rgba(255, 255, 255, 0.085);
+  --tab-idle-border: rgba(255, 255, 255, 0.12);
+  --tab-active-bg: linear-gradient(180deg, rgba(72, 120, 214, 0.6) 0%, rgba(45, 84, 162, 0.72) 100%);
+  --tab-active-border: rgba(118, 164, 255, 0.86);
+  --ghost-idle-bg: rgba(33, 44, 67, 0.7);
+  --ghost-idle-border: rgba(111, 146, 218, 0.36);
+  --ghost-running-border: rgba(115, 206, 151, 0.66);
+  --ghost-failed-border: rgba(228, 120, 120, 0.7);
+  --ghost-succeeded-border: rgba(110, 188, 255, 0.7);
+  --field-bg: rgba(13, 19, 32, 0.86);
+  --field-border: rgba(118, 152, 214, 0.34);
+  --field-focus: #87b7ff;
+  --button-bg: #3f6feb;
+  --button-bg-hover: #5480f4;
   --sidebar-width: 320px;
   --sidebar-collapsed-width: 44px;
 }
@@ -26,19 +33,13 @@ body {
   height: 100%;
   overflow: hidden;
   color: var(--text-primary);
-  font-family:
-    "SF Pro Text",
-    "Segoe UI",
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: "SF Pro Text", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
-  background:
-    radial-gradient(circle at 15% 70%, rgba(212, 171, 130, 0.35), transparent 44%),
-    radial-gradient(circle at 74% 18%, rgba(154, 181, 225, 0.3), transparent 38%),
-    linear-gradient(145deg, #8fa1b4 0%, #cfb9aa 45%, #6f7f90 100%);
+  background: radial-gradient(circle at 18% 72%, rgba(214, 176, 137, 0.32), transparent 42%),
+    radial-gradient(circle at 77% 19%, rgba(149, 177, 226, 0.24), transparent 36%),
+    linear-gradient(145deg, #8c9fb3 0%, #ceb8aa 44%, #6d7e91 100%);
 }
 
 .window-shell {
@@ -51,21 +52,31 @@ body {
   position: absolute;
   inset: 0 0 auto 0;
   height: var(--shell-height);
-  padding: 8px 10px 10px;
+  padding: 7px 10px 8px;
   background: var(--shell-bg);
   border-bottom: 1px solid var(--shell-border);
   z-index: 20;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(11px);
 }
 
-.tab-strip-row {
+.tab-strip-row,
+.ghost-strip-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 26px;
 }
 
-.tab-strip {
+.tab-strip-row {
+  height: 28px;
+}
+
+.ghost-strip-row {
+  height: 25px;
+  margin-top: 5px;
+}
+
+.tab-strip,
+.ghost-strip {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -82,24 +93,30 @@ body {
 }
 
 .tab-button {
-  border: 1px solid transparent;
+  border: 1px solid var(--tab-idle-border);
   color: var(--text-primary);
-  background: var(--tab-bg);
-  border-radius: 9px;
+  background: var(--tab-idle-bg);
+  border-radius: 999px;
   height: 24px;
-  min-width: 132px;
-  max-width: 236px;
-  padding: 0 8px 0 10px;
+  min-width: 124px;
+  max-width: 248px;
+  padding: 0 8px 0 11px;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
   cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.tab-button:hover {
+  border-color: rgba(173, 201, 255, 0.45);
 }
 
 .tab-button.active {
   background: var(--tab-active-bg);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--tab-active-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .tab-title {
@@ -107,6 +124,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
+  letter-spacing: 0.01em;
 }
 
 .tab-badge {
@@ -117,8 +135,8 @@ body {
   font-size: 10px;
   line-height: 16px;
   text-align: center;
-  color: #d8e6ff;
-  background: rgba(47, 109, 244, 0.72);
+  color: #e8f0ff;
+  background: rgba(59, 123, 251, 0.86);
 }
 
 .tab-close {
@@ -128,90 +146,121 @@ body {
   cursor: pointer;
   width: 18px;
   height: 18px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .tab-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
   color: var(--text-primary);
 }
 
 .new-tab-button {
   border: 1px solid var(--field-border);
-  background: var(--field-bg);
+  background: rgba(12, 17, 29, 0.86);
   color: var(--text-primary);
-  border-radius: 9px;
+  border-radius: 999px;
   height: 24px;
-  padding: 0 10px;
+  padding: 0 11px;
   cursor: pointer;
 }
 
-.ghost-strip-row {
-  height: 24px;
-  margin-top: 6px;
+.new-tab-button:hover {
+  background: rgba(18, 26, 43, 0.92);
+  border-color: rgba(167, 196, 255, 0.46);
 }
 
-.ghost-strip {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.ghost-chip,
+.ghost-tab,
 .ghost-placeholder {
   border-radius: 999px;
   height: 22px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 9px;
   font-size: 11px;
   white-space: nowrap;
 }
 
-.ghost-chip {
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(23, 30, 44, 0.75);
+.ghost-tab {
+  border: 1px solid var(--ghost-idle-border);
+  background: var(--ghost-idle-bg);
   color: var(--text-primary);
   cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
-.ghost-chip.active {
-  border-color: rgba(98, 154, 255, 0.75);
-  background: rgba(34, 56, 95, 0.9);
+.ghost-tab:hover {
+  border-color: rgba(168, 201, 255, 0.56);
 }
 
-.ghost-chip.running {
-  border-color: rgba(109, 187, 143, 0.64);
+.ghost-tab.active {
+  border-color: rgba(124, 172, 255, 0.86);
+  background: linear-gradient(180deg, rgba(47, 82, 146, 0.84) 0%, rgba(36, 59, 106, 0.9) 100%);
 }
 
-.ghost-chip.failed {
-  border-color: rgba(224, 118, 118, 0.75);
+.ghost-tab.live {
+  box-shadow: 0 0 0 1px rgba(101, 168, 255, 0.3), 0 4px 12px rgba(7, 13, 24, 0.35);
 }
 
-.ghost-chip.succeeded {
-  border-color: rgba(106, 175, 235, 0.75);
+.ghost-tab.running,
+.ghost-tab.queued {
+  border-color: var(--ghost-running-border);
 }
 
-.ghost-state {
+.ghost-tab.failed {
+  border-color: var(--ghost-failed-border);
+}
+
+.ghost-tab.succeeded {
+  border-color: var(--ghost-succeeded-border);
+}
+
+.ghost-tab-title {
+  font-weight: 600;
+}
+
+.ghost-tab-meta {
   color: var(--text-secondary);
+}
+
+.ghost-tab-action {
+  border: 0;
+  border-radius: 6px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  background: rgba(14, 18, 29, 0.5);
+}
+
+.ghost-tab-action.cancel {
+  color: rgba(241, 132, 132, 0.92);
+}
+
+.ghost-tab-action.dismiss {
+  color: rgba(172, 194, 232, 0.9);
+}
+
+.ghost-tab-action:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .ghost-placeholder {
-  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
   color: var(--text-secondary);
-  background: rgba(20, 24, 36, 0.48);
+  background: rgba(12, 16, 26, 0.48);
 }
 
 .command-form {
-  margin-top: 8px;
+  margin-top: 7px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -232,7 +281,7 @@ body {
 .command-input {
   flex: 1;
   min-width: 0;
-  height: 34px;
+  height: 32px;
   border-radius: 10px;
   border: 1px solid var(--field-border);
   background: var(--field-bg);
@@ -253,9 +302,10 @@ body {
 .submit-button:focus,
 .new-tab-button:focus,
 .sidebar-toggle:focus,
-.ghost-chip:focus,
+.tab-button:focus,
+.ghost-tab:focus,
+.ghost-tab-action:focus,
 .status-item:focus,
-.ghost-chip-cancel:focus,
 .status-item-cancel:focus {
   outline: 1px solid var(--field-focus);
   outline-offset: 1px;
@@ -266,7 +316,7 @@ body {
   background: var(--field-bg);
   color: var(--text-primary);
   border-radius: 10px;
-  height: 34px;
+  height: 32px;
   padding: 0 10px;
   min-width: 102px;
 }
@@ -276,7 +326,7 @@ body {
   background: var(--button-bg);
   color: #fff;
   border-radius: 10px;
-  height: 34px;
+  height: 32px;
   min-width: 64px;
   padding: 0 14px;
   font-weight: 600;
@@ -475,112 +525,6 @@ h1 {
   line-height: 1.4;
 }
 
-.hidden {
-  display: none !important;
-}
-
-/* ── Ghost Viewer (Picture-in-Picture Read-Only Panel) ── */
-
-.ghost-viewer {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 360px;
-  background: rgba(20, 20, 30, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.ghost-viewer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
-}
-
-.ghost-viewer-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-  font-family: monospace;
-  letter-spacing: 0.04em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ghost-viewer-close {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-}
-
-.ghost-viewer-close:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.ghost-viewer-body {
-  background: #000;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ghost-viewer-img {
-  width: 100%;
-  height: auto;
-  display: block;
-  pointer-events: none;
-  user-select: none;
-}
-
-.ghost-viewer-empty {
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 12px;
-  padding: 24px;
-  text-align: center;
-  margin: 0;
-}
-
-/* ── Cancel controls (Phase 6.6) ── */
-
-.ghost-chip-cancel {
-  border: 0;
-  background: transparent;
-  color: rgba(244, 100, 100, 0.72);
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  padding: 0;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.ghost-chip-cancel:hover {
-  background: rgba(220, 60, 60, 0.22);
-  color: rgba(255, 140, 140, 0.95);
-}
-
 .status-item-cancel {
   border: 1px solid rgba(220, 80, 80, 0.48);
   background: transparent;
@@ -601,12 +545,6 @@ h1 {
   color: rgba(255, 180, 180, 0.95);
 }
 
-.ghost-chip.cancelled {
-  opacity: 0.55;
-  border-color: rgba(180, 180, 180, 0.38);
-}
-
-.status-item.cancelled {
-  opacity: 0.72;
-  border-color: rgba(180, 180, 180, 0.28);
+.hidden {
+  display: none !important;
 }

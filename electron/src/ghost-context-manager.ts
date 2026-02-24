@@ -1,4 +1,4 @@
-import { BrowserWindow, session, type Session } from "electron";
+import { BrowserView, session, type Session } from "electron";
 
 const PARTITION_PREFIX = "persist:ghost-";
 const STORAGE_TYPES_TO_CLEAR = [
@@ -12,11 +12,6 @@ const STORAGE_TYPES_TO_CLEAR = [
   "cachestorage"
 ] as const;
 
-interface WindowSize {
-  width: number;
-  height: number;
-}
-
 export interface GhostContextSummary {
   contextId: string;
   partition: string;
@@ -29,16 +24,23 @@ interface ManagedGhostContext {
   contextId: string;
   partition: string;
   partitionSession: Session;
-  ghostWindow: BrowserWindow;
+  ghostView: BrowserView;
   status: "ACTIVE" | "DESTROYING";
   destroyPromise: Promise<void> | null;
+  readOnlyInputGuards: {
+    beforeInput: (event: Event, input: unknown) => void;
+    beforeMouse: (event: Event, mouse: unknown) => void;
+  };
 }
 
 export interface GhostContextManagerOptions {
   contextCount: number;
   autoReplenish: boolean;
-  defaultSize: WindowSize;
-  showGhostTab: boolean;
+  defaultSize?: {
+    width: number;
+    height: number;
+  };
+  showGhostTab?: boolean;
   initialUrlForContext: (contextId: string) => string;
   logger?: (line: string) => void;
 }
@@ -69,17 +71,32 @@ export class GhostContextManager {
   listContexts(): GhostContextSummary[] {
     const summaries: GhostContextSummary[] = [];
     for (const context of this.contexts.values()) {
-      const url = context.ghostWindow.isDestroyed() ? "about:blank" : context.ghostWindow.webContents.getURL();
+      const { webContents } = context.ghostView;
+      const url = webContents.isDestroyed() ? "about:blank" : safeGetCurrentUrl(webContents);
       summaries.push({
         contextId: context.contextId,
         partition: context.partition,
-        webContentsId: context.ghostWindow.webContents.id,
+        webContentsId: webContents.id,
         url,
         status: context.status
       });
     }
 
     return summaries.sort((left, right) => left.contextId.localeCompare(right.contextId));
+  }
+
+  getContextView(contextId: string): BrowserView | null {
+    const context = this.contexts.get(contextId);
+    if (!context || context.status === "DESTROYING") {
+      return null;
+    }
+
+    const { ghostView } = context;
+    if (ghostView.webContents.isDestroyed()) {
+      return null;
+    }
+
+    return ghostView;
   }
 
   async destroyContext(contextId: string, allowReplenish = true): Promise<void> {
@@ -103,12 +120,17 @@ export class GhostContextManager {
 
   async captureGhostPage(contextId: string): Promise<string | null> {
     const context = this.contexts.get(contextId);
-    if (!context || context.status === "DESTROYING" || context.ghostWindow.isDestroyed()) {
+    if (!context || context.status === "DESTROYING") {
+      return null;
+    }
+
+    const { webContents } = context.ghostView;
+    if (webContents.isDestroyed()) {
       return null;
     }
 
     try {
-      const nativeImage = await context.ghostWindow.webContents.capturePage();
+      const nativeImage = await webContents.capturePage();
       const pngBuffer = nativeImage.toPNG();
       return pngBuffer.toString("base64");
     } catch {
@@ -126,11 +148,22 @@ export class GhostContextManager {
     context: ManagedGhostContext,
     allowReplenish: boolean
   ): Promise<void> {
-    const { contextId, partition, partitionSession, ghostWindow } = context;
+    const { contextId, partition, partitionSession, ghostView, readOnlyInputGuards } = context;
     this.logger(`[ghost-context] destroying id=${contextId} partition=${partition}`);
 
-    if (!ghostWindow.isDestroyed()) {
-      await closeBrowserWindow(ghostWindow);
+    const { webContents } = ghostView;
+    if (!webContents.isDestroyed()) {
+      (
+        webContents as unknown as {
+          removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
+        }
+      ).removeListener("before-input-event", readOnlyInputGuards.beforeInput as (...args: unknown[]) => void);
+      (
+        webContents as unknown as {
+          removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
+        }
+      ).removeListener("before-mouse-event", readOnlyInputGuards.beforeMouse as (...args: unknown[]) => void);
+      await closeBrowserView(ghostView);
     }
 
     await clearPartitionStorage(partitionSession, contextId);
@@ -159,45 +192,64 @@ export class GhostContextManager {
       cache: true
     });
     const initialUrl = this.options.initialUrlForContext(contextId);
-    const ghostWindow = new BrowserWindow({
-      width: this.options.defaultSize.width,
-      height: this.options.defaultSize.height,
-      show: this.options.showGhostTab,
-      webPreferences: this.options.showGhostTab
-        ? {
-            session: partitionSession
-          }
-        : {
-            session: partitionSession,
-            offscreen: true
-          }
+    const ghostView = new BrowserView({
+      webPreferences: {
+        session: partitionSession,
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false
+      }
     });
+
+    const beforeInput = (event: Event, input: unknown): void => {
+      void input;
+      event.preventDefault();
+    };
+    const beforeMouse = (event: Event, mouse: unknown): void => {
+      void mouse;
+      event.preventDefault();
+    };
 
     const managedContext: ManagedGhostContext = {
       contextId,
       partition,
       partitionSession,
-      ghostWindow,
+      ghostView,
       status: "ACTIVE",
-      destroyPromise: null
+      destroyPromise: null,
+      readOnlyInputGuards: {
+        beforeInput,
+        beforeMouse
+      }
     };
 
     this.contexts.set(contextId, managedContext);
 
-    ghostWindow.webContents.on("did-finish-load", () => {
+    const { webContents } = ghostView;
+
+    (webContents as unknown as { on: (event: string, listener: (...args: unknown[]) => void) => void }).on(
+      "before-input-event",
+      beforeInput as (...args: unknown[]) => void
+    );
+    (webContents as unknown as { on: (event: string, listener: (...args: unknown[]) => void) => void }).on(
+      "before-mouse-event",
+      beforeMouse as (...args: unknown[]) => void
+    );
+
+    webContents.on("did-finish-load", () => {
       this.logger(
-        `[ghost-context] ready id=${contextId} partition=${partition} webContentsId=${ghostWindow.webContents.id} url=${ghostWindow.webContents.getURL()}`
+        `[ghost-context] ready id=${contextId} partition=${partition} webContentsId=${webContents.id} url=${safeGetCurrentUrl(webContents)}`
       );
     });
 
-    ghostWindow.webContents.on("did-fail-load", (...args) => {
+    webContents.on("did-fail-load", (...args) => {
       const [, errorCode, errorDescription, validatedURL] = args;
       this.logger(
         `[ghost-context] load-failed id=${contextId} url=${validatedURL} code=${String(errorCode)} error=${String(errorDescription)}`
       );
     });
 
-    ghostWindow.on("closed", () => {
+    webContents.on("destroyed", () => {
       const latest = this.contexts.get(contextId);
       if (!latest) {
         return;
@@ -211,11 +263,11 @@ export class GhostContextManager {
     });
 
     try {
-      await ghostWindow.loadURL(initialUrl);
+      await webContents.loadURL(initialUrl);
     } catch (error) {
       this.contexts.delete(contextId);
-      if (!ghostWindow.isDestroyed()) {
-        ghostWindow.destroy();
+      if (!webContents.isDestroyed()) {
+        webContents.close();
       }
       throw error;
     }
@@ -226,16 +278,25 @@ export class GhostContextManager {
   }
 }
 
-async function closeBrowserWindow(window: BrowserWindow): Promise<void> {
-  if (window.isDestroyed()) {
+function safeGetCurrentUrl(webContents: BrowserView["webContents"]): string {
+  try {
+    return webContents.getURL() || "about:blank";
+  } catch {
+    return "about:blank";
+  }
+}
+
+async function closeBrowserView(view: BrowserView): Promise<void> {
+  const { webContents } = view;
+  if (webContents.isDestroyed()) {
     return;
   }
 
   await new Promise<void>((resolve) => {
-    window.once("closed", () => {
+    webContents.once("destroyed", () => {
       resolve();
     });
-    window.close();
+    webContents.close();
   });
 }
 
