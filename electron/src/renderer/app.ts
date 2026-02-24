@@ -17,6 +17,7 @@ interface WorkspaceBridgeApi {
   submitCommand: (submission: WorkspaceCommandSubmission) => Promise<WorkspaceCommandSubmissionResult>;
   onState: (listener: (state: WorkspaceState) => void) => () => void;
   onCommandFocus: (listener: (target: CommandFocusTarget) => void) => () => void;
+  getTaskScreenshot: (taskId: string) => Promise<string | null>;
 }
 
 declare global {
@@ -54,6 +55,11 @@ const statusSidebarElement = getElement<HTMLElement>("status-sidebar");
 const statusSidebarToggleElement = getElement<HTMLButtonElement>("sidebar-toggle");
 const statusSidebarContextElement = getElement<HTMLParagraphElement>("sidebar-context-label");
 const statusFeedElement = getElement<HTMLDivElement>("status-feed");
+const ghostViewerElement = getElement<HTMLDivElement>("ghost-viewer");
+const ghostViewerLabelElement = getElement<HTMLSpanElement>("ghost-viewer-label");
+const ghostViewerCloseElement = getElement<HTMLButtonElement>("ghost-viewer-close");
+const ghostViewerImgElement = getElement<HTMLImageElement>("ghost-viewer-img");
+const ghostViewerEmptyElement = getElement<HTMLParagraphElement>("ghost-viewer-empty");
 
 let currentState: WorkspaceState | null = null;
 let draftCommand = "";
@@ -64,6 +70,8 @@ let activeContextId: string | null = null;
 let selectedTaskId: string | null = null;
 let sidebarCollapsed = false;
 let elapsedTickerHandle: number | null = null;
+let viewerTaskId: string | null = null;
+let viewerPollHandle: number | null = null;
 
 initializeUi().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
@@ -82,6 +90,10 @@ async function initializeUi(): Promise<void> {
   statusSidebarToggleElement.addEventListener("click", () => {
     sidebarCollapsed = !sidebarCollapsed;
     renderSidebarState();
+  });
+
+  ghostViewerCloseElement.addEventListener("click", () => {
+    closeGhostViewer();
   });
 
   newTabButtonElement.addEventListener("click", () => {
@@ -188,6 +200,21 @@ function applyState(state: WorkspaceState): void {
 
   startPageElement.classList.toggle("hidden", !state.isStartPageActive);
   renderDispatchSurface();
+
+  // Close viewer if its task no longer belongs to the active context (context switch).
+  if (viewerTaskId) {
+    const viewerTask = state.tasks.find((t) => t.taskId === viewerTaskId);
+    if (!viewerTask || viewerTask.workspaceContextId !== nextContextId) {
+      closeGhostViewer();
+    } else if (
+      viewerPollHandle !== null &&
+      (viewerTask.status === "SUCCEEDED" || viewerTask.status === "FAILED")
+    ) {
+      // Task finished — stop polling and take one final screenshot.
+      stopGhostViewerPolling();
+      refreshGhostViewerScreenshot();
+    }
+  }
 }
 
 function renderTabStrip(
@@ -267,6 +294,7 @@ function renderGhostStrip(
       selectedTaskId = task.taskId;
       renderGhostStrip(contextId, contextTasks);
       renderStatusFeed(contextId, contextTasks);
+      openGhostViewer(task);
     });
 
     const label = document.createElement("span");
@@ -618,9 +646,63 @@ function getElement<TElement extends HTMLElement>(id: string): TElement {
   return element as TElement;
 }
 
+function openGhostViewer(task: WorkspaceTaskSummary): void {
+  viewerTaskId = task.taskId;
+  ghostViewerLabelElement.textContent = `Ghost ${shortTaskId(task.taskId)} · ${task.intent}`;
+  ghostViewerElement.classList.remove("hidden");
+  refreshGhostViewerScreenshot();
+  startGhostViewerPolling(task);
+}
+
+function closeGhostViewer(): void {
+  stopGhostViewerPolling();
+  viewerTaskId = null;
+  ghostViewerElement.classList.add("hidden");
+  ghostViewerImgElement.src = "";
+  ghostViewerImgElement.classList.add("hidden");
+  ghostViewerEmptyElement.classList.remove("hidden");
+}
+
+function startGhostViewerPolling(task: WorkspaceTaskSummary): void {
+  stopGhostViewerPolling();
+  if (task.status === "RUNNING" || task.status === "QUEUED") {
+    viewerPollHandle = window.setInterval(() => {
+      refreshGhostViewerScreenshot();
+    }, 500);
+  }
+}
+
+function stopGhostViewerPolling(): void {
+  if (viewerPollHandle !== null) {
+    clearInterval(viewerPollHandle);
+    viewerPollHandle = null;
+  }
+}
+
+function refreshGhostViewerScreenshot(): void {
+  const taskId = viewerTaskId;
+  if (!taskId) {
+    return;
+  }
+  void bridge.getTaskScreenshot(taskId).then((base64) => {
+    if (viewerTaskId !== taskId) {
+      return; // viewer was closed or switched while request was in flight
+    }
+    if (base64) {
+      ghostViewerImgElement.src = `data:image/png;base64,${base64}`;
+      ghostViewerImgElement.classList.remove("hidden");
+      ghostViewerEmptyElement.classList.add("hidden");
+    } else {
+      ghostViewerImgElement.classList.add("hidden");
+      ghostViewerEmptyElement.classList.remove("hidden");
+    }
+  });
+}
+
 window.addEventListener("beforeunload", () => {
   if (elapsedTickerHandle !== null) {
     window.clearInterval(elapsedTickerHandle);
     elapsedTickerHandle = null;
   }
+  stopGhostViewerPolling();
 });

@@ -476,3 +476,81 @@ h1 {
 .hidden {
   display: none !important;
 }
+
+/* ── Ghost Viewer (Picture-in-Picture Read-Only Panel) ── */
+
+.ghost-viewer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 360px;
+  background: rgba(20, 20, 30, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ghost-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.ghost-viewer-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: monospace;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghost-viewer-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.ghost-viewer-close:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ghost-viewer-body {
+  background: #000;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ghost-viewer-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ghost-viewer-empty {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+  padding: 24px;
+  text-align: center;
+  margin: 0;
+}

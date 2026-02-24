@@ -43,6 +43,7 @@ interface WorkspaceControllerOptions {
   window: BrowserWindow;
   remoteDebuggingPort: string;
   topChromeHeight?: number;
+  ghostPageCapturer?: (contextId: string) => Promise<string | null>;
   logger?: (line: string) => void;
 }
 
@@ -85,6 +86,7 @@ interface ManagedWorkspaceTask {
   finishedAt: string | null;
   durationMs: number | null;
   finalUrl: string | null;
+  ghostContextId: string | null;
 }
 
 export class WorkspaceController {
@@ -92,6 +94,7 @@ export class WorkspaceController {
   private readonly topChromeHeight: number;
   private readonly logger: (line: string) => void;
   private readonly remoteDebuggingPort: string;
+  private readonly ghostPageCapturer: ((contextId: string) => Promise<string | null>) | undefined;
   private readonly tabs = new Map<string, WorkspaceTabInternal>();
   private readonly tabOrder: string[] = [];
   private readonly tasks = new Map<string, ManagedWorkspaceTask>();
@@ -150,6 +153,17 @@ export class WorkspaceController {
     this.emitState();
     return result;
   };
+  private readonly handleGetTaskScreenshot = async (
+    event: IpcMainInvokeEvent,
+    taskId: string
+  ): Promise<string | null> => {
+    this.assertInvokeSender(event);
+    const ghostContextId = this.getTaskGhostContextId(taskId);
+    if (!ghostContextId || !this.ghostPageCapturer) {
+      return null;
+    }
+    return this.ghostPageCapturer(ghostContextId);
+  };
 
   private nextTabOrdinal = 1;
   private activeTabId = START_PAGE_TAB_ID;
@@ -168,6 +182,7 @@ export class WorkspaceController {
     this.topChromeHeight = options.topChromeHeight ?? DEFAULT_TOP_CHROME_HEIGHT;
     this.logger = options.logger ?? ((line: string) => console.info(line));
     this.remoteDebuggingPort = options.remoteDebuggingPort;
+    this.ghostPageCapturer = options.ghostPageCapturer;
     this.orchestrationRuntime = new OrchestrationRuntime({
       remoteDebuggingPort: this.remoteDebuggingPort,
       logger: (line) => this.logger(line),
@@ -194,6 +209,7 @@ export class WorkspaceController {
     ipcMain.handle(WORKSPACE_CHANNELS.switchTab, this.handleSwitchTab);
     ipcMain.handle(WORKSPACE_CHANNELS.closeTab, this.handleCloseTab);
     ipcMain.handle(WORKSPACE_CHANNELS.submitCommand, this.handleSubmitCommand);
+    ipcMain.handle(WORKSPACE_CHANNELS.getTaskScreenshot, this.handleGetTaskScreenshot);
   }
 
   async shutdown(): Promise<void> {
@@ -208,6 +224,7 @@ export class WorkspaceController {
     ipcMain.removeHandler(WORKSPACE_CHANNELS.switchTab);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.closeTab);
     ipcMain.removeHandler(WORKSPACE_CHANNELS.submitCommand);
+    ipcMain.removeHandler(WORKSPACE_CHANNELS.getTaskScreenshot);
 
     this.window.removeListener("resize", this.onWindowResize);
     this.window.webContents.removeListener("before-input-event", this.onShortcutBeforeInput);
@@ -237,6 +254,10 @@ export class WorkspaceController {
       return;
     }
     this.scheduleStateEmit();
+  }
+
+  getTaskGhostContextId(taskId: string): string | null {
+    return this.tasks.get(taskId)?.ghostContextId ?? null;
   }
 
   private scheduleStateEmit(): void {
@@ -380,7 +401,8 @@ export class WorkspaceController {
       startedAt: null,
       finishedAt: null,
       durationMs: null,
-      finalUrl: null
+      finalUrl: null,
+      ghostContextId: null
     };
     this.tasks.set(taskId, task);
     this.taskOrder.unshift(taskId);
@@ -426,6 +448,10 @@ export class WorkspaceController {
     const task = this.tasks.get(message.taskId);
     if (!task) {
       return;
+    }
+
+    if (!task.ghostContextId && message.contextId) {
+      task.ghostContextId = message.contextId;
     }
 
     switch (message.payload.kind) {
