@@ -200,6 +200,24 @@ async function startLocalScenarioServer() {
       return;
     }
 
+    if (requestUrl.pathname === "/visible-answer") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Visible Answer Fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Support Code</h1>
+      <p id="support-code">The support code is 8491.</p>
+    </main>
+  </body>
+</html>`);
+      return;
+    }
+
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end("<html><body><h1>OK</h1></body></html>");
   });
@@ -323,6 +341,40 @@ function createRepeatedNoopClickNavigator() {
   };
 }
 
+function createReadScreenNavigator() {
+  const calls = {
+    readScreenCalls: 0,
+    standardCalls: 0
+  };
+
+  return {
+    calls,
+    async decideNextAction(input) {
+      if (input?.decisionMode === "READ_SCREEN") {
+        calls.readScreenCalls += 1;
+        return {
+          action: "DONE",
+          target: null,
+          text: "Support code: 8491",
+          key: null,
+          confidence: 0.95,
+          reasoning: "Answer is directly visible on screen."
+        };
+      }
+
+      calls.standardCalls += 1;
+      return {
+        action: "WAIT",
+        target: null,
+        text: "250",
+        key: null,
+        confidence: 0.6,
+        reasoning: "Fallback wait."
+      };
+    }
+  };
+}
+
 function validateEnterRequiredScenario(result, startUrl) {
   assertCondition(result && typeof result === "object", "enter-required result missing.");
   assertCondition(Array.isArray(result.history) && result.history.length > 0, "enter-required history missing.");
@@ -422,6 +474,28 @@ function validateNoopRepeatScenario(result) {
   };
 }
 
+function validateReadScreenScenario(result, navigatorCalls) {
+  assertCondition(result && typeof result === "object", "read-screen result missing.");
+  assertCondition(Array.isArray(result.history) && result.history.length > 0, "read-screen history missing.");
+  assertCondition(navigatorCalls.readScreenCalls > 0, "read-screen scenario expected at least one READ_SCREEN call.");
+  assertCondition(navigatorCalls.standardCalls === 0, "read-screen scenario should terminate before STANDARD calls.");
+
+  const firstRecord = result.history[0];
+  assertCondition(firstRecord?.action?.action === "DONE", "read-screen scenario expected first action DONE.");
+  assertCondition(
+    typeof firstRecord?.action?.text === "string" && firstRecord.action.text.includes("8491"),
+    "read-screen scenario expected DONE text to include 8491."
+  );
+
+  return {
+    status: result.status,
+    stepsTaken: result.stepsTaken,
+    readScreenCalls: navigatorCalls.readScreenCalls,
+    standardCalls: navigatorCalls.standardCalls,
+    firstAction: firstRecord?.action?.action ?? null
+  };
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -510,6 +584,35 @@ async function main() {
       }
     });
 
+    const readScreenNavigator = createReadScreenNavigator();
+    const readScreenStartUrl = `${localServer.baseUrl}/visible-answer`;
+    const readScreenLoop = createPerceptionActionLoop({
+      cdpClient,
+      navigatorEngine: readScreenNavigator,
+      maxSteps: 3,
+      maxNoProgressSteps: 2,
+      logger: (line) => console.info(`[read-screen] ${line}`)
+    });
+    const readScreenResult = await readScreenLoop.runTask({
+      intent: "What is the support code shown on the screen?",
+      startUrl: readScreenStartUrl,
+      maxSteps: 3,
+      maxNoProgressSteps: 2
+    });
+    const readScreenSummary = validateReadScreenScenario(readScreenResult, readScreenNavigator.calls);
+    const readScreenArtifact = await writeScenarioArtifact("read-screen-fast-answer", {
+      ...readScreenResult,
+      summary: readScreenSummary,
+      runConfig: {
+        phase: MILESTONE,
+        scenario: "read-screen-fast-answer",
+        remoteDebuggingPort,
+        headful: isHeadfulEnabled(),
+        startUrl: readScreenStartUrl,
+        localServerPort: localServer.port
+      }
+    });
+
     const scenarios = [
       {
         name: "enter-required-submit",
@@ -524,6 +627,13 @@ async function main() {
         stepsTaken: noopResult.stepsTaken,
         summary: noopSummary,
         artifact: noopArtifact
+      },
+      {
+        name: "read-screen-fast-answer",
+        status: readScreenResult.status,
+        stepsTaken: readScreenResult.stepsTaken,
+        summary: readScreenSummary,
+        artifact: readScreenArtifact
       }
     ];
 

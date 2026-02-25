@@ -1,18 +1,18 @@
 {
-  "taskId": "task-1771986393337",
+  "taskId": "task-1771989180228",
   "contextId": null,
   "status": "MAX_STEPS",
   "intent": "Repeatedly click the only button.",
-  "startUrl": "http://127.0.0.1:50992/noop-button",
-  "finalUrl": "http://127.0.0.1:50992/noop-button",
+  "startUrl": "http://127.0.0.1:52919/noop-button",
+  "finalUrl": "http://127.0.0.1:52919/noop-button",
   "stepsTaken": 7,
   "history": [
     {
       "step": 1,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -38,7 +38,7 @@
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -58,7 +58,8 @@
         "message": null
       },
       "tiersAttempted": [
-        "TIER_1_AX"
+        "TIER_1_AX",
+        "TIER_2_VISION"
       ],
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
@@ -86,7 +87,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 1,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|CLICK|3,4|none|none",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|CLICK|3,4|none|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -105,11 +106,11 @@
       "normalizedNodeCount": 6,
       "normalizedCharCount": 1046,
       "navigatorNormalizedTreeCharCount": 589,
-      "navigatorObservationCharCount": 1617,
-      "tier1PromptCharCount": 4262,
-      "tier1EstimatedPromptTokens": 1066,
-      "tier2PromptCharCount": 0,
-      "tier2EstimatedPromptTokens": 0,
+      "navigatorObservationCharCount": 1700,
+      "tier1PromptCharCount": 4531,
+      "tier1EstimatedPromptTokens": 1133,
+      "tier2PromptCharCount": 4600,
+      "tier2EstimatedPromptTokens": 1150,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": "subtask-1",
@@ -128,7 +129,7 @@
       "observationCachePerceptionHit": false,
       "observationCachePerceptionAgeMs": null,
       "observationCacheDecisionHit": false,
-      "observationCacheDecisionKey": "TIER_1_AX|NONE",
+      "observationCacheDecisionKey": "TIER_2_VISION|NONE",
       "observationCacheScreenshotHit": false,
       "prefetchCandidateUrl": null,
       "prefetchStatus": "NOT_REQUESTED",
@@ -136,14 +137,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:35.884Z"
+      "timestamp": "2026-02-25T03:13:03.055Z"
     },
     {
       "step": 2,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -169,7 +170,7 @@
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -217,7 +218,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 2,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|CLICK|3,4|none|none",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|CLICK|3,4|none|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -239,8 +240,8 @@
       "navigatorObservationCharCount": 1999,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 4640,
-      "tier2EstimatedPromptTokens": 1160,
+      "tier2PromptCharCount": 4909,
+      "tier2EstimatedPromptTokens": 1228,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": "subtask-1",
@@ -257,28 +258,28 @@
       "contextSummaryIncluded": false,
       "contextSummaryCharCount": 0,
       "observationCachePerceptionHit": true,
-      "observationCachePerceptionAgeMs": 2512,
+      "observationCachePerceptionAgeMs": 2791,
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": "TIER_2_VISION|NO_PROGRESS",
-      "observationCacheScreenshotHit": false,
+      "observationCacheScreenshotHit": true,
       "prefetchCandidateUrl": null,
       "prefetchStatus": "NOT_REQUESTED",
       "prefetchReason": null,
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:38.671Z"
+      "timestamp": "2026-02-25T03:13:05.568Z"
     },
     {
       "step": 3,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "FAILED",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "FAILED",
         "target": null,
-        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:50992/noop-button.",
+        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:52919/noop-button.",
         "key": null,
         "confidence": 1,
         "reasoning": "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
@@ -286,7 +287,7 @@
       "action": {
         "action": "FAILED",
         "target": null,
-        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:50992/noop-button.",
+        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:52919/noop-button.",
         "key": null,
         "confidence": 1,
         "reasoning": "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
@@ -294,7 +295,7 @@
       "execution": {
         "status": "failed",
         "action": "FAILED",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -304,7 +305,7 @@
         "significantDomMutationObserved": false,
         "domMutationSummary": null,
         "extractedData": null,
-        "message": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:50992/noop-button."
+        "message": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:52919/noop-button."
       },
       "tiersAttempted": [],
       "resolvedTier": "TIER_2_VISION",
@@ -333,7 +334,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 0,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|FAILED|none|none|stopped after 2 no-progress steps at scrolly=0 on http://127.0.0",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|FAILED|none|none|stopped after 2 no-progress steps at scrolly=0 on http://127.0.0",
       "disallowedActionFingerprintCount": 1,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": null,
@@ -366,7 +367,7 @@
       "contextSummaryIncluded": false,
       "contextSummaryCharCount": 0,
       "observationCachePerceptionHit": true,
-      "observationCachePerceptionAgeMs": 5300,
+      "observationCachePerceptionAgeMs": 5306,
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": null,
       "observationCacheScreenshotHit": false,
@@ -376,14 +377,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:38.675Z"
+      "timestamp": "2026-02-25T03:13:05.574Z"
     },
     {
       "step": 4,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -409,7 +410,7 @@
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -429,7 +430,8 @@
         "message": null
       },
       "tiersAttempted": [
-        "TIER_1_AX"
+        "TIER_1_AX",
+        "TIER_2_VISION"
       ],
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
@@ -457,7 +459,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 1,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|CLICK|3,4|none|none",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|CLICK|3,4|none|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -476,11 +478,11 @@
       "normalizedNodeCount": 6,
       "normalizedCharCount": 1046,
       "navigatorNormalizedTreeCharCount": 589,
-      "navigatorObservationCharCount": 2658,
-      "tier1PromptCharCount": 5304,
-      "tier1EstimatedPromptTokens": 1326,
-      "tier2PromptCharCount": 0,
-      "tier2EstimatedPromptTokens": 0,
+      "navigatorObservationCharCount": 2741,
+      "tier1PromptCharCount": 5573,
+      "tier1EstimatedPromptTokens": 1394,
+      "tier2PromptCharCount": 5642,
+      "tier2EstimatedPromptTokens": 1411,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": "subtask-1",
@@ -499,7 +501,7 @@
       "observationCachePerceptionHit": false,
       "observationCachePerceptionAgeMs": null,
       "observationCacheDecisionHit": false,
-      "observationCacheDecisionKey": "TIER_1_AX|NONE",
+      "observationCacheDecisionKey": "TIER_2_VISION|NONE",
       "observationCacheScreenshotHit": false,
       "prefetchCandidateUrl": null,
       "prefetchStatus": "NOT_REQUESTED",
@@ -507,14 +509,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:41.184Z"
+      "timestamp": "2026-02-25T03:13:08.381Z"
     },
     {
       "step": 5,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -537,7 +539,7 @@
       "execution": {
         "status": "acted",
         "action": "WAIT",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -585,7 +587,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 2,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|WAIT|none|none|500",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|WAIT|none|none|500",
       "disallowedActionFingerprintCount": 1,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -607,8 +609,8 @@
       "navigatorObservationCharCount": 3098,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 5739,
-      "tier2EstimatedPromptTokens": 1435,
+      "tier2PromptCharCount": 6008,
+      "tier2EstimatedPromptTokens": 1502,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": "subtask-1",
@@ -625,28 +627,28 @@
       "contextSummaryIncluded": false,
       "contextSummaryCharCount": 0,
       "observationCachePerceptionHit": true,
-      "observationCachePerceptionAgeMs": 2509,
+      "observationCachePerceptionAgeMs": 2807,
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": "TIER_2_VISION|NO_PROGRESS",
-      "observationCacheScreenshotHit": false,
+      "observationCacheScreenshotHit": true,
       "prefetchCandidateUrl": null,
       "prefetchStatus": "NOT_REQUESTED",
       "prefetchReason": null,
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:42.479Z"
+      "timestamp": "2026-02-25T03:13:09.390Z"
     },
     {
       "step": 6,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "FAILED",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "FAILED",
         "target": null,
-        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:50992/noop-button.",
+        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:52919/noop-button.",
         "key": null,
         "confidence": 1,
         "reasoning": "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
@@ -654,7 +656,7 @@
       "action": {
         "action": "FAILED",
         "target": null,
-        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:50992/noop-button.",
+        "text": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:52919/noop-button.",
         "key": null,
         "confidence": 1,
         "reasoning": "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
@@ -662,7 +664,7 @@
       "execution": {
         "status": "failed",
         "action": "FAILED",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -672,7 +674,7 @@
         "significantDomMutationObserved": false,
         "domMutationSummary": null,
         "extractedData": null,
-        "message": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:50992/noop-button."
+        "message": "Stopped after 2 no-progress steps at scrollY=0 on http://127.0.0.1:52919/noop-button."
       },
       "tiersAttempted": [],
       "resolvedTier": "TIER_2_VISION",
@@ -701,7 +703,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 0,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|FAILED|none|none|stopped after 2 no-progress steps at scrolly=0 on http://127.0.0",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|FAILED|none|none|stopped after 2 no-progress steps at scrolly=0 on http://127.0.0",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": null,
@@ -734,7 +736,7 @@
       "contextSummaryIncluded": false,
       "contextSummaryCharCount": 0,
       "observationCachePerceptionHit": true,
-      "observationCachePerceptionAgeMs": 3805,
+      "observationCachePerceptionAgeMs": 3816,
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": null,
       "observationCacheScreenshotHit": false,
@@ -744,14 +746,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:42.483Z"
+      "timestamp": "2026-02-25T03:13:09.392Z"
     },
     {
       "step": 7,
-      "urlAtPerception": "http://127.0.0.1:50992/noop-button",
-      "urlAfterAction": "http://127.0.0.1:50992/noop-button",
+      "urlAtPerception": "http://127.0.0.1:52919/noop-button",
+      "urlAfterAction": "http://127.0.0.1:52919/noop-button",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:50992/noop-button",
+      "currentUrl": "http://127.0.0.1:52919/noop-button",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -777,7 +779,7 @@
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "http://127.0.0.1:50992/noop-button",
+        "currentUrl": "http://127.0.0.1:52919/noop-button",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -797,7 +799,8 @@
         "message": null
       },
       "tiersAttempted": [
-        "TIER_1_AX"
+        "TIER_1_AX",
+        "TIER_2_VISION"
       ],
       "resolvedTier": "TIER_1_AX",
       "escalationReason": null,
@@ -825,7 +828,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 1,
-      "actionFingerprint": "http://127.0.0.1:50992/noop-button|CLICK|3,4|none|none",
+      "actionFingerprint": "http://127.0.0.1:52919/noop-button|CLICK|3,4|none|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -844,11 +847,11 @@
       "normalizedNodeCount": 6,
       "normalizedCharCount": 1046,
       "navigatorNormalizedTreeCharCount": 589,
-      "navigatorObservationCharCount": 3652,
-      "tier1PromptCharCount": 6298,
-      "tier1EstimatedPromptTokens": 1575,
-      "tier2PromptCharCount": 0,
-      "tier2EstimatedPromptTokens": 0,
+      "navigatorObservationCharCount": 3735,
+      "tier1PromptCharCount": 6567,
+      "tier1EstimatedPromptTokens": 1642,
+      "tier2PromptCharCount": 6636,
+      "tier2EstimatedPromptTokens": 1659,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": "subtask-1",
@@ -867,7 +870,7 @@
       "observationCachePerceptionHit": false,
       "observationCachePerceptionAgeMs": null,
       "observationCacheDecisionHit": false,
-      "observationCacheDecisionKey": "TIER_1_AX|NONE",
+      "observationCacheDecisionKey": "TIER_2_VISION|NONE",
       "observationCacheScreenshotHit": false,
       "prefetchCandidateUrl": null,
       "prefetchStatus": "NOT_REQUESTED",
@@ -875,20 +878,20 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:26:44.994Z"
+      "timestamp": "2026-02-25T03:13:12.191Z"
     }
   ],
   "decomposition": {
     "isDecomposed": false,
     "impliedStepCount": 1,
     "generatedBy": "HEURISTIC_V1",
-    "generatedAt": "2026-02-25T02:26:33.337Z"
+    "generatedAt": "2026-02-25T03:13:00.228Z"
   },
   "subtasks": [
     {
       "id": "subtask-1",
       "intent": "Repeatedly click the only button.",
-      "startUrl": "http://127.0.0.1:50992/noop-button",
+      "startUrl": "http://127.0.0.1:52919/noop-button",
       "verification": {
         "type": "action_confirmed",
         "condition": "At least one meaningful action completed for the intent."
@@ -897,7 +900,7 @@
       "attemptCount": 3,
       "completedStep": null,
       "failedStep": 7,
-      "lastUpdatedAt": "2026-02-25T02:26:44.994Z"
+      "lastUpdatedAt": "2026-02-25T03:13:12.191Z"
     }
   ],
   "checkpoint": {
@@ -907,7 +910,7 @@
   },
   "subtaskStatusTimeline": [
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Repeatedly click the only button.",
@@ -919,10 +922,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-25T02:26:33.338Z"
+      "timestamp": "2026-02-25T03:13:00.228Z"
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Repeatedly click the only button.",
@@ -934,10 +937,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "TASK_FAILED:FAILED",
-      "timestamp": "2026-02-25T02:26:38.675Z"
+      "timestamp": "2026-02-25T03:13:05.574Z"
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Repeatedly click the only button.",
@@ -949,10 +952,10 @@
       "attempt": 2,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "TASK_FAILED:RETRY_FROM_CHECKPOINT",
-      "timestamp": "2026-02-25T02:26:38.675Z"
+      "timestamp": "2026-02-25T03:13:05.574Z"
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Repeatedly click the only button.",
@@ -964,10 +967,10 @@
       "attempt": 2,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "TASK_FAILED:FAILED",
-      "timestamp": "2026-02-25T02:26:42.483Z"
+      "timestamp": "2026-02-25T03:13:09.392Z"
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Repeatedly click the only button.",
@@ -979,10 +982,10 @@
       "attempt": 3,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "TASK_FAILED:RETRY_FROM_CHECKPOINT",
-      "timestamp": "2026-02-25T02:26:42.483Z"
+      "timestamp": "2026-02-25T03:13:09.392Z"
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Repeatedly click the only button.",
@@ -994,7 +997,7 @@
       "attempt": 3,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "MAX_STEPS_REACHED",
-      "timestamp": "2026-02-25T02:26:44.994Z"
+      "timestamp": "2026-02-25T03:13:12.191Z"
     }
   ],
   "structuredErrors": [],
@@ -1004,48 +1007,48 @@
       "reason": "NO_PROGRESS",
       "fromTier": "TIER_1_AX",
       "toTier": "TIER_2_VISION",
-      "urlAtEscalation": "http://127.0.0.1:50992/noop-button",
+      "urlAtEscalation": "http://127.0.0.1:52919/noop-button",
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 0.9,
-      "timestamp": "2026-02-25T02:26:35.884Z"
+      "timestamp": "2026-02-25T03:13:03.055Z"
     },
     {
       "step": 3,
       "reason": "NO_PROGRESS",
       "fromTier": "TIER_1_AX",
       "toTier": "TIER_2_VISION",
-      "urlAtEscalation": "http://127.0.0.1:50992/noop-button",
+      "urlAtEscalation": "http://127.0.0.1:52919/noop-button",
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:26:38.672Z"
+      "timestamp": "2026-02-25T03:13:05.571Z"
     },
     {
       "step": 5,
       "reason": "NO_PROGRESS",
       "fromTier": "TIER_1_AX",
       "toTier": "TIER_2_VISION",
-      "urlAtEscalation": "http://127.0.0.1:50992/noop-button",
+      "urlAtEscalation": "http://127.0.0.1:52919/noop-button",
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 0.9,
-      "timestamp": "2026-02-25T02:26:41.184Z"
+      "timestamp": "2026-02-25T03:13:08.381Z"
     },
     {
       "step": 6,
       "reason": "NO_PROGRESS",
       "fromTier": "TIER_1_AX",
       "toTier": "TIER_2_VISION",
-      "urlAtEscalation": "http://127.0.0.1:50992/noop-button",
+      "urlAtEscalation": "http://127.0.0.1:52919/noop-button",
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:26:42.480Z"
+      "timestamp": "2026-02-25T03:13:09.390Z"
     }
   ],
   "axDeficientPages": [],
@@ -1056,7 +1059,7 @@
       "source": "NONE",
       "candidateUrl": null,
       "prefetch": null,
-      "timestamp": "2026-02-25T02:26:33.377Z"
+      "timestamp": "2026-02-25T03:13:00.547Z"
     },
     {
       "step": 2,
@@ -1064,7 +1067,7 @@
       "source": "NONE",
       "candidateUrl": null,
       "prefetch": null,
-      "timestamp": "2026-02-25T02:26:36.164Z"
+      "timestamp": "2026-02-25T03:13:03.057Z"
     },
     {
       "step": 4,
@@ -1072,7 +1075,7 @@
       "source": "NONE",
       "candidateUrl": null,
       "prefetch": null,
-      "timestamp": "2026-02-25T02:26:38.678Z"
+      "timestamp": "2026-02-25T03:13:05.873Z"
     },
     {
       "step": 7,
@@ -1080,12 +1083,12 @@
       "source": "NONE",
       "candidateUrl": null,
       "prefetch": null,
-      "timestamp": "2026-02-25T02:26:42.487Z"
+      "timestamp": "2026-02-25T03:13:09.680Z"
     }
   ],
   "tierUsage": {
     "tier1Calls": 3,
-    "tier2Calls": 2,
+    "tier2Calls": 5,
     "tier3Scrolls": 0,
     "axDeficientDetections": 0,
     "lowConfidenceEscalations": 0,
@@ -1094,17 +1097,17 @@
     "domBypassResolutions": 0,
     "resolvedAtTier1": 3,
     "resolvedAtTier2": 4,
-    "estimatedCostUsd": 0.00645,
+    "estimatedCostUsd": 0.01545,
     "estimatedVisionCostAvoidedUsd": 0
   },
   "contextWindow": {
     "maxRecentPairCount": 5,
     "maxSummarizedPairCount": 1,
     "summaryRefreshCount": 1,
-    "latestSummary": "Archived steps 1-1 covered 127.0.0.1. Action mix: 1 CLICK. Latest archived state: step=1 tier=TIER_1_AX action=CLICK confidence=0.90 nav=false dom=false sigDom=false url=http://127.0.0.1:50992/noop-button.",
+    "latestSummary": "Archived steps 1-1 covered 127.0.0.1. Action mix: 1 CLICK. Latest archived state: step=1 tier=TIER_1_AX action=CLICK confidence=0.90 nav=false dom=false sigDom=false url=http://127.0.0.1:52919/noop-button.",
     "summaryCharCount": 205,
-    "maxPromptCharCount": 6298,
-    "maxEstimatedPromptTokens": 1575,
+    "maxPromptCharCount": 6636,
+    "maxEstimatedPromptTokens": 1659,
     "promptTokenAlertThreshold": 12000,
     "tokenAlertCount": 0,
     "tokenAlerts": []
@@ -1114,9 +1117,9 @@
     "perceptionHits": 4,
     "perceptionMisses": 0,
     "decisionHits": 0,
-    "decisionMisses": 3,
-    "screenshotHits": 0,
-    "screenshotMisses": 2,
+    "decisionMisses": 6,
+    "screenshotHits": 2,
+    "screenshotMisses": 3,
     "entriesWritten": 3,
     "expiredEntries": 0,
     "invalidations": 4,
@@ -1140,7 +1143,7 @@
   "finalExecution": {
     "status": "acted",
     "action": "CLICK",
-    "currentUrl": "http://127.0.0.1:50992/noop-button",
+    "currentUrl": "http://127.0.0.1:52919/noop-button",
     "navigationObserved": false,
     "urlChanged": false,
     "scrollChanged": false,
@@ -1162,7 +1165,7 @@
   "errorDetail": {
     "type": "UNKNOWN",
     "status": null,
-    "url": "http://127.0.0.1:50992/noop-button",
+    "url": "http://127.0.0.1:52919/noop-button",
     "message": "Reached max steps (7) without terminal completion.",
     "retryable": true,
     "errorType": null,
@@ -1170,271 +1173,271 @@
   },
   "stateTransitions": [
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "IDLE",
       "to": "LOADING",
-      "timestamp": "2026-02-25T02:26:33.338Z",
+      "timestamp": "2026-02-25T03:13:00.228Z",
       "step": 0,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "TASK_ASSIGNED",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "LOADING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:33.372Z",
+      "timestamp": "2026-02-25T03:13:00.264Z",
       "step": 1,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "NAVIGATION_COMPLETE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:33.377Z",
+      "timestamp": "2026-02-25T03:13:00.268Z",
       "step": 1,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:33.377Z",
+      "timestamp": "2026-02-25T03:13:00.547Z",
       "step": 1,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_CLICK",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:35.884Z",
+      "timestamp": "2026-02-25T03:13:03.055Z",
       "step": 2,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:35.884Z",
+      "timestamp": "2026-02-25T03:13:03.055Z",
       "step": 2,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:36.164Z",
+      "timestamp": "2026-02-25T03:13:03.057Z",
       "step": 2,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_CLICK",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:38.671Z",
+      "timestamp": "2026-02-25T03:13:05.568Z",
       "step": 3,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:38.672Z",
+      "timestamp": "2026-02-25T03:13:05.570Z",
       "step": 3,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:38.672Z",
+      "timestamp": "2026-02-25T03:13:05.571Z",
       "step": 3,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_FAILED",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:38.675Z",
+      "timestamp": "2026-02-25T03:13:05.574Z",
       "step": 4,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "SUBTASK_RETRY",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:38.678Z",
+      "timestamp": "2026-02-25T03:13:05.578Z",
       "step": 4,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:38.678Z",
+      "timestamp": "2026-02-25T03:13:05.874Z",
       "step": 4,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_CLICK",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:41.184Z",
+      "timestamp": "2026-02-25T03:13:08.381Z",
       "step": 5,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:41.184Z",
+      "timestamp": "2026-02-25T03:13:08.381Z",
       "step": 5,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:41.473Z",
+      "timestamp": "2026-02-25T03:13:08.383Z",
       "step": 5,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_WAIT",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:42.480Z",
+      "timestamp": "2026-02-25T03:13:09.390Z",
       "step": 6,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:42.480Z",
+      "timestamp": "2026-02-25T03:13:09.390Z",
       "step": 6,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:42.480Z",
+      "timestamp": "2026-02-25T03:13:09.390Z",
       "step": 6,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_FAILED",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:42.483Z",
+      "timestamp": "2026-02-25T03:13:09.392Z",
       "step": 7,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "SUBTASK_RETRY",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:26:42.487Z",
+      "timestamp": "2026-02-25T03:13:09.396Z",
       "step": 7,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:26:42.487Z",
+      "timestamp": "2026-02-25T03:13:09.680Z",
       "step": 7,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "ACTION_CLICK",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:26:44.994Z",
+      "timestamp": "2026-02-25T03:13:12.191Z",
       "step": 8,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "FAILED",
-      "timestamp": "2026-02-25T02:26:44.995Z",
+      "timestamp": "2026-02-25T03:13:12.191Z",
       "step": 7,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "MAX_STEPS_REACHED",
       "errorDetail": {
         "type": "UNKNOWN",
         "status": null,
-        "url": "http://127.0.0.1:50992/noop-button",
+        "url": "http://127.0.0.1:52919/noop-button",
         "message": "Reached max steps (7) without terminal completion.",
         "retryable": true,
         "errorType": null,
@@ -1442,13 +1445,13 @@
       }
     },
     {
-      "taskId": "task-1771986393337",
+      "taskId": "task-1771989180228",
       "contextId": null,
       "from": "FAILED",
       "to": "IDLE",
-      "timestamp": "2026-02-25T02:26:44.995Z",
+      "timestamp": "2026-02-25T03:13:12.191Z",
       "step": 7,
-      "url": "http://127.0.0.1:50992/noop-button",
+      "url": "http://127.0.0.1:52919/noop-button",
       "reason": "TASK_CONTEXT_CLEANUP",
       "errorDetail": null
     }
@@ -1464,7 +1467,7 @@
     "scenario": "noop-repeat-diversification",
     "remoteDebuggingPort": 9333,
     "headful": true,
-    "startUrl": "http://127.0.0.1:50992/noop-button",
-    "localServerPort": 50992
+    "startUrl": "http://127.0.0.1:52919/noop-button",
+    "localServerPort": 52919
   }
 }

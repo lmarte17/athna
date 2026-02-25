@@ -57,6 +57,7 @@ export {
   type NavigatorActiveSubtask,
   type NavigatorCheckpointState,
   type NavigatorDecisionRequest,
+  type NavigatorDecisionMode,
   type NavigatorEngineOptions,
   type NavigatorEngine,
   type NavigatorEscalationReason,

@@ -1,11 +1,11 @@
 {
-  "taskId": "task-1771985696515",
+  "taskId": "task-1771989264756",
   "contextId": null,
-  "status": "DONE",
+  "status": "MAX_STEPS",
   "intent": "open the Privacy link in the page footer",
   "startUrl": "https://developer.mozilla.org/en-US/",
   "finalUrl": "https://developer.mozilla.org/en-US/",
-  "stepsTaken": 4,
+  "stepsTaken": 6,
   "history": [
     {
       "step": 1,
@@ -19,7 +19,7 @@
         "text": "800",
         "key": null,
         "confidence": 1,
-        "reasoning": "The user wants to open the 'Privacy' link, which is typically in the footer. The AX tree indicates a relevant link, 'Website Privacy Notice', is located far down the page and is currently not visible in the viewport. I need to scroll down to find it."
+        "reasoning": "The Privacy link is located in the footer (y=2746), which is currently out of the viewport. Scrolling down to bring it into view."
       },
       "action": {
         "action": "SCROLL",
@@ -102,8 +102,8 @@
       "navigatorObservationCharCount": 9403,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 12051,
-      "tier2EstimatedPromptTokens": 3013,
+      "tier2PromptCharCount": 12320,
+      "tier2EstimatedPromptTokens": 3080,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": "subtask-1",
@@ -130,7 +130,7 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:15:06.777Z"
+      "timestamp": "2026-02-25T03:14:52.976Z"
     },
     {
       "step": 2,
@@ -144,7 +144,7 @@
         "text": "800",
         "key": null,
         "confidence": 1,
-        "reasoning": "The 'Privacy' link, which is expected in the footer, is not visible in the current viewport. I need to scroll down to find it."
+        "reasoning": "Scrolling down to reach the footer where the Privacy link is located."
       },
       "action": {
         "action": "SCROLL",
@@ -222,13 +222,13 @@
       "domBypassMatchedText": null,
       "interactiveElementCount": 32,
       "normalizedNodeCount": 32,
-      "normalizedCharCount": 7936,
-      "navigatorNormalizedTreeCharCount": 4229,
-      "navigatorObservationCharCount": 9633,
+      "normalizedCharCount": 7905,
+      "navigatorNormalizedTreeCharCount": 4198,
+      "navigatorObservationCharCount": 9577,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 12282,
-      "tier2EstimatedPromptTokens": 3071,
+      "tier2PromptCharCount": 12495,
+      "tier2EstimatedPromptTokens": 3124,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": null,
@@ -255,7 +255,7 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:15:15.511Z"
+      "timestamp": "2026-02-25T03:15:10.291Z"
     },
     {
       "step": 3,
@@ -269,7 +269,7 @@
         "text": "800",
         "key": null,
         "confidence": 1,
-        "reasoning": "The user wants to open the 'Privacy' link which is typically in the footer. The footer is not yet visible in the current viewport, so I need to scroll down to find it."
+        "reasoning": "The 'Privacy' link is located in the footer, which is not yet visible in the current viewport based on the y-coordinates of other footer elements like the Mozilla logo. Scrolling down further to reach it."
       },
       "action": {
         "action": "SCROLL",
@@ -347,13 +347,13 @@
       "domBypassMatchedText": null,
       "interactiveElementCount": 32,
       "normalizedNodeCount": 32,
-      "normalizedCharCount": 7937,
-      "navigatorNormalizedTreeCharCount": 4229,
-      "navigatorObservationCharCount": 9943,
+      "normalizedCharCount": 7906,
+      "navigatorNormalizedTreeCharCount": 4198,
+      "navigatorObservationCharCount": 9887,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 12592,
-      "tier2EstimatedPromptTokens": 3148,
+      "tier2PromptCharCount": 12805,
+      "tier2EstimatedPromptTokens": 3202,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": null,
@@ -380,7 +380,7 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:15:21.780Z"
+      "timestamp": "2026-02-25T03:15:27.324Z"
     },
     {
       "step": 4,
@@ -389,24 +389,30 @@
       "state": "ACTING",
       "currentUrl": "https://developer.mozilla.org/en-US/",
       "inferredAction": {
-        "action": "DONE",
-        "target": null,
+        "action": "CLICK",
+        "target": {
+          "x": 195,
+          "y": 795
+        },
         "text": null,
         "key": null,
-        "confidence": 1,
-        "reasoning": "The subtask to open the privacy link is already marked as complete, so the overall task is finished."
+        "confidence": 0.9,
+        "reasoning": "The 'Website Privacy Notice' link is visible in the page footer, to the right of the Mozilla logo. It is absent from the AX tree, so coordinates were inferred from the visual layout."
       },
       "action": {
-        "action": "DONE",
-        "target": null,
+        "action": "CLICK",
+        "target": {
+          "x": 195,
+          "y": 795
+        },
         "text": null,
         "key": null,
-        "confidence": 1,
-        "reasoning": "The subtask to open the privacy link is already marked as complete, so the overall task is finished."
+        "confidence": 0.9,
+        "reasoning": "The 'Website Privacy Notice' link is visible in the page footer, to the right of the Mozilla logo. It is absent from the AX tree, so coordinates were inferred from the visual layout."
       },
       "execution": {
-        "status": "done",
-        "action": "DONE",
+        "status": "acted",
+        "action": "CLICK",
         "currentUrl": "https://developer.mozilla.org/en-US/",
         "navigationObserved": false,
         "urlChanged": false,
@@ -415,7 +421,14 @@
         "inputValueChanged": false,
         "domMutationObserved": false,
         "significantDomMutationObserved": false,
-        "domMutationSummary": null,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
         "extractedData": null,
         "message": null
       },
@@ -447,24 +460,31 @@
       },
       "targetMightBeBelowFold": false,
       "scrollCount": 3,
-      "noProgressStreak": 0,
-      "actionFingerprint": "https://developer.mozilla.org/en-US/|DONE|none|none|none",
+      "noProgressStreak": 1,
+      "actionFingerprint": "https://developer.mozilla.org/en-US/|CLICK|8,33|none|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
-      "postActionMutationSummary": null,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
       "domExtractionAttempted": true,
       "domExtractionElementCount": 44,
       "domBypassUsed": false,
       "domBypassMatchedText": null,
       "interactiveElementCount": 32,
       "normalizedNodeCount": 32,
-      "normalizedCharCount": 7937,
-      "navigatorNormalizedTreeCharCount": 4229,
-      "navigatorObservationCharCount": 10252,
+      "normalizedCharCount": 7906,
+      "navigatorNormalizedTreeCharCount": 4198,
+      "navigatorObservationCharCount": 10196,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 12901,
-      "tier2EstimatedPromptTokens": 3226,
+      "tier2PromptCharCount": 13114,
+      "tier2EstimatedPromptTokens": 3279,
       "decompositionUsed": false,
       "decompositionImpliedStepCount": 1,
       "activeSubtaskId": null,
@@ -485,20 +505,282 @@
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": "TIER_2_VISION|AX_DEFICIENT",
       "observationCacheScreenshotHit": false,
+      "prefetchCandidateUrl": "https://www.mozilla.org/privacy/websites/",
+      "prefetchStatus": "PREFETCHED",
+      "prefetchReason": "PREFETCH_REQUEST_DISPATCHED",
+      "prefetchDurationMs": 1,
+      "promptTokenAlertTriggered": false,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-25T03:15:47.526Z"
+    },
+    {
+      "step": 5,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "urlAfterAction": "https://developer.mozilla.org/en-US/",
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 210,
+          "y": 790
+        },
+        "text": null,
+        "key": null,
+        "confidence": 0.9,
+        "reasoning": "The 'Website Privacy Notice' link is visible next to the Mozilla logo. The previous click may have barely missed the hit area or hit the margin between words. Adjusting the coordinates slightly to the center of the text."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 210,
+          "y": 790
+        },
+        "text": null,
+        "key": null,
+        "confidence": 0.9,
+        "reasoning": "The 'Website Privacy Notice' link is visible next to the Mozilla logo. The previous click may have barely missed the hit area or hit the margin between words. Adjusting the coordinates slightly to the center of the text."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "urlChanged": false,
+        "scrollChanged": false,
+        "focusChanged": false,
+        "inputValueChanged": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 142,
+        "textCharCount": 5080,
+        "mediaElementCount": 6,
+        "domInteractiveCandidateCount": 170
+      },
+      "axTreeRefetched": false,
+      "axTreeRefetchReason": "NONE",
+      "scrollPosition": {
+        "scrollY": 2383.5,
+        "viewportHeight": 900,
+        "documentHeight": 3284,
+        "maxScrollY": 2384,
+        "remainingScrollPx": 0.5,
+        "atTop": false,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
+      "scrollCount": 3,
+      "noProgressStreak": 2,
+      "actionFingerprint": "https://developer.mozilla.org/en-US/|CLICK|9,33|none|none",
+      "disallowedActionFingerprintCount": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 44,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7906,
+      "navigatorNormalizedTreeCharCount": 4198,
+      "navigatorObservationCharCount": 10610,
+      "tier1PromptCharCount": 0,
+      "tier1EstimatedPromptTokens": 0,
+      "tier2PromptCharCount": 13528,
+      "tier2EstimatedPromptTokens": 3382,
+      "decompositionUsed": false,
+      "decompositionImpliedStepCount": 1,
+      "activeSubtaskId": null,
+      "activeSubtaskIntent": null,
+      "activeSubtaskStatus": null,
+      "activeSubtaskAttempt": 0,
+      "activeSubtaskIndex": 0,
+      "totalSubtasks": 1,
+      "checkpointLastCompletedSubtaskIndex": 0,
+      "checkpointCurrentSubtaskAttempt": 0,
+      "contextRecentPairCount": 4,
+      "contextSummarizedPairCount": 0,
+      "contextTotalPairCount": 4,
+      "contextSummaryIncluded": false,
+      "contextSummaryCharCount": 0,
+      "observationCachePerceptionHit": true,
+      "observationCachePerceptionAgeMs": 20203,
+      "observationCacheDecisionHit": false,
+      "observationCacheDecisionKey": "TIER_2_VISION|AX_DEFICIENT",
+      "observationCacheScreenshotHit": true,
+      "prefetchCandidateUrl": "https://www.mozilla.org/privacy/websites/",
+      "prefetchStatus": "PREFETCHED",
+      "prefetchReason": "PREFETCH_REQUEST_DISPATCHED",
+      "prefetchDurationMs": 2,
+      "promptTokenAlertTriggered": false,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-25T03:16:21.070Z"
+    },
+    {
+      "step": 6,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "urlAfterAction": "https://developer.mozilla.org/en-US/",
+      "state": "ACTING",
+      "currentUrl": "https://developer.mozilla.org/en-US/",
+      "inferredAction": {
+        "action": "CLICK",
+        "target": {
+          "x": 200,
+          "y": 805
+        },
+        "text": null,
+        "key": null,
+        "confidence": 0.9,
+        "reasoning": "Previous clicks at y=790 and y=795 likely missed the text vertically. The Mozilla logo bounding box spans y=780 to 810, and the text 'Website Privacy Notice' is visually aligned with the bottom of the logo. Adjusting the click to y=805 to hit the actual text."
+      },
+      "action": {
+        "action": "CLICK",
+        "target": {
+          "x": 200,
+          "y": 805
+        },
+        "text": null,
+        "key": null,
+        "confidence": 0.9,
+        "reasoning": "Previous clicks at y=790 and y=795 likely missed the text vertically. The Mozilla logo bounding box spans y=780 to 810, and the text 'Website Privacy Notice' is visually aligned with the bottom of the logo. Adjusting the click to y=805 to hit the actual text."
+      },
+      "execution": {
+        "status": "acted",
+        "action": "CLICK",
+        "currentUrl": "https://developer.mozilla.org/en-US/",
+        "navigationObserved": false,
+        "urlChanged": false,
+        "scrollChanged": false,
+        "focusChanged": false,
+        "inputValueChanged": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": {
+          "mutationObserved": false,
+          "significantMutationObserved": false,
+          "addedOrRemovedNodeCount": 0,
+          "interactiveRoleMutationCount": 0,
+          "childListMutationCount": 0,
+          "attributeMutationCount": 0
+        },
+        "extractedData": null,
+        "message": null
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": "AX_DEFICIENT",
+      "axDeficientDetected": true,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": true,
+        "visibleElementCount": 142,
+        "textCharCount": 5080,
+        "mediaElementCount": 6,
+        "domInteractiveCandidateCount": 170
+      },
+      "axTreeRefetched": false,
+      "axTreeRefetchReason": "NONE",
+      "scrollPosition": {
+        "scrollY": 2383.5,
+        "viewportHeight": 900,
+        "documentHeight": 3284,
+        "maxScrollY": 2384,
+        "remainingScrollPx": 0.5,
+        "atTop": false,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
+      "scrollCount": 3,
+      "noProgressStreak": 3,
+      "actionFingerprint": "https://developer.mozilla.org/en-US/|CLICK|8,34|none|none",
+      "disallowedActionFingerprintCount": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": {
+        "mutationObserved": false,
+        "significantMutationObserved": false,
+        "addedOrRemovedNodeCount": 0,
+        "interactiveRoleMutationCount": 0,
+        "childListMutationCount": 0,
+        "attributeMutationCount": 0
+      },
+      "domExtractionAttempted": true,
+      "domExtractionElementCount": 44,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 32,
+      "normalizedNodeCount": 32,
+      "normalizedCharCount": 7906,
+      "navigatorNormalizedTreeCharCount": 4198,
+      "navigatorObservationCharCount": 11062,
+      "tier1PromptCharCount": 0,
+      "tier1EstimatedPromptTokens": 0,
+      "tier2PromptCharCount": 13980,
+      "tier2EstimatedPromptTokens": 3495,
+      "decompositionUsed": false,
+      "decompositionImpliedStepCount": 1,
+      "activeSubtaskId": null,
+      "activeSubtaskIntent": null,
+      "activeSubtaskStatus": null,
+      "activeSubtaskAttempt": 0,
+      "activeSubtaskIndex": 0,
+      "totalSubtasks": 1,
+      "checkpointLastCompletedSubtaskIndex": 0,
+      "checkpointCurrentSubtaskAttempt": 0,
+      "contextRecentPairCount": 5,
+      "contextSummarizedPairCount": 0,
+      "contextTotalPairCount": 5,
+      "contextSummaryIncluded": false,
+      "contextSummaryCharCount": 0,
+      "observationCachePerceptionHit": true,
+      "observationCachePerceptionAgeMs": 53746,
+      "observationCacheDecisionHit": false,
+      "observationCacheDecisionKey": "TIER_2_VISION|AX_DEFICIENT",
+      "observationCacheScreenshotHit": true,
       "prefetchCandidateUrl": null,
       "prefetchStatus": "NOT_REQUESTED",
       "prefetchReason": null,
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T02:15:39.952Z"
+      "timestamp": "2026-02-25T03:17:12.411Z"
     }
   ],
   "decomposition": {
     "isDecomposed": false,
     "impliedStepCount": 1,
     "generatedBy": "HEURISTIC_V1",
-    "generatedAt": "2026-02-25T02:14:56.517Z"
+    "generatedAt": "2026-02-25T03:14:24.757Z"
   },
   "subtasks": [
     {
@@ -513,7 +795,7 @@
       "attemptCount": 1,
       "completedStep": 1,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-25T02:15:06.777Z"
+      "lastUpdatedAt": "2026-02-25T03:14:52.976Z"
     }
   ],
   "checkpoint": {
@@ -526,13 +808,13 @@
         "completionUrl": "https://developer.mozilla.org/en-US/",
         "resolvedTier": "TIER_3_SCROLL",
         "action": "SCROLL",
-        "timestamp": "2026-02-25T02:15:06.777Z"
+        "timestamp": "2026-02-25T03:14:52.976Z"
       }
     ]
   },
   "subtaskStatusTimeline": [
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "open the Privacy link in the page footer",
@@ -544,10 +826,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-25T02:14:56.517Z"
+      "timestamp": "2026-02-25T03:14:24.757Z"
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "open the Privacy link in the page footer",
@@ -559,7 +841,7 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": 0,
       "reason": "VERIFIED:meaningful_effect_confirmed",
-      "timestamp": "2026-02-25T02:15:06.777Z"
+      "timestamp": "2026-02-25T03:14:52.976Z"
     }
   ],
   "structuredErrors": [],
@@ -574,7 +856,7 @@
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:14:56.778Z"
+      "timestamp": "2026-02-25T03:14:25.198Z"
     },
     {
       "step": 1,
@@ -586,7 +868,7 @@
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_3_SCROLL",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:15:04.261Z"
+      "timestamp": "2026-02-25T03:14:50.460Z"
     },
     {
       "step": 2,
@@ -598,7 +880,7 @@
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:15:06.840Z"
+      "timestamp": "2026-02-25T03:14:53.055Z"
     },
     {
       "step": 2,
@@ -610,7 +892,7 @@
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_3_SCROLL",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:15:13.002Z"
+      "timestamp": "2026-02-25T03:15:07.779Z"
     },
     {
       "step": 3,
@@ -622,7 +904,7 @@
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:15:15.579Z"
+      "timestamp": "2026-02-25T03:15:10.386Z"
     },
     {
       "step": 3,
@@ -634,7 +916,7 @@
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_3_SCROLL",
       "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:15:19.273Z"
+      "timestamp": "2026-02-25T03:15:24.811Z"
     },
     {
       "step": 4,
@@ -645,8 +927,32 @@
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
-      "resolvedConfidence": 1,
-      "timestamp": "2026-02-25T02:15:21.842Z"
+      "resolvedConfidence": 0.9,
+      "timestamp": "2026-02-25T03:15:27.403Z"
+    },
+    {
+      "step": 5,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 0.9,
+      "timestamp": "2026-02-25T03:15:47.527Z"
+    },
+    {
+      "step": 6,
+      "reason": "AX_DEFICIENT",
+      "fromTier": "TIER_1_AX",
+      "toTier": "TIER_2_VISION",
+      "urlAtEscalation": "https://developer.mozilla.org/en-US/",
+      "triggerConfidence": null,
+      "confidenceThreshold": 0.75,
+      "resolvedTier": "TIER_2_VISION",
+      "resolvedConfidence": 0.9,
+      "timestamp": "2026-02-25T03:16:21.070Z"
     }
   ],
   "axDeficientPages": [
@@ -662,7 +968,7 @@
       "textCharCount": 5080,
       "mediaElementCount": 6,
       "domInteractiveCandidateCount": 170,
-      "timestamp": "2026-02-25T02:14:56.778Z"
+      "timestamp": "2026-02-25T03:14:25.198Z"
     },
     {
       "step": 2,
@@ -676,7 +982,7 @@
       "textCharCount": 5080,
       "mediaElementCount": 6,
       "domInteractiveCandidateCount": 170,
-      "timestamp": "2026-02-25T02:15:06.840Z"
+      "timestamp": "2026-02-25T03:14:53.055Z"
     },
     {
       "step": 3,
@@ -690,7 +996,7 @@
       "textCharCount": 5080,
       "mediaElementCount": 6,
       "domInteractiveCandidateCount": 170,
-      "timestamp": "2026-02-25T02:15:15.579Z"
+      "timestamp": "2026-02-25T03:15:10.386Z"
     },
     {
       "step": 4,
@@ -704,43 +1010,114 @@
       "textCharCount": 5080,
       "mediaElementCount": 6,
       "domInteractiveCandidateCount": 170,
-      "timestamp": "2026-02-25T02:15:21.842Z"
+      "timestamp": "2026-02-25T03:15:27.403Z"
+    },
+    {
+      "step": 5,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "interactiveElementCount": 32,
+      "threshold": 10000,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 142,
+      "textCharCount": 5080,
+      "mediaElementCount": 6,
+      "domInteractiveCandidateCount": 170,
+      "timestamp": "2026-02-25T03:15:47.527Z"
+    },
+    {
+      "step": 6,
+      "urlAtPerception": "https://developer.mozilla.org/en-US/",
+      "interactiveElementCount": 32,
+      "threshold": 10000,
+      "readyState": "complete",
+      "isLoadComplete": true,
+      "hasSignificantVisualContent": true,
+      "visibleElementCount": 142,
+      "textCharCount": 5080,
+      "mediaElementCount": 6,
+      "domInteractiveCandidateCount": 170,
+      "timestamp": "2026-02-25T03:16:21.070Z"
     }
   ],
-  "prefetches": [],
+  "prefetches": [
+    {
+      "step": 4,
+      "action": "CLICK",
+      "source": "DOM_LINK_TARGET",
+      "candidateUrl": "https://www.mozilla.org/privacy/websites/",
+      "prefetch": {
+        "requestedUrl": "https://www.mozilla.org/privacy/websites/",
+        "normalizedUrl": "https://www.mozilla.org/privacy/websites/",
+        "status": "PREFETCHED",
+        "startedAt": "2026-02-25T03:15:45.019Z",
+        "finishedAt": "2026-02-25T03:15:45.020Z",
+        "durationMs": 1,
+        "reason": "PREFETCH_REQUEST_DISPATCHED",
+        "errorMessage": null
+      },
+      "timestamp": "2026-02-25T03:15:45.020Z"
+    },
+    {
+      "step": 5,
+      "action": "CLICK",
+      "source": "DOM_LINK_TARGET",
+      "candidateUrl": "https://www.mozilla.org/privacy/websites/",
+      "prefetch": {
+        "requestedUrl": "https://www.mozilla.org/privacy/websites/",
+        "normalizedUrl": "https://www.mozilla.org/privacy/websites/",
+        "status": "PREFETCHED",
+        "startedAt": "2026-02-25T03:16:18.561Z",
+        "finishedAt": "2026-02-25T03:16:18.563Z",
+        "durationMs": 2,
+        "reason": "PREFETCH_REQUEST_DISPATCHED",
+        "errorMessage": null
+      },
+      "timestamp": "2026-02-25T03:16:18.563Z"
+    },
+    {
+      "step": 6,
+      "action": "CLICK",
+      "source": "NONE",
+      "candidateUrl": null,
+      "prefetch": null,
+      "timestamp": "2026-02-25T03:17:09.901Z"
+    }
+  ],
   "tierUsage": {
     "tier1Calls": 0,
-    "tier2Calls": 4,
+    "tier2Calls": 6,
     "tier3Scrolls": 3,
-    "axDeficientDetections": 4,
+    "axDeficientDetections": 6,
     "lowConfidenceEscalations": 0,
     "noProgressEscalations": 0,
     "unsafeActionEscalations": 0,
     "domBypassResolutions": 0,
     "resolvedAtTier1": 0,
-    "resolvedAtTier2": 1,
-    "estimatedCostUsd": 0.012,
+    "resolvedAtTier2": 3,
+    "estimatedCostUsd": 0.018,
     "estimatedVisionCostAvoidedUsd": 0
   },
   "contextWindow": {
-    "maxRecentPairCount": 3,
+    "maxRecentPairCount": 5,
     "maxSummarizedPairCount": 0,
     "summaryRefreshCount": 0,
     "latestSummary": null,
     "summaryCharCount": 0,
-    "maxPromptCharCount": 12901,
-    "maxEstimatedPromptTokens": 3226,
+    "maxPromptCharCount": 13980,
+    "maxEstimatedPromptTokens": 3495,
     "promptTokenAlertThreshold": 12000,
     "tokenAlertCount": 0,
     "tokenAlerts": []
   },
   "observationCache": {
     "ttlMs": 60000,
-    "perceptionHits": 0,
+    "perceptionHits": 2,
     "perceptionMisses": 0,
     "decisionHits": 0,
     "decisionMisses": 4,
-    "screenshotHits": 0,
+    "screenshotHits": 2,
     "screenshotMisses": 4,
     "entriesWritten": 4,
     "expiredEntries": 0,
@@ -752,16 +1129,19 @@
     "ttlMs": null
   },
   "finalAction": {
-    "action": "DONE",
-    "target": null,
+    "action": "CLICK",
+    "target": {
+      "x": 200,
+      "y": 805
+    },
     "text": null,
     "key": null,
-    "confidence": 1,
-    "reasoning": "The subtask to open the privacy link is already marked as complete, so the overall task is finished."
+    "confidence": 0.9,
+    "reasoning": "Previous clicks at y=790 and y=795 likely missed the text vertically. The Mozilla logo bounding box spans y=780 to 810, and the text 'Website Privacy Notice' is visually aligned with the bottom of the logo. Adjusting the click to y=805 to hit the actual text."
   },
   "finalExecution": {
-    "status": "done",
-    "action": "DONE",
+    "status": "acted",
+    "action": "CLICK",
     "currentUrl": "https://developer.mozilla.org/en-US/",
     "navigationObserved": false,
     "urlChanged": false,
@@ -770,173 +1150,273 @@
     "inputValueChanged": false,
     "domMutationObserved": false,
     "significantDomMutationObserved": false,
-    "domMutationSummary": null,
+    "domMutationSummary": {
+      "mutationObserved": false,
+      "significantMutationObserved": false,
+      "addedOrRemovedNodeCount": 0,
+      "interactiveRoleMutationCount": 0,
+      "childListMutationCount": 0,
+      "attributeMutationCount": 0
+    },
     "extractedData": null,
     "message": null
   },
-  "errorDetail": null,
+  "errorDetail": {
+    "type": "UNKNOWN",
+    "status": null,
+    "url": "https://developer.mozilla.org/en-US/",
+    "message": "Reached max steps (6) without terminal completion.",
+    "retryable": true,
+    "errorType": null,
+    "step": 6
+  },
   "stateTransitions": [
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "IDLE",
       "to": "LOADING",
-      "timestamp": "2026-02-25T02:14:56.517Z",
+      "timestamp": "2026-02-25T03:14:24.757Z",
       "step": 0,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "TASK_ASSIGNED",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "LOADING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:14:56.698Z",
+      "timestamp": "2026-02-25T03:14:25.126Z",
       "step": 1,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "NAVIGATION_COMPLETE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:14:56.778Z",
+      "timestamp": "2026-02-25T03:14:25.198Z",
       "step": 1,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:15:04.262Z",
+      "timestamp": "2026-02-25T03:14:50.460Z",
       "step": 1,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "ACTION_SCROLL",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:15:06.777Z",
+      "timestamp": "2026-02-25T03:14:52.976Z",
       "step": 2,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:15:06.840Z",
+      "timestamp": "2026-02-25T03:14:53.055Z",
       "step": 2,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:15:13.002Z",
+      "timestamp": "2026-02-25T03:15:07.779Z",
       "step": 2,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "ACTION_SCROLL",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:15:15.511Z",
+      "timestamp": "2026-02-25T03:15:10.291Z",
       "step": 3,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:15:15.579Z",
+      "timestamp": "2026-02-25T03:15:10.386Z",
       "step": 3,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:15:19.273Z",
+      "timestamp": "2026-02-25T03:15:24.811Z",
       "step": 3,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "ACTION_SCROLL",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T02:15:21.780Z",
+      "timestamp": "2026-02-25T03:15:27.324Z",
       "step": 4,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T02:15:21.842Z",
+      "timestamp": "2026-02-25T03:15:27.403Z",
       "step": 4,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T02:15:39.949Z",
+      "timestamp": "2026-02-25T03:15:45.017Z",
       "step": 4,
       "url": "https://developer.mozilla.org/en-US/",
-      "reason": "ACTION_DONE",
+      "reason": "ACTION_CLICK",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
       "from": "ACTING",
-      "to": "COMPLETE",
-      "timestamp": "2026-02-25T02:15:39.952Z",
-      "step": 4,
+      "to": "PERCEIVING",
+      "timestamp": "2026-02-25T03:15:47.526Z",
+      "step": 5,
       "url": "https://developer.mozilla.org/en-US/",
-      "reason": "TASK_DONE",
+      "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771985696515",
+      "taskId": "task-1771989264756",
       "contextId": null,
-      "from": "COMPLETE",
+      "from": "PERCEIVING",
+      "to": "INFERRING",
+      "timestamp": "2026-02-25T03:15:47.527Z",
+      "step": 5,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": null,
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "INFERRING",
+      "to": "ACTING",
+      "timestamp": "2026-02-25T03:16:18.559Z",
+      "step": 5,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": "ACTION_CLICK",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "ACTING",
+      "to": "PERCEIVING",
+      "timestamp": "2026-02-25T03:16:21.070Z",
+      "step": 6,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": "NEXT_STEP",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "PERCEIVING",
+      "to": "INFERRING",
+      "timestamp": "2026-02-25T03:16:21.070Z",
+      "step": 6,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": null,
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "INFERRING",
+      "to": "ACTING",
+      "timestamp": "2026-02-25T03:17:09.901Z",
+      "step": 6,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": "ACTION_CLICK",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "ACTING",
+      "to": "PERCEIVING",
+      "timestamp": "2026-02-25T03:17:12.411Z",
+      "step": 7,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": "NEXT_STEP",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "PERCEIVING",
+      "to": "FAILED",
+      "timestamp": "2026-02-25T03:17:12.411Z",
+      "step": 6,
+      "url": "https://developer.mozilla.org/en-US/",
+      "reason": "MAX_STEPS_REACHED",
+      "errorDetail": {
+        "type": "UNKNOWN",
+        "status": null,
+        "url": "https://developer.mozilla.org/en-US/",
+        "message": "Reached max steps (6) without terminal completion.",
+        "retryable": true,
+        "errorType": null,
+        "step": 6
+      }
+    },
+    {
+      "taskId": "task-1771989264756",
+      "contextId": null,
+      "from": "FAILED",
       "to": "IDLE",
-      "timestamp": "2026-02-25T02:15:39.952Z",
-      "step": 4,
+      "timestamp": "2026-02-25T03:17:12.411Z",
+      "step": 6,
       "url": "https://developer.mozilla.org/en-US/",
       "reason": "TASK_CONTEXT_CLEANUP",
       "errorDetail": null

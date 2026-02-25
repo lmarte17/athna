@@ -2,7 +2,7 @@
   "ok": true,
   "phase": "5.1",
   "summary": {
-    "scenarioCount": 2,
+    "scenarioCount": 3,
     "scenarios": [
       {
         "name": "enter-required-submit",
@@ -11,7 +11,7 @@
         "summary": {
           "status": "DONE",
           "stepsTaken": 4,
-          "finalUrl": "http://127.0.0.1:50992/enter-required/results?q=athna%20reliability%20routing",
+          "finalUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
           "typeStep": 2,
           "pressEnterStep": 3
         },
@@ -28,12 +28,25 @@
           "noProgressDecisionCacheHits": 0
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.1/scenarios/noop-repeat-diversification-decision-routing-result.json"
+      },
+      {
+        "name": "read-screen-fast-answer",
+        "status": "DONE",
+        "stepsTaken": 1,
+        "summary": {
+          "status": "DONE",
+          "stepsTaken": 1,
+          "readScreenCalls": 1,
+          "standardCalls": 0,
+          "firstAction": "DONE"
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.1/scenarios/read-screen-fast-answer-decision-routing-result.json"
       }
     ]
   },
   "runConfig": {
     "remoteDebuggingPort": 9333,
     "headful": true,
-    "localServerPort": 50992
+    "localServerPort": 52919
   }
 }

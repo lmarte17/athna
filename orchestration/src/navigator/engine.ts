@@ -32,6 +32,7 @@ export interface NavigatorActionDecision {
 }
 
 export type NavigatorInferenceTier = "TIER_1_AX" | "TIER_2_VISION";
+export type NavigatorDecisionMode = "STANDARD" | "READ_SCREEN";
 export type NavigatorEscalationReason =
   | "LOW_CONFIDENCE"
   | "AX_DEFICIENT"
@@ -114,6 +115,7 @@ export interface NavigatorDecisionRequest {
   intent: string;
   observation: NavigatorObservationInput;
   tier?: NavigatorInferenceTier;
+  decisionMode?: NavigatorDecisionMode;
   escalationReason?: NavigatorEscalationReason | null;
 }
 
@@ -251,6 +253,7 @@ function buildNavigatorUserPayload(
   return {
     intent: input.intent.trim(),
     tier,
+    decisionMode: input.decisionMode ?? "STANDARD",
     escalationReason: input.escalationReason ?? null,
     isInitialStep: previousActions.length === 0,
     observation
@@ -298,6 +301,8 @@ function buildNavigatorPrompt(
     "- If structuredError.retryable=false and no alternative route is clear, return FAILED with concise reasoning.",
     "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",
     "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
+    "- If decisionMode=READ_SCREEN and the requested answer is clearly visible, return DONE with text containing the concise answer.",
+    "- In decisionMode=READ_SCREEN, avoid clicks/typing unless the answer is not visible and cannot be inferred safely.",
     "- If noProgressStreak > 0, do not repeat the same action/target/text combination.",
     "- disallowedActionFingerprints lists action fingerprints to avoid on this step.",
     "- Keep reasoning concise.",

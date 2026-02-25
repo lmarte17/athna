@@ -1,0 +1,344 @@
+{
+  "taskId": "task-1771989192194",
+  "contextId": null,
+  "status": "DONE",
+  "intent": "What is the support code shown on the screen?",
+  "startUrl": "http://127.0.0.1:52919/visible-answer",
+  "finalUrl": "http://127.0.0.1:52919/visible-answer",
+  "stepsTaken": 1,
+  "history": [
+    {
+      "step": 1,
+      "urlAtPerception": "http://127.0.0.1:52919/visible-answer",
+      "urlAfterAction": "http://127.0.0.1:52919/visible-answer",
+      "state": "ACTING",
+      "currentUrl": "http://127.0.0.1:52919/visible-answer",
+      "inferredAction": {
+        "action": "DONE",
+        "target": null,
+        "text": "Support code: 8491",
+        "key": null,
+        "confidence": 0.95,
+        "reasoning": "Answer is directly visible on screen."
+      },
+      "action": {
+        "action": "DONE",
+        "target": null,
+        "text": "Support code: 8491",
+        "key": null,
+        "confidence": 0.95,
+        "reasoning": "Answer is directly visible on screen."
+      },
+      "execution": {
+        "status": "done",
+        "action": "DONE",
+        "currentUrl": "http://127.0.0.1:52919/visible-answer",
+        "navigationObserved": false,
+        "urlChanged": false,
+        "scrollChanged": false,
+        "focusChanged": false,
+        "inputValueChanged": false,
+        "domMutationObserved": false,
+        "significantDomMutationObserved": false,
+        "domMutationSummary": null,
+        "extractedData": null,
+        "message": "Support code: 8491"
+      },
+      "tiersAttempted": [
+        "TIER_2_VISION"
+      ],
+      "resolvedTier": "TIER_2_VISION",
+      "escalationReason": null,
+      "axDeficientDetected": false,
+      "axDeficiencySignals": {
+        "readyState": "complete",
+        "isLoadComplete": true,
+        "hasSignificantVisualContent": false,
+        "visibleElementCount": 3,
+        "textCharCount": 38,
+        "mediaElementCount": 0,
+        "domInteractiveCandidateCount": 0
+      },
+      "axTreeRefetched": true,
+      "axTreeRefetchReason": "INITIAL",
+      "scrollPosition": {
+        "scrollY": 0,
+        "viewportHeight": 900,
+        "documentHeight": 900,
+        "maxScrollY": 0,
+        "remainingScrollPx": 0,
+        "atTop": true,
+        "atBottom": true
+      },
+      "targetMightBeBelowFold": false,
+      "scrollCount": 0,
+      "noProgressStreak": 0,
+      "actionFingerprint": "http://127.0.0.1:52919/visible-answer|DONE|none|none|support code: 8491",
+      "disallowedActionFingerprintCount": 0,
+      "postActionSignificantDomMutationObserved": false,
+      "postActionMutationSummary": null,
+      "domExtractionAttempted": false,
+      "domExtractionElementCount": 0,
+      "domBypassUsed": false,
+      "domBypassMatchedText": null,
+      "interactiveElementCount": 0,
+      "normalizedNodeCount": 6,
+      "normalizedCharCount": 1022,
+      "navigatorNormalizedTreeCharCount": 576,
+      "navigatorObservationCharCount": 1583,
+      "tier1PromptCharCount": 0,
+      "tier1EstimatedPromptTokens": 0,
+      "tier2PromptCharCount": 4498,
+      "tier2EstimatedPromptTokens": 1125,
+      "decompositionUsed": false,
+      "decompositionImpliedStepCount": 1,
+      "activeSubtaskId": "subtask-1",
+      "activeSubtaskIntent": "What is the support code shown on the screen?",
+      "activeSubtaskStatus": "IN_PROGRESS",
+      "activeSubtaskAttempt": 1,
+      "activeSubtaskIndex": 1,
+      "totalSubtasks": 1,
+      "checkpointLastCompletedSubtaskIndex": 0,
+      "checkpointCurrentSubtaskAttempt": 0,
+      "contextRecentPairCount": 0,
+      "contextSummarizedPairCount": 0,
+      "contextTotalPairCount": 0,
+      "contextSummaryIncluded": false,
+      "contextSummaryCharCount": 0,
+      "observationCachePerceptionHit": false,
+      "observationCachePerceptionAgeMs": null,
+      "observationCacheDecisionHit": false,
+      "observationCacheDecisionKey": "TIER_2_VISION|NONE",
+      "observationCacheScreenshotHit": false,
+      "prefetchCandidateUrl": null,
+      "prefetchStatus": "NOT_REQUESTED",
+      "prefetchReason": null,
+      "prefetchDurationMs": null,
+      "promptTokenAlertTriggered": false,
+      "usedToonEncoding": true,
+      "timestamp": "2026-02-25T03:13:12.525Z"
+    }
+  ],
+  "decomposition": {
+    "isDecomposed": false,
+    "impliedStepCount": 1,
+    "generatedBy": "HEURISTIC_V1",
+    "generatedAt": "2026-02-25T03:13:12.194Z"
+  },
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "intent": "What is the support code shown on the screen?",
+      "startUrl": "http://127.0.0.1:52919/visible-answer",
+      "verification": {
+        "type": "action_confirmed",
+        "condition": "At least one meaningful action completed for the intent."
+      },
+      "status": "COMPLETE",
+      "attemptCount": 1,
+      "completedStep": 1,
+      "failedStep": null,
+      "lastUpdatedAt": "2026-02-25T03:13:12.525Z"
+    }
+  ],
+  "checkpoint": {
+    "lastCompletedSubtaskIndex": 0,
+    "currentSubtaskAttempt": 0,
+    "subtaskArtifacts": [
+      {
+        "subtaskId": "subtask-1",
+        "step": 1,
+        "completionUrl": "http://127.0.0.1:52919/visible-answer",
+        "resolvedTier": "TIER_2_VISION",
+        "action": "DONE",
+        "timestamp": "2026-02-25T03:13:12.525Z"
+      }
+    ]
+  },
+  "subtaskStatusTimeline": [
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "subtaskId": "subtask-1",
+      "subtaskIntent": "What is the support code shown on the screen?",
+      "status": "IN_PROGRESS",
+      "verificationType": "action_confirmed",
+      "verificationCondition": "At least one meaningful action completed for the intent.",
+      "currentSubtaskIndex": 1,
+      "totalSubtasks": 1,
+      "attempt": 1,
+      "checkpointLastCompletedSubtaskIndex": -1,
+      "reason": "DECOMPOSITION_INITIALIZED",
+      "timestamp": "2026-02-25T03:13:12.194Z"
+    },
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "subtaskId": "subtask-1",
+      "subtaskIntent": "What is the support code shown on the screen?",
+      "status": "COMPLETE",
+      "verificationType": "action_confirmed",
+      "verificationCondition": "At least one meaningful action completed for the intent.",
+      "currentSubtaskIndex": 1,
+      "totalSubtasks": 1,
+      "attempt": 1,
+      "checkpointLastCompletedSubtaskIndex": 0,
+      "reason": "VERIFIED:task_done_action",
+      "timestamp": "2026-02-25T03:13:12.525Z"
+    }
+  ],
+  "structuredErrors": [],
+  "escalations": [],
+  "axDeficientPages": [],
+  "prefetches": [],
+  "tierUsage": {
+    "tier1Calls": 0,
+    "tier2Calls": 1,
+    "tier3Scrolls": 0,
+    "axDeficientDetections": 0,
+    "lowConfidenceEscalations": 0,
+    "noProgressEscalations": 0,
+    "unsafeActionEscalations": 0,
+    "domBypassResolutions": 0,
+    "resolvedAtTier1": 0,
+    "resolvedAtTier2": 1,
+    "estimatedCostUsd": 0.003,
+    "estimatedVisionCostAvoidedUsd": 0
+  },
+  "contextWindow": {
+    "maxRecentPairCount": 0,
+    "maxSummarizedPairCount": 0,
+    "summaryRefreshCount": 0,
+    "latestSummary": null,
+    "summaryCharCount": 0,
+    "maxPromptCharCount": 4498,
+    "maxEstimatedPromptTokens": 1125,
+    "promptTokenAlertThreshold": 12000,
+    "tokenAlertCount": 0,
+    "tokenAlerts": []
+  },
+  "observationCache": {
+    "ttlMs": 60000,
+    "perceptionHits": 0,
+    "perceptionMisses": 0,
+    "decisionHits": 0,
+    "decisionMisses": 0,
+    "screenshotHits": 0,
+    "screenshotMisses": 1,
+    "entriesWritten": 1,
+    "expiredEntries": 0,
+    "invalidations": 0,
+    "finalEntryCount": 1
+  },
+  "httpCachePolicy": {
+    "mode": "RESPECT_HEADERS",
+    "ttlMs": null
+  },
+  "finalAction": {
+    "action": "DONE",
+    "target": null,
+    "text": "Support code: 8491",
+    "key": null,
+    "confidence": 0.95,
+    "reasoning": "Answer is directly visible on screen."
+  },
+  "finalExecution": {
+    "status": "done",
+    "action": "DONE",
+    "currentUrl": "http://127.0.0.1:52919/visible-answer",
+    "navigationObserved": false,
+    "urlChanged": false,
+    "scrollChanged": false,
+    "focusChanged": false,
+    "inputValueChanged": false,
+    "domMutationObserved": false,
+    "significantDomMutationObserved": false,
+    "domMutationSummary": null,
+    "extractedData": null,
+    "message": "Support code: 8491"
+  },
+  "errorDetail": null,
+  "stateTransitions": [
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "from": "IDLE",
+      "to": "LOADING",
+      "timestamp": "2026-02-25T03:13:12.194Z",
+      "step": 0,
+      "url": "http://127.0.0.1:52919/visible-answer",
+      "reason": "TASK_ASSIGNED",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "from": "LOADING",
+      "to": "PERCEIVING",
+      "timestamp": "2026-02-25T03:13:12.232Z",
+      "step": 1,
+      "url": "http://127.0.0.1:52919/visible-answer",
+      "reason": "NAVIGATION_COMPLETE",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "from": "PERCEIVING",
+      "to": "INFERRING",
+      "timestamp": "2026-02-25T03:13:12.236Z",
+      "step": 1,
+      "url": "http://127.0.0.1:52919/visible-answer",
+      "reason": null,
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "from": "INFERRING",
+      "to": "ACTING",
+      "timestamp": "2026-02-25T03:13:12.522Z",
+      "step": 1,
+      "url": "http://127.0.0.1:52919/visible-answer",
+      "reason": "ACTION_DONE",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "from": "ACTING",
+      "to": "COMPLETE",
+      "timestamp": "2026-02-25T03:13:12.525Z",
+      "step": 1,
+      "url": "http://127.0.0.1:52919/visible-answer",
+      "reason": "TASK_DONE",
+      "errorDetail": null
+    },
+    {
+      "taskId": "task-1771989192194",
+      "contextId": null,
+      "from": "COMPLETE",
+      "to": "IDLE",
+      "timestamp": "2026-02-25T03:13:12.525Z",
+      "step": 1,
+      "url": "http://127.0.0.1:52919/visible-answer",
+      "reason": "TASK_CONTEXT_CLEANUP",
+      "errorDetail": null
+    }
+  ],
+  "summary": {
+    "status": "DONE",
+    "stepsTaken": 1,
+    "readScreenCalls": 1,
+    "standardCalls": 0,
+    "firstAction": "DONE"
+  },
+  "runConfig": {
+    "phase": "5.1",
+    "scenario": "read-screen-fast-answer",
+    "remoteDebuggingPort": 9333,
+    "headful": true,
+    "startUrl": "http://127.0.0.1:52919/visible-answer",
+    "localServerPort": 52919
+  }
+}

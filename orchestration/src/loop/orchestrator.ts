@@ -25,6 +25,7 @@ import {
   type NavigatorObservationSubtask,
   type NavigatorStructuredError,
   type NavigatorStructuredErrorType,
+  type NavigatorDecisionMode,
   type NavigatorEscalationReason,
   type NavigatorInferenceTier
 } from "../navigator/engine.js";
@@ -77,6 +78,9 @@ const DEFAULT_MAX_SUBTASK_RETRIES = 2;
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 30_000;
 const DEFAULT_OBSERVATION_CACHE_TTL_MS = DEFAULT_NAVIGATOR_OBSERVATION_CACHE_TTL_MS;
 const DEFAULT_BELOW_FOLD_MARGIN_RATIO = 0.11;
+const DEFAULT_VISION_PRIMARY_ROUTING = true;
+const DEFAULT_READ_SCREEN_PASS = true;
+const READ_SCREEN_DONE_MIN_CONFIDENCE = 0.82;
 const ESTIMATED_TIER1_CALL_COST_USD = 0.00015;
 const ESTIMATED_TIER2_CALL_COST_USD = 0.003;
 const DOM_BYPASS_MIN_SCORE = 2;
@@ -416,6 +420,8 @@ class PerceptionActionLoop {
     const maxSubtaskRetries = input.maxSubtaskRetries ?? this.maxSubtaskRetries;
     const navigationTimeoutMs = input.navigationTimeoutMs ?? this.navigationTimeoutMs;
     const observationCacheTtlMs = input.observationCacheTtlMs ?? this.observationCacheTtlMs;
+    const visionPrimaryRoutingEnabled = resolveVisionPrimaryRoutingEnabledFromEnv();
+    const readScreenPassEnabled = resolveReadScreenPassEnabledFromEnv();
     const requestedHttpCachePolicy = input.httpCachePolicy ?? this.defaultHttpCachePolicy;
 
     if (maxSteps <= 0) {
@@ -1257,6 +1263,160 @@ class PerceptionActionLoop {
         let actionFingerprint: string | null = null;
         let lowConfidenceEscalatedThisStep = false;
         let sameUrlSubtaskNoProgressStreak = 0;
+        let tier2ObservationForStep:
+          | {
+              observation: typeof observation & {
+                screenshot: {
+                  base64: string;
+                  mimeType: string;
+                  width: number;
+                  height: number;
+                  mode?: string;
+                };
+              };
+              observationCharCount: number;
+            }
+          | null = null;
+        let companionTier2Decision: NavigatorActionDecision | null = null;
+
+        const ensureTier2Observation = async () => {
+          if (tier2ObservationForStep) {
+            return tier2ObservationForStep;
+          }
+
+          const cachedScreenshot = observationCache.getTier2Screenshot(urlAtPerception, Date.now());
+          observationCacheScreenshotHit = cachedScreenshot !== null;
+          let screenshotPayload: {
+            base64: string;
+            mimeType: string;
+            width: number;
+            height: number;
+            mode?: string;
+          };
+          if (cachedScreenshot) {
+            screenshotPayload = cachedScreenshot.screenshot;
+          } else {
+            const screenshot = await this.options.cdpClient.withVisualRenderPass(async () => {
+              return this.options.cdpClient.captureScreenshot({
+                mode: "viewport"
+              });
+            });
+            screenshotPayload = {
+              base64: screenshot.base64,
+              mimeType: screenshot.mimeType,
+              width: screenshot.width,
+              height: screenshot.height,
+              mode: screenshot.mode
+            };
+            observationCache.setTier2Screenshot(urlAtPerception, screenshotPayload, Date.now());
+          }
+
+          const tier2Observation = {
+            ...observation,
+            screenshot: screenshotPayload
+          };
+          const observationCharCount = JSON.stringify({
+            ...observation,
+            screenshot: {
+              mimeType: screenshotPayload.mimeType,
+              width: screenshotPayload.width,
+              height: screenshotPayload.height,
+              mode: screenshotPayload.mode
+            }
+          }).length;
+          tier2ObservationCharCount = Math.max(tier2ObservationCharCount, observationCharCount);
+          tier2ObservationForStep = {
+            observation: tier2Observation,
+            observationCharCount
+          };
+
+          return tier2ObservationForStep;
+        };
+
+        const inferTier2Decision = async (params: {
+          escalationReason: NavigatorEscalationReason | null;
+          decisionMode?: NavigatorDecisionMode;
+          allowDecisionCache: boolean;
+          writeDecisionCache: boolean;
+        }): Promise<NavigatorActionDecision> => {
+          const tier2DecisionCacheKey = createObservationDecisionCacheKey({
+            tier: "TIER_2_VISION",
+            escalationReason: params.escalationReason
+          });
+          const allowTier2DecisionCacheRead =
+            params.allowDecisionCache &&
+            shouldReadDecisionCache({
+              noProgressStreak,
+              escalationReason: params.escalationReason
+            });
+          const tier2CachedDecision = allowTier2DecisionCacheRead
+            ? observationCache.getDecision(urlAtPerception, tier2DecisionCacheKey, Date.now())
+            : null;
+          if (tier2CachedDecision) {
+            observationCacheDecisionHit = true;
+            observationCacheDecisionKey = tier2DecisionCacheKey;
+            return tier2CachedDecision.decision;
+          }
+
+          tierUsage.tier2Calls += 1;
+          const tier2ObservationState = await ensureTier2Observation();
+          this.logger(
+            `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationState.observationCharCount} reason=${params.escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} screenshotCacheHit=${observationCacheScreenshotHit}`
+          );
+
+          const tier2PromptBudget = estimateNavigatorPromptBudget({
+            intent: input.intent,
+            observation: tier2ObservationState.observation,
+            tier: "TIER_2_VISION",
+            decisionMode: params.decisionMode,
+            escalationReason: params.escalationReason
+          });
+          tier2PromptCharCount = Math.max(tier2PromptCharCount, tier2PromptBudget.promptCharCount);
+          tier2EstimatedPromptTokens = Math.max(
+            tier2EstimatedPromptTokens,
+            tier2PromptBudget.estimatedPromptTokens
+          );
+          const tier2TokenAlert = contextWindow.recordPromptBudget({
+            step,
+            tier: "TIER_2_VISION",
+            promptCharCount: tier2PromptBudget.promptCharCount,
+            estimatedPromptTokens: tier2PromptBudget.estimatedPromptTokens,
+            threshold: tier2PromptBudget.alertThreshold
+          });
+          if (tier2TokenAlert) {
+            promptTokenAlertTriggered = true;
+            this.logger(
+              `[loop][step ${step}] context-window-alert tier=TIER_2_VISION promptTokens=${tier2PromptBudget.estimatedPromptTokens} threshold=${tier2PromptBudget.alertThreshold} url=${urlAtPerception}`
+            );
+          }
+
+          const tier2Action = await this.options.navigatorEngine.decideNextAction({
+            intent: input.intent,
+            observation: tier2ObservationState.observation,
+            tier: "TIER_2_VISION",
+            decisionMode: params.decisionMode,
+            escalationReason: params.escalationReason
+          });
+
+          if (
+            params.writeDecisionCache &&
+            params.decisionMode !== "READ_SCREEN" &&
+            shouldWriteDecisionCache({
+              noProgressStreak,
+              escalationReason: params.escalationReason
+            })
+          ) {
+            observationCache.setDecision(
+              urlAtPerception,
+              tier2DecisionCacheKey,
+              tier2Action,
+              Date.now()
+            );
+          }
+
+          observationCacheDecisionKey = tier2DecisionCacheKey;
+          return tier2Action;
+        };
 
         transitionState("INFERRING", {
           step,
@@ -1270,145 +1430,221 @@ class PerceptionActionLoop {
           this.logger(
             `[loop][step ${step}] policy=SUBMIT_FALLBACK action=PRESS_KEY key=Enter url=${urlAtPerception}`
           );
-        } else if (shouldBypassTier1ForNoProgress) {
-          escalationReason = "NO_PROGRESS";
-          tierUsage.noProgressEscalations += 1;
-          tier2EscalationEvent = createEscalationEvent({
-            step,
-            reason: escalationReason,
-            fromTier: "TIER_1_AX",
-            toTier: "TIER_2_VISION",
-            urlAtEscalation: urlAtPerception,
-            triggerConfidence: null,
-            confidenceThreshold,
-            resolvedTier: "TIER_2_VISION",
-            resolvedConfidence: null
-          });
-          escalations.push(tier2EscalationEvent);
-          this.logger(
-            `[loop][step ${step}] escalation=NO_PROGRESS streak=${noProgressStreak} url=${urlAtPerception}`
-          );
-        } else if (!axDeficientDetected) {
-          tiersAttempted.push("TIER_1_AX");
-          const tier1DecisionCacheKey = createObservationDecisionCacheKey({
-            tier: "TIER_1_AX",
-            escalationReason: null
-          });
-          observationCacheDecisionKey = tier1DecisionCacheKey;
-          const allowTier1DecisionCacheRead = shouldReadDecisionCache({
-            noProgressStreak,
-            escalationReason: null
-          });
-          const tier1CachedDecision = allowTier1DecisionCacheRead
-            ? observationCache.getDecision(urlAtPerception, tier1DecisionCacheKey, Date.now())
-            : null;
-          observationCacheDecisionHit = tier1CachedDecision !== null;
-          this.logger(
-            `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} cacheHit=${observationCacheDecisionHit}`
-          );
-          let tier1Action: NavigatorActionDecision;
-          if (tier1CachedDecision) {
-            tier1Action = tier1CachedDecision.decision;
-          } else {
-            tierUsage.tier1Calls += 1;
-            const tier1PromptBudget = estimateNavigatorPromptBudget({
-              intent: input.intent,
-              observation,
-              tier: "TIER_1_AX"
+        } else {
+          const shouldAttemptReadScreenPass =
+            readScreenPassEnabled && isScreenAnswerIntent(input.intent);
+          if (shouldAttemptReadScreenPass) {
+            tiersAttempted.push("TIER_2_VISION");
+            const readScreenAction = await inferTier2Decision({
+              escalationReason: null,
+              decisionMode: "READ_SCREEN",
+              allowDecisionCache: false,
+              writeDecisionCache: false
             });
-            tier1PromptCharCount = tier1PromptBudget.promptCharCount;
-            tier1EstimatedPromptTokens = tier1PromptBudget.estimatedPromptTokens;
-            const tier1TokenAlert = contextWindow.recordPromptBudget({
-              step,
-              tier: "TIER_1_AX",
-              promptCharCount: tier1PromptBudget.promptCharCount,
-              estimatedPromptTokens: tier1PromptBudget.estimatedPromptTokens,
-              threshold: tier1PromptBudget.alertThreshold
-            });
-            if (tier1TokenAlert) {
-              promptTokenAlertTriggered = true;
-              this.logger(
-                `[loop][step ${step}] context-window-alert tier=TIER_1_AX promptTokens=${tier1PromptBudget.estimatedPromptTokens} threshold=${tier1PromptBudget.alertThreshold} url=${urlAtPerception}`
-              );
-            }
-            tier1Action = await this.options.navigatorEngine.decideNextAction({
-              intent: input.intent,
-              observation,
-              tier: "TIER_1_AX"
-            });
-          }
-          const isUnsafeTier1Action = tier1Action.action === "FAILED";
-
-          if (!isUnsafeTier1Action && tier1Action.confidence >= confidenceThreshold) {
-            inferredAction = tier1Action;
-            resolvedTier = "TIER_1_AX";
-            tierUsage.resolvedAtTier1 += 1;
             if (
-              !tier1CachedDecision &&
-              shouldWriteDecisionCache({
-                noProgressStreak,
-                escalationReason: null
+              isReadScreenDoneCandidate({
+                action: readScreenAction,
+                confidenceThreshold
               })
             ) {
-              observationCache.setDecision(
-                urlAtPerception,
-                tier1DecisionCacheKey,
-                tier1Action,
-                Date.now()
+              inferredAction = readScreenAction;
+              resolvedTier = "TIER_2_VISION";
+              this.logger(
+                `[loop][step ${step}] policy=READ_SCREEN_DONE confidence=${readScreenAction.confidence.toFixed(2)} url=${urlAtPerception}`
               );
             }
-          } else {
-            escalationReason = isUnsafeTier1Action ? "UNSAFE_ACTION" : "LOW_CONFIDENCE";
-            if (escalationReason === "LOW_CONFIDENCE") {
-              tierUsage.lowConfidenceEscalations += 1;
-              lowConfidenceStreak += 1;
-              lowConfidenceEscalatedThisStep = true;
-            } else {
-              tierUsage.unsafeActionEscalations += 1;
-            }
+          }
+
+          if (!inferredAction && shouldBypassTier1ForNoProgress) {
+            escalationReason = "NO_PROGRESS";
+            tierUsage.noProgressEscalations += 1;
             tier2EscalationEvent = createEscalationEvent({
               step,
               reason: escalationReason,
               fromTier: "TIER_1_AX",
               toTier: "TIER_2_VISION",
               urlAtEscalation: urlAtPerception,
-              triggerConfidence: tier1Action.confidence,
+              triggerConfidence: null,
               confidenceThreshold,
               resolvedTier: "TIER_2_VISION",
               resolvedConfidence: null
             });
             escalations.push(tier2EscalationEvent);
             this.logger(
-              `[loop][step ${step}] escalation=${escalationReason} threshold=${confidenceThreshold.toFixed(2)} confidence=${tier1Action.confidence.toFixed(2)} action=${tier1Action.action} url=${urlAtPerception}`
+              `[loop][step ${step}] escalation=NO_PROGRESS streak=${noProgressStreak} url=${urlAtPerception}`
+            );
+          } else if (!inferredAction && !axDeficientDetected) {
+            tiersAttempted.push("TIER_1_AX");
+            const shouldRunVisionCompanion = visionPrimaryRoutingEnabled && noProgressStreak === 0;
+            const tier1DecisionCacheKey = createObservationDecisionCacheKey({
+              tier: "TIER_1_AX",
+              escalationReason: null
+            });
+            observationCacheDecisionKey = tier1DecisionCacheKey;
+            const allowTier1DecisionCacheRead = shouldReadDecisionCache({
+              noProgressStreak,
+              escalationReason: null
+            });
+            const tier1CachedDecision = allowTier1DecisionCacheRead
+              ? observationCache.getDecision(urlAtPerception, tier1DecisionCacheKey, Date.now())
+              : null;
+            observationCacheDecisionHit = tier1CachedDecision !== null;
+            this.logger(
+              `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} cacheHit=${observationCacheDecisionHit}`
+            );
+            let tier1Action: NavigatorActionDecision;
+            let companionPromise: Promise<NavigatorActionDecision> | null = null;
+            if (shouldRunVisionCompanion) {
+              tiersAttempted.push("TIER_2_VISION");
+              companionPromise = inferTier2Decision({
+                escalationReason: null,
+                decisionMode: "STANDARD",
+                allowDecisionCache: true,
+                writeDecisionCache: true
+              });
+            }
+
+            if (tier1CachedDecision) {
+              tier1Action = tier1CachedDecision.decision;
+            } else {
+              tierUsage.tier1Calls += 1;
+              const tier1PromptBudget = estimateNavigatorPromptBudget({
+                intent: input.intent,
+                observation,
+                tier: "TIER_1_AX"
+              });
+              tier1PromptCharCount = tier1PromptBudget.promptCharCount;
+              tier1EstimatedPromptTokens = tier1PromptBudget.estimatedPromptTokens;
+              const tier1TokenAlert = contextWindow.recordPromptBudget({
+                step,
+                tier: "TIER_1_AX",
+                promptCharCount: tier1PromptBudget.promptCharCount,
+                estimatedPromptTokens: tier1PromptBudget.estimatedPromptTokens,
+                threshold: tier1PromptBudget.alertThreshold
+              });
+              if (tier1TokenAlert) {
+                promptTokenAlertTriggered = true;
+                this.logger(
+                  `[loop][step ${step}] context-window-alert tier=TIER_1_AX promptTokens=${tier1PromptBudget.estimatedPromptTokens} threshold=${tier1PromptBudget.alertThreshold} url=${urlAtPerception}`
+                );
+              }
+              tier1Action = await this.options.navigatorEngine.decideNextAction({
+                intent: input.intent,
+                observation,
+                tier: "TIER_1_AX"
+              });
+            }
+
+            if (companionPromise) {
+              try {
+                companionTier2Decision = await companionPromise;
+              } catch (error) {
+                this.logger(
+                  `[loop][step ${step}] vision-companion-failed url=${urlAtPerception} error=${
+                    error instanceof Error ? error.message : String(error)
+                  }`
+                );
+              }
+            }
+
+            const isUnsafeTier1Action = tier1Action.action === "FAILED";
+            if (!isUnsafeTier1Action && tier1Action.confidence >= confidenceThreshold) {
+              inferredAction = tier1Action;
+              resolvedTier = "TIER_1_AX";
+              if (
+                companionTier2Decision &&
+                shouldPreferVisionPrimaryAction({
+                  tier1Action,
+                  tier2Action: companionTier2Decision,
+                  confidenceThreshold
+                })
+              ) {
+                inferredAction = companionTier2Decision;
+                resolvedTier = "TIER_2_VISION";
+                this.logger(
+                  `[loop][step ${step}] policy=VISION_PRIMARY_ARBITRATION from=${tier1Action.action}@${tier1Action.confidence.toFixed(2)} to=${companionTier2Decision.action}@${companionTier2Decision.confidence.toFixed(2)} url=${urlAtPerception}`
+                );
+              } else {
+                tierUsage.resolvedAtTier1 += 1;
+              }
+              if (
+                !tier1CachedDecision &&
+                shouldWriteDecisionCache({
+                  noProgressStreak,
+                  escalationReason: null
+                })
+              ) {
+                observationCache.setDecision(
+                  urlAtPerception,
+                  tier1DecisionCacheKey,
+                  tier1Action,
+                  Date.now()
+                );
+              }
+            } else {
+              escalationReason = isUnsafeTier1Action ? "UNSAFE_ACTION" : "LOW_CONFIDENCE";
+              if (escalationReason === "LOW_CONFIDENCE") {
+                tierUsage.lowConfidenceEscalations += 1;
+                lowConfidenceStreak += 1;
+                lowConfidenceEscalatedThisStep = true;
+              } else {
+                tierUsage.unsafeActionEscalations += 1;
+              }
+              tier2EscalationEvent = createEscalationEvent({
+                step,
+                reason: escalationReason,
+                fromTier: "TIER_1_AX",
+                toTier: "TIER_2_VISION",
+                urlAtEscalation: urlAtPerception,
+                triggerConfidence: tier1Action.confidence,
+                confidenceThreshold,
+                resolvedTier: "TIER_2_VISION",
+                resolvedConfidence: null
+              });
+              escalations.push(tier2EscalationEvent);
+              this.logger(
+                `[loop][step ${step}] escalation=${escalationReason} threshold=${confidenceThreshold.toFixed(2)} confidence=${tier1Action.confidence.toFixed(2)} action=${tier1Action.action} url=${urlAtPerception}`
+              );
+              if (companionTier2Decision && companionTier2Decision.action !== "FAILED") {
+                inferredAction = companionTier2Decision;
+                resolvedTier = "TIER_2_VISION";
+                if (tier2EscalationEvent) {
+                  tier2EscalationEvent.resolvedTier = "TIER_2_VISION";
+                  tier2EscalationEvent.resolvedConfidence = companionTier2Decision.confidence;
+                }
+                this.logger(
+                  `[loop][step ${step}] policy=VISION_COMPANION_RECOVERY action=${companionTier2Decision.action} confidence=${companionTier2Decision.confidence.toFixed(2)} url=${urlAtPerception}`
+                );
+              }
+            }
+          } else if (!inferredAction) {
+            axDeficientPages.push(
+              createAXDeficientPageLog({
+                step,
+                urlAtPerception,
+                interactiveElementCount: indexResult.elementCount,
+                threshold: axDeficientInteractiveThreshold,
+                signals: axDeficiencySignals
+              })
+            );
+            escalationReason = "AX_DEFICIENT";
+            tierUsage.axDeficientDetections += 1;
+            tier2EscalationEvent = createEscalationEvent({
+              step,
+              reason: escalationReason,
+              fromTier: "TIER_1_AX",
+              toTier: "TIER_2_VISION",
+              urlAtEscalation: urlAtPerception,
+              triggerConfidence: null,
+              confidenceThreshold,
+              resolvedTier: "TIER_2_VISION",
+              resolvedConfidence: null
+            });
+            escalations.push(tier2EscalationEvent);
+            this.logger(
+              `[loop][step ${step}] escalation=AX_DEFICIENT elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
             );
           }
-        } else {
-          axDeficientPages.push(
-            createAXDeficientPageLog({
-              step,
-              urlAtPerception,
-              interactiveElementCount: indexResult.elementCount,
-              threshold: axDeficientInteractiveThreshold,
-              signals: axDeficiencySignals
-            })
-          );
-          escalationReason = "AX_DEFICIENT";
-          tierUsage.axDeficientDetections += 1;
-          tier2EscalationEvent = createEscalationEvent({
-            step,
-            reason: escalationReason,
-            fromTier: "TIER_1_AX",
-            toTier: "TIER_2_VISION",
-            urlAtEscalation: urlAtPerception,
-            triggerConfidence: null,
-            confidenceThreshold,
-            resolvedTier: "TIER_2_VISION",
-            resolvedConfidence: null
-          });
-          escalations.push(tier2EscalationEvent);
-          this.logger(
-            `[loop][step ${step}] escalation=AX_DEFICIENT elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
-          );
         }
 
         if (!lowConfidenceEscalatedThisStep) {
@@ -1477,111 +1713,18 @@ class PerceptionActionLoop {
 
         if (!inferredAction) {
           tiersAttempted.push("TIER_2_VISION");
-          const tier2DecisionCacheKey = createObservationDecisionCacheKey({
-            tier: "TIER_2_VISION",
-            escalationReason
-          });
-          observationCacheDecisionKey = tier2DecisionCacheKey;
-          const allowTier2DecisionCacheRead = shouldReadDecisionCache({
-            noProgressStreak,
-            escalationReason
-          });
-          const tier2CachedDecision = allowTier2DecisionCacheRead
-            ? observationCache.getDecision(urlAtPerception, tier2DecisionCacheKey, Date.now())
-            : null;
-          observationCacheDecisionHit = tier2CachedDecision !== null;
-          if (tier2CachedDecision) {
-            inferredAction = tier2CachedDecision.decision;
+          if (companionTier2Decision) {
+            inferredAction = companionTier2Decision;
             this.logger(
-              `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} cacheHit=true reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason}`
+              `[loop][step ${step}] policy=VISION_COMPANION_REUSE action=${companionTier2Decision.action} confidence=${companionTier2Decision.confidence.toFixed(2)} url=${urlAtPerception}`
             );
           } else {
-            tierUsage.tier2Calls += 1;
-            const cachedScreenshot = observationCache.getTier2Screenshot(urlAtPerception, Date.now());
-            observationCacheScreenshotHit = cachedScreenshot !== null;
-            let screenshotPayload: {
-              base64: string;
-              mimeType: string;
-              width: number;
-              height: number;
-              mode?: string;
-            };
-            if (cachedScreenshot) {
-              screenshotPayload = cachedScreenshot.screenshot;
-            } else {
-              const screenshot = await this.options.cdpClient.withVisualRenderPass(async () => {
-                return this.options.cdpClient.captureScreenshot({
-                  mode: "viewport"
-                });
-              });
-              screenshotPayload = {
-                base64: screenshot.base64,
-                mimeType: screenshot.mimeType,
-                width: screenshot.width,
-                height: screenshot.height,
-                mode: screenshot.mode
-              };
-              observationCache.setTier2Screenshot(urlAtPerception, screenshotPayload, Date.now());
-            }
-            const tier2Observation = {
-              ...observation,
-              screenshot: screenshotPayload
-            };
-            tier2ObservationCharCount = JSON.stringify({
-              ...observation,
-              screenshot: {
-                mimeType: screenshotPayload.mimeType,
-                width: screenshotPayload.width,
-                height: screenshotPayload.height,
-                mode: screenshotPayload.mode
-              }
-            }).length;
-
-            this.logger(
-              `[loop][step ${step}] state=INFERRING tier=TIER_2_VISION url=${urlAtPerception} observationChars=${tier2ObservationCharCount} reason=${escalationReason ?? "NONE"} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} screenshotCacheHit=${observationCacheScreenshotHit}`
-            );
-            const tier2PromptBudget = estimateNavigatorPromptBudget({
-              intent: input.intent,
-              observation: tier2Observation,
-              tier: "TIER_2_VISION",
-              escalationReason
+            inferredAction = await inferTier2Decision({
+              escalationReason,
+              decisionMode: "STANDARD",
+              allowDecisionCache: true,
+              writeDecisionCache: true
             });
-            tier2PromptCharCount = tier2PromptBudget.promptCharCount;
-            tier2EstimatedPromptTokens = tier2PromptBudget.estimatedPromptTokens;
-            const tier2TokenAlert = contextWindow.recordPromptBudget({
-              step,
-              tier: "TIER_2_VISION",
-              promptCharCount: tier2PromptBudget.promptCharCount,
-              estimatedPromptTokens: tier2PromptBudget.estimatedPromptTokens,
-              threshold: tier2PromptBudget.alertThreshold
-            });
-            if (tier2TokenAlert) {
-              promptTokenAlertTriggered = true;
-              this.logger(
-                `[loop][step ${step}] context-window-alert tier=TIER_2_VISION promptTokens=${tier2PromptBudget.estimatedPromptTokens} threshold=${tier2PromptBudget.alertThreshold} url=${urlAtPerception}`
-              );
-            }
-            inferredAction = await this.options.navigatorEngine.decideNextAction({
-              intent: input.intent,
-              observation: tier2Observation,
-              tier: "TIER_2_VISION",
-              escalationReason
-            });
-            if (inferredAction) {
-              if (
-                shouldWriteDecisionCache({
-                  noProgressStreak,
-                  escalationReason
-                })
-              ) {
-                observationCache.setDecision(
-                  urlAtPerception,
-                  tier2DecisionCacheKey,
-                  inferredAction,
-                  Date.now()
-                );
-              }
-            }
           }
           resolvedTier = "TIER_2_VISION";
           if (tier2EscalationEvent) {
@@ -2941,6 +3084,87 @@ function resolveOptionalString(value: string | undefined): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function resolveVisionPrimaryRoutingEnabledFromEnv(): boolean {
+  return resolveBooleanEnv("VISION_PRIMARY_ROUTING", DEFAULT_VISION_PRIMARY_ROUTING);
+}
+
+function resolveReadScreenPassEnabledFromEnv(): boolean {
+  return resolveBooleanEnv("READ_SCREEN_PASS", DEFAULT_READ_SCREEN_PASS);
+}
+
+function resolveBooleanEnv(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (!raw || !raw.trim()) {
+    return fallback;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+}
+
+function isScreenAnswerIntent(intent: string): boolean {
+  const normalized = intent.toLowerCase().trim();
+  if (!normalized) {
+    return false;
+  }
+  if (normalized.includes("?")) {
+    return true;
+  }
+
+  return (
+    /\bwhat\b|\bwho\b|\bwhen\b|\bwhere\b|\bwhich\b|\bhow many\b|\bhow much\b/.test(normalized) ||
+    /\btell me\b|\bshown on the screen\b|\bvisible on the page\b|\bprice\b|\btotal\b|\banswer\b/.test(
+      normalized
+    )
+  );
+}
+
+function isReadScreenDoneCandidate(input: {
+  action: NavigatorActionDecision;
+  confidenceThreshold: number;
+}): boolean {
+  if (input.action.action !== "DONE") {
+    return false;
+  }
+
+  if (!input.action.text || input.action.text.trim().length === 0) {
+    return false;
+  }
+
+  const minimumConfidence = Math.max(input.confidenceThreshold, READ_SCREEN_DONE_MIN_CONFIDENCE);
+  return input.action.confidence >= minimumConfidence;
+}
+
+function shouldPreferVisionPrimaryAction(input: {
+  tier1Action: NavigatorActionDecision;
+  tier2Action: NavigatorActionDecision;
+  confidenceThreshold: number;
+}): boolean {
+  const tier2 = input.tier2Action;
+  if (tier2.action === "FAILED") {
+    return false;
+  }
+
+  if (tier2.action === "DONE" && tier2.confidence >= input.confidenceThreshold) {
+    return true;
+  }
+
+  if (tier2.action === "EXTRACT" && tier2.confidence >= input.confidenceThreshold) {
+    return true;
+  }
+
+  if (tier2.confidence >= input.tier1Action.confidence + 0.15) {
+    return true;
+  }
+
+  return false;
 }
 
 export function createPerceptionActionLoop(options: PerceptionActionLoopOptions): PerceptionActionLoop {
