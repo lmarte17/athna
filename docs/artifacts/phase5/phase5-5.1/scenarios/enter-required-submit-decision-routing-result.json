@@ -1,18 +1,18 @@
 {
-  "taskId": "task-1771989174259",
+  "taskId": "task-1771991521912",
   "contextId": null,
   "status": "DONE",
   "intent": "Type a query and submit via Enter.",
-  "startUrl": "http://127.0.0.1:52919/enter-required",
-  "finalUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+  "startUrl": "http://127.0.0.1:54698/enter-required",
+  "finalUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
   "stepsTaken": 4,
   "history": [
     {
       "step": 1,
-      "urlAtPerception": "http://127.0.0.1:52919/enter-required",
-      "urlAfterAction": "http://127.0.0.1:52919/enter-required",
+      "urlAtPerception": "http://127.0.0.1:54698/enter-required",
+      "urlAfterAction": "http://127.0.0.1:54698/enter-required",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:52919/enter-required",
+      "currentUrl": "http://127.0.0.1:54698/enter-required",
       "inferredAction": {
         "action": "CLICK",
         "target": {
@@ -38,7 +38,7 @@
       "execution": {
         "status": "acted",
         "action": "CLICK",
-        "currentUrl": "http://127.0.0.1:52919/enter-required",
+        "currentUrl": "http://127.0.0.1:54698/enter-required",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -86,7 +86,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 1,
-      "actionFingerprint": "http://127.0.0.1:52919/enter-required|CLICK|5,5|none|none",
+      "actionFingerprint": "http://127.0.0.1:54698/enter-required|CLICK|5,5|none|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -103,13 +103,13 @@
       "domBypassMatchedText": null,
       "interactiveElementCount": 1,
       "normalizedNodeCount": 9,
-      "normalizedCharCount": 1576,
-      "navigatorNormalizedTreeCharCount": 743,
-      "navigatorObservationCharCount": 1973,
+      "normalizedCharCount": 1590,
+      "navigatorNormalizedTreeCharCount": 757,
+      "navigatorObservationCharCount": 1989,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 4884,
-      "tier2EstimatedPromptTokens": 1221,
+      "tier2PromptCharCount": 5015,
+      "tier2EstimatedPromptTokens": 1254,
       "decompositionUsed": true,
       "decompositionImpliedStepCount": 3,
       "activeSubtaskId": "subtask-1",
@@ -136,14 +136,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T03:12:57.393Z"
+      "timestamp": "2026-02-25T03:52:04.758Z"
     },
     {
       "step": 2,
-      "urlAtPerception": "http://127.0.0.1:52919/enter-required",
-      "urlAfterAction": "http://127.0.0.1:52919/enter-required",
+      "urlAtPerception": "http://127.0.0.1:54698/enter-required",
+      "urlAfterAction": "http://127.0.0.1:54698/enter-required",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:52919/enter-required",
+      "currentUrl": "http://127.0.0.1:54698/enter-required",
       "inferredAction": {
         "action": "TYPE",
         "target": null,
@@ -163,7 +163,7 @@
       "execution": {
         "status": "acted",
         "action": "TYPE",
-        "currentUrl": "http://127.0.0.1:52919/enter-required",
+        "currentUrl": "http://127.0.0.1:54698/enter-required",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -211,7 +211,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 0,
-      "actionFingerprint": "http://127.0.0.1:52919/enter-required|TYPE|none|none|athna reliability routing",
+      "actionFingerprint": "http://127.0.0.1:54698/enter-required|TYPE|none|none|athna reliability routing",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -228,13 +228,13 @@
       "domBypassMatchedText": null,
       "interactiveElementCount": 1,
       "normalizedNodeCount": 9,
-      "normalizedCharCount": 1576,
-      "navigatorNormalizedTreeCharCount": 743,
-      "navigatorObservationCharCount": 2260,
+      "normalizedCharCount": 1590,
+      "navigatorNormalizedTreeCharCount": 757,
+      "navigatorObservationCharCount": 2276,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
-      "tier2PromptCharCount": 5172,
-      "tier2EstimatedPromptTokens": 1293,
+      "tier2PromptCharCount": 5303,
+      "tier2EstimatedPromptTokens": 1326,
       "decompositionUsed": true,
       "decompositionImpliedStepCount": 3,
       "activeSubtaskId": "subtask-1",
@@ -251,7 +251,7 @@
       "contextSummaryIncluded": false,
       "contextSummaryCharCount": 0,
       "observationCachePerceptionHit": true,
-      "observationCachePerceptionAgeMs": 2824,
+      "observationCachePerceptionAgeMs": 2803,
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": "TIER_2_VISION|AX_DEFICIENT",
       "observationCacheScreenshotHit": true,
@@ -261,14 +261,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T03:12:59.924Z"
+      "timestamp": "2026-02-25T03:52:07.284Z"
     },
     {
       "step": 3,
-      "urlAtPerception": "http://127.0.0.1:52919/enter-required",
-      "urlAfterAction": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "urlAtPerception": "http://127.0.0.1:54698/enter-required",
+      "urlAfterAction": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "currentUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "inferredAction": {
         "action": "PRESS_KEY",
         "target": null,
@@ -288,7 +288,7 @@
       "execution": {
         "status": "acted",
         "action": "PRESS_KEY",
-        "currentUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+        "currentUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
         "navigationObserved": false,
         "urlChanged": true,
         "scrollChanged": false,
@@ -334,7 +334,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 0,
-      "actionFingerprint": "http://127.0.0.1:52919/enter-required|PRESS_KEY|none|enter|none",
+      "actionFingerprint": "http://127.0.0.1:54698/enter-required|PRESS_KEY|none|enter|none",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": {
@@ -351,9 +351,9 @@
       "domBypassMatchedText": null,
       "interactiveElementCount": 1,
       "normalizedNodeCount": 9,
-      "normalizedCharCount": 1576,
-      "navigatorNormalizedTreeCharCount": 743,
-      "navigatorObservationCharCount": 2470,
+      "normalizedCharCount": 1590,
+      "navigatorNormalizedTreeCharCount": 757,
+      "navigatorObservationCharCount": 2486,
       "tier1PromptCharCount": 0,
       "tier1EstimatedPromptTokens": 0,
       "tier2PromptCharCount": 0,
@@ -374,7 +374,7 @@
       "contextSummaryIncluded": false,
       "contextSummaryCharCount": 0,
       "observationCachePerceptionHit": true,
-      "observationCachePerceptionAgeMs": 5355,
+      "observationCachePerceptionAgeMs": 5329,
       "observationCacheDecisionHit": false,
       "observationCacheDecisionKey": null,
       "observationCacheScreenshotHit": false,
@@ -384,14 +384,14 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T03:12:59.941Z"
+      "timestamp": "2026-02-25T03:52:07.301Z"
     },
     {
       "step": 4,
-      "urlAtPerception": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
-      "urlAfterAction": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "urlAtPerception": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
+      "urlAfterAction": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "state": "ACTING",
-      "currentUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "currentUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "inferredAction": {
         "action": "DONE",
         "target": null,
@@ -411,7 +411,7 @@
       "execution": {
         "status": "done",
         "action": "DONE",
-        "currentUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+        "currentUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
         "navigationObserved": false,
         "urlChanged": false,
         "scrollChanged": false,
@@ -453,7 +453,7 @@
       "targetMightBeBelowFold": false,
       "scrollCount": 0,
       "noProgressStreak": 0,
-      "actionFingerprint": "http://127.0.0.1:52919/enter-required/results|DONE|none|none|enter fixture complete",
+      "actionFingerprint": "http://127.0.0.1:54698/enter-required/results|DONE|none|none|enter fixture complete",
       "disallowedActionFingerprintCount": 0,
       "postActionSignificantDomMutationObserved": false,
       "postActionMutationSummary": null,
@@ -463,13 +463,13 @@
       "domBypassMatchedText": null,
       "interactiveElementCount": 0,
       "normalizedNodeCount": 4,
-      "normalizedCharCount": 777,
-      "navigatorNormalizedTreeCharCount": 557,
-      "navigatorObservationCharCount": 2410,
-      "tier1PromptCharCount": 5243,
-      "tier1EstimatedPromptTokens": 1311,
-      "tier2PromptCharCount": 5312,
-      "tier2EstimatedPromptTokens": 1328,
+      "normalizedCharCount": 781,
+      "navigatorNormalizedTreeCharCount": 561,
+      "navigatorObservationCharCount": 2414,
+      "tier1PromptCharCount": 5362,
+      "tier1EstimatedPromptTokens": 1341,
+      "tier2PromptCharCount": 5431,
+      "tier2EstimatedPromptTokens": 1358,
       "decompositionUsed": true,
       "decompositionImpliedStepCount": 3,
       "activeSubtaskId": null,
@@ -496,20 +496,20 @@
       "prefetchDurationMs": null,
       "promptTokenAlertTriggered": false,
       "usedToonEncoding": true,
-      "timestamp": "2026-02-25T03:13:00.226Z"
+      "timestamp": "2026-02-25T03:52:07.596Z"
     }
   ],
   "decomposition": {
     "isDecomposed": true,
     "impliedStepCount": 3,
     "generatedBy": "HEURISTIC_V1",
-    "generatedAt": "2026-02-25T03:12:54.260Z"
+    "generatedAt": "2026-02-25T03:52:01.913Z"
   },
   "subtasks": [
     {
       "id": "subtask-1",
       "intent": "Type a query",
-      "startUrl": "http://127.0.0.1:52919/enter-required",
+      "startUrl": "http://127.0.0.1:54698/enter-required",
       "verification": {
         "type": "action_confirmed",
         "condition": "Meaningful interaction for the clause has executed."
@@ -518,7 +518,7 @@
       "attemptCount": 1,
       "completedStep": 2,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-25T03:12:59.924Z"
+      "lastUpdatedAt": "2026-02-25T03:52:07.284Z"
     },
     {
       "id": "subtask-2",
@@ -532,7 +532,7 @@
       "attemptCount": 1,
       "completedStep": 3,
       "failedStep": null,
-      "lastUpdatedAt": "2026-02-25T03:12:59.941Z"
+      "lastUpdatedAt": "2026-02-25T03:52:07.301Z"
     }
   ],
   "checkpoint": {
@@ -542,24 +542,24 @@
       {
         "subtaskId": "subtask-1",
         "step": 2,
-        "completionUrl": "http://127.0.0.1:52919/enter-required",
+        "completionUrl": "http://127.0.0.1:54698/enter-required",
         "resolvedTier": "TIER_2_VISION",
         "action": "TYPE",
-        "timestamp": "2026-02-25T03:12:59.924Z"
+        "timestamp": "2026-02-25T03:52:07.284Z"
       },
       {
         "subtaskId": "subtask-2",
         "step": 3,
-        "completionUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+        "completionUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
         "resolvedTier": "TIER_1_AX",
         "action": "PRESS_KEY",
-        "timestamp": "2026-02-25T03:12:59.941Z"
+        "timestamp": "2026-02-25T03:52:07.301Z"
       }
     ]
   },
   "subtaskStatusTimeline": [
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Type a query",
@@ -571,10 +571,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-25T03:12:54.260Z"
+      "timestamp": "2026-02-25T03:52:01.913Z"
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "subtaskId": "subtask-2",
       "subtaskIntent": "submit via Enter",
@@ -586,10 +586,10 @@
       "attempt": 0,
       "checkpointLastCompletedSubtaskIndex": -1,
       "reason": "DECOMPOSITION_INITIALIZED",
-      "timestamp": "2026-02-25T03:12:54.260Z"
+      "timestamp": "2026-02-25T03:52:01.913Z"
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "subtaskId": "subtask-1",
       "subtaskIntent": "Type a query",
@@ -601,10 +601,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": 0,
       "reason": "VERIFIED:meaningful_effect_confirmed",
-      "timestamp": "2026-02-25T03:12:59.924Z"
+      "timestamp": "2026-02-25T03:52:07.284Z"
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "subtaskId": "subtask-2",
       "subtaskIntent": "submit via Enter",
@@ -616,10 +616,10 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": 0,
       "reason": "CHECKPOINT_ADVANCE",
-      "timestamp": "2026-02-25T03:12:59.924Z"
+      "timestamp": "2026-02-25T03:52:07.284Z"
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "subtaskId": "subtask-2",
       "subtaskIntent": "submit via Enter",
@@ -631,7 +631,7 @@
       "attempt": 1,
       "checkpointLastCompletedSubtaskIndex": 1,
       "reason": "VERIFIED:meaningful_effect_confirmed",
-      "timestamp": "2026-02-25T03:12:59.941Z"
+      "timestamp": "2026-02-25T03:52:07.301Z"
     }
   ],
   "structuredErrors": [],
@@ -641,30 +641,30 @@
       "reason": "AX_DEFICIENT",
       "fromTier": "TIER_1_AX",
       "toTier": "TIER_2_VISION",
-      "urlAtEscalation": "http://127.0.0.1:52919/enter-required",
+      "urlAtEscalation": "http://127.0.0.1:54698/enter-required",
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 0.95,
-      "timestamp": "2026-02-25T03:12:54.587Z"
+      "timestamp": "2026-02-25T03:52:01.964Z"
     },
     {
       "step": 2,
       "reason": "AX_DEFICIENT",
       "fromTier": "TIER_1_AX",
       "toTier": "TIER_2_VISION",
-      "urlAtEscalation": "http://127.0.0.1:52919/enter-required",
+      "urlAtEscalation": "http://127.0.0.1:54698/enter-required",
       "triggerConfidence": null,
       "confidenceThreshold": 0.75,
       "resolvedTier": "TIER_2_VISION",
       "resolvedConfidence": 0.95,
-      "timestamp": "2026-02-25T03:12:57.394Z"
+      "timestamp": "2026-02-25T03:52:04.759Z"
     }
   ],
   "axDeficientPages": [
     {
       "step": 1,
-      "urlAtPerception": "http://127.0.0.1:52919/enter-required",
+      "urlAtPerception": "http://127.0.0.1:54698/enter-required",
       "interactiveElementCount": 1,
       "threshold": 5,
       "readyState": "complete",
@@ -674,11 +674,11 @@
       "textCharCount": 76,
       "mediaElementCount": 0,
       "domInteractiveCandidateCount": 1,
-      "timestamp": "2026-02-25T03:12:54.587Z"
+      "timestamp": "2026-02-25T03:52:01.964Z"
     },
     {
       "step": 2,
-      "urlAtPerception": "http://127.0.0.1:52919/enter-required",
+      "urlAtPerception": "http://127.0.0.1:54698/enter-required",
       "interactiveElementCount": 1,
       "threshold": 5,
       "readyState": "complete",
@@ -688,7 +688,7 @@
       "textCharCount": 76,
       "mediaElementCount": 0,
       "domInteractiveCandidateCount": 1,
-      "timestamp": "2026-02-25T03:12:57.394Z"
+      "timestamp": "2026-02-25T03:52:04.759Z"
     }
   ],
   "prefetches": [
@@ -698,7 +698,7 @@
       "source": "NONE",
       "candidateUrl": null,
       "prefetch": null,
-      "timestamp": "2026-02-25T03:12:54.879Z"
+      "timestamp": "2026-02-25T03:52:02.244Z"
     }
   ],
   "tierUsage": {
@@ -721,8 +721,8 @@
     "summaryRefreshCount": 0,
     "latestSummary": null,
     "summaryCharCount": 0,
-    "maxPromptCharCount": 5312,
-    "maxEstimatedPromptTokens": 1328,
+    "maxPromptCharCount": 5431,
+    "maxEstimatedPromptTokens": 1358,
     "promptTokenAlertThreshold": 12000,
     "tokenAlertCount": 0,
     "tokenAlerts": []
@@ -755,7 +755,7 @@
   "finalExecution": {
     "status": "done",
     "action": "DONE",
-    "currentUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+    "currentUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
     "navigationObserved": false,
     "urlChanged": false,
     "scrollChanged": false,
@@ -770,167 +770,167 @@
   "errorDetail": null,
   "stateTransitions": [
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "IDLE",
       "to": "LOADING",
-      "timestamp": "2026-02-25T03:12:54.260Z",
+      "timestamp": "2026-02-25T03:52:01.913Z",
       "step": 0,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "TASK_ASSIGNED",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "LOADING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T03:12:54.569Z",
+      "timestamp": "2026-02-25T03:52:01.955Z",
       "step": 1,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "NAVIGATION_COMPLETE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T03:12:54.586Z",
+      "timestamp": "2026-02-25T03:52:01.963Z",
       "step": 1,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T03:12:54.880Z",
+      "timestamp": "2026-02-25T03:52:02.244Z",
       "step": 1,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "ACTION_CLICK",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T03:12:57.393Z",
+      "timestamp": "2026-02-25T03:52:04.758Z",
       "step": 2,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T03:12:57.393Z",
+      "timestamp": "2026-02-25T03:52:04.759Z",
       "step": 2,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T03:12:57.396Z",
+      "timestamp": "2026-02-25T03:52:04.762Z",
       "step": 2,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "ACTION_TYPE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T03:12:59.924Z",
+      "timestamp": "2026-02-25T03:52:07.284Z",
       "step": 3,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T03:12:59.924Z",
+      "timestamp": "2026-02-25T03:52:07.285Z",
       "step": 3,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T03:12:59.924Z",
+      "timestamp": "2026-02-25T03:52:07.285Z",
       "step": 3,
-      "url": "http://127.0.0.1:52919/enter-required",
+      "url": "http://127.0.0.1:54698/enter-required",
       "reason": "ACTION_PRESS_KEY",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "ACTING",
       "to": "PERCEIVING",
-      "timestamp": "2026-02-25T03:12:59.941Z",
+      "timestamp": "2026-02-25T03:52:07.301Z",
       "step": 4,
-      "url": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "url": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "reason": "NEXT_STEP",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "PERCEIVING",
       "to": "INFERRING",
-      "timestamp": "2026-02-25T03:12:59.944Z",
+      "timestamp": "2026-02-25T03:52:07.305Z",
       "step": 4,
-      "url": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "url": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "reason": null,
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "INFERRING",
       "to": "ACTING",
-      "timestamp": "2026-02-25T03:13:00.224Z",
+      "timestamp": "2026-02-25T03:52:07.594Z",
       "step": 4,
-      "url": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "url": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "reason": "ACTION_DONE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "ACTING",
       "to": "COMPLETE",
-      "timestamp": "2026-02-25T03:13:00.226Z",
+      "timestamp": "2026-02-25T03:52:07.596Z",
       "step": 4,
-      "url": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "url": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "reason": "TASK_DONE",
       "errorDetail": null
     },
     {
-      "taskId": "task-1771989174259",
+      "taskId": "task-1771991521912",
       "contextId": null,
       "from": "COMPLETE",
       "to": "IDLE",
-      "timestamp": "2026-02-25T03:13:00.226Z",
+      "timestamp": "2026-02-25T03:52:07.596Z",
       "step": 4,
-      "url": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+      "url": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
       "reason": "TASK_CONTEXT_CLEANUP",
       "errorDetail": null
     }
@@ -938,7 +938,7 @@
   "summary": {
     "status": "DONE",
     "stepsTaken": 4,
-    "finalUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+    "finalUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
     "typeStep": 2,
     "pressEnterStep": 3
   },
@@ -947,7 +947,7 @@
     "scenario": "enter-required-submit",
     "remoteDebuggingPort": 9333,
     "headful": true,
-    "startUrl": "http://127.0.0.1:52919/enter-required",
-    "localServerPort": 52919
+    "startUrl": "http://127.0.0.1:54698/enter-required",
+    "localServerPort": 54698
   }
 }

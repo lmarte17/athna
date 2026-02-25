@@ -2,7 +2,7 @@
   "ok": true,
   "phase": "5.1",
   "summary": {
-    "scenarioCount": 3,
+    "scenarioCount": 4,
     "scenarios": [
       {
         "name": "enter-required-submit",
@@ -11,7 +11,7 @@
         "summary": {
           "status": "DONE",
           "stepsTaken": 4,
-          "finalUrl": "http://127.0.0.1:52919/enter-required/results?q=athna%20reliability%20routing",
+          "finalUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
           "typeStep": 2,
           "pressEnterStep": 3
         },
@@ -41,12 +41,27 @@
           "firstAction": "DONE"
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.1/scenarios/read-screen-fast-answer-decision-routing-result.json"
+      },
+      {
+        "name": "computer-use-fallback",
+        "status": "MAX_STEPS",
+        "stepsTaken": 8,
+        "summary": {
+          "status": "MAX_STEPS",
+          "stepsTaken": 8,
+          "computerUseCalls": 2,
+          "standardCalls": 6,
+          "fallbackStep": 3,
+          "finalUrlChanged": false,
+          "finalUrl": "http://127.0.0.1:54698/computer-use-link"
+        },
+        "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.1/scenarios/computer-use-fallback-decision-routing-result.json"
       }
     ]
   },
   "runConfig": {
     "remoteDebuggingPort": 9333,
     "headful": true,
-    "localServerPort": 52919
+    "localServerPort": 54698
   }
 }

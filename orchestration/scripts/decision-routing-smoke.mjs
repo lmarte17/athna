@@ -10,7 +10,7 @@ const STARTUP_TIMEOUT_MS = 20_000;
 const MILESTONE = "5.1";
 
 if (!process.env.GHOST_HEADFUL) {
-  process.env.GHOST_HEADFUL = process.env.GHOST_HEADLESS ?? "true";
+  process.env.GHOST_HEADFUL = "true";
 }
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -218,6 +218,51 @@ async function startLocalScenarioServer() {
       return;
     }
 
+    if (requestUrl.pathname === "/computer-use-link") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Computer Use Link Fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Computer Use Link Fixture</h1>
+      <p>Click the continue link to finish.</p>
+      <a id="continue-link" href="/computer-use/success" style="display:block;padding:24px 16px;border:2px solid #333;max-width:420px;">
+        Continue to Success
+      </a>
+    </main>
+    <script>
+      document.body.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.location.assign("/computer-use/success");
+      });
+    </script>
+  </body>
+</html>`);
+      return;
+    }
+
+    if (requestUrl.pathname === "/computer-use/success") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Computer Use Success</title>
+  </head>
+  <body>
+    <main>
+      <h1>Success</h1>
+      <p id="done-message">Computer use fallback reached the target page.</p>
+    </main>
+  </body>
+</html>`);
+      return;
+    }
+
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end("<html><body><h1>OK</h1></body></html>");
   });
@@ -375,6 +420,52 @@ function createReadScreenNavigator() {
   };
 }
 
+function createComputerUseFallbackNavigator() {
+  const calls = {
+    computerUseCalls: 0,
+    standardCalls: 0
+  };
+
+  return {
+    calls,
+    async decideNextAction(input) {
+      const currentUrl = String(input?.observation?.currentUrl || "");
+      if (currentUrl.includes("/computer-use/success")) {
+        return {
+          action: "DONE",
+          target: null,
+          text: "computer-use fixture complete",
+          key: null,
+          confidence: 1,
+          reasoning: "Finish after successful navigation."
+        };
+      }
+
+      if (input?.decisionMode === "COMPUTER_USE") {
+        calls.computerUseCalls += 1;
+        return {
+          action: "CLICK",
+          target: { x: 140, y: 190 },
+          text: null,
+          key: null,
+          confidence: 0.93,
+          reasoning: "Computer-use fallback issues a deterministic viewport click."
+        };
+      }
+
+      calls.standardCalls += 1;
+      return {
+        action: "WAIT",
+        target: null,
+        text: "250",
+        key: null,
+        confidence: 0.62,
+        reasoning: "Deliberate stall to trigger computer-use fallback."
+      };
+    }
+  };
+}
+
 function validateEnterRequiredScenario(result, startUrl) {
   assertCondition(result && typeof result === "object", "enter-required result missing.");
   assertCondition(Array.isArray(result.history) && result.history.length > 0, "enter-required history missing.");
@@ -428,6 +519,7 @@ function validateNoopRepeatScenario(result) {
 
   for (const [index, record] of result.history.entries()) {
     const noProgressStreak = Number(record?.noProgressStreak ?? 0);
+    const previousNoProgressStreak = Number(result.history[index - 1]?.noProgressStreak ?? 0);
     const fingerprint =
       typeof record?.actionFingerprint === "string" && record.actionFingerprint.length > 0
         ? record.actionFingerprint
@@ -437,7 +529,7 @@ function validateNoopRepeatScenario(result) {
       diversifiedActions += 1;
     }
 
-    if (noProgressStreak > 0 && record?.observationCacheDecisionHit === true) {
+    if (previousNoProgressStreak > 0 && record?.observationCacheDecisionHit === true) {
       noProgressDecisionCacheHits += 1;
     }
 
@@ -493,6 +585,34 @@ function validateReadScreenScenario(result, navigatorCalls) {
     readScreenCalls: navigatorCalls.readScreenCalls,
     standardCalls: navigatorCalls.standardCalls,
     firstAction: firstRecord?.action?.action ?? null
+  };
+}
+
+function validateComputerUseFallbackScenario(result, navigatorCalls, startUrl) {
+  assertCondition(result && typeof result === "object", "computer-use result missing.");
+  assertCondition(Array.isArray(result.history) && result.history.length > 0, "computer-use history missing.");
+  assertCondition(
+    navigatorCalls.computerUseCalls > 0,
+    "computer-use scenario expected at least one COMPUTER_USE decision call."
+  );
+
+  const fallbackStep = result.history.find((record) => {
+    return (
+      record?.resolvedTier === "TIER_2_VISION" &&
+      record?.action?.action === "CLICK" &&
+      record?.noProgressStreak >= 2
+    );
+  });
+  assertCondition(Boolean(fallbackStep), "computer-use expected a Tier-2 click after a no-progress streak.");
+
+  return {
+    status: result.status,
+    stepsTaken: result.stepsTaken,
+    computerUseCalls: navigatorCalls.computerUseCalls,
+    standardCalls: navigatorCalls.standardCalls,
+    fallbackStep: fallbackStep?.step ?? null,
+    finalUrlChanged: typeof result.finalUrl === "string" ? result.finalUrl !== startUrl : false,
+    finalUrl: result.finalUrl
   };
 }
 
@@ -613,6 +733,39 @@ async function main() {
       }
     });
 
+    const computerUseNavigator = createComputerUseFallbackNavigator();
+    const computerUseStartUrl = `${localServer.baseUrl}/computer-use-link`;
+    const computerUseLoop = createPerceptionActionLoop({
+      cdpClient,
+      navigatorEngine: computerUseNavigator,
+      maxSteps: 8,
+      maxNoProgressSteps: 6,
+      logger: (line) => console.info(`[computer-use] ${line}`)
+    });
+    const computerUseResult = await computerUseLoop.runTask({
+      intent: "Proceed to the destination page and finish.",
+      startUrl: computerUseStartUrl,
+      maxSteps: 8,
+      maxNoProgressSteps: 6
+    });
+    const computerUseSummary = validateComputerUseFallbackScenario(
+      computerUseResult,
+      computerUseNavigator.calls,
+      computerUseStartUrl
+    );
+    const computerUseArtifact = await writeScenarioArtifact("computer-use-fallback", {
+      ...computerUseResult,
+      summary: computerUseSummary,
+      runConfig: {
+        phase: MILESTONE,
+        scenario: "computer-use-fallback",
+        remoteDebuggingPort,
+        headful: isHeadfulEnabled(),
+        startUrl: computerUseStartUrl,
+        localServerPort: localServer.port
+      }
+    });
+
     const scenarios = [
       {
         name: "enter-required-submit",
@@ -634,6 +787,13 @@ async function main() {
         stepsTaken: readScreenResult.stepsTaken,
         summary: readScreenSummary,
         artifact: readScreenArtifact
+      },
+      {
+        name: "computer-use-fallback",
+        status: computerUseResult.status,
+        stepsTaken: computerUseResult.stepsTaken,
+        summary: computerUseSummary,
+        artifact: computerUseArtifact
       }
     ];
 

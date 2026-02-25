@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "start": "npm run start -w @ghost-browser/electron",
+    "build": "npm run build -w @ghost-browser/electron",
     "cdp:smoke": "npm run cdp:smoke -w @ghost-browser/orchestration",
     "ax:smoke": "npm run ax:smoke -w @ghost-browser/orchestration",
     "index:smoke": "npm run index:smoke -w @ghost-browser/orchestration",

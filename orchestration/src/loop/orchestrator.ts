@@ -80,6 +80,7 @@ const DEFAULT_OBSERVATION_CACHE_TTL_MS = DEFAULT_NAVIGATOR_OBSERVATION_CACHE_TTL
 const DEFAULT_BELOW_FOLD_MARGIN_RATIO = 0.11;
 const DEFAULT_VISION_PRIMARY_ROUTING = true;
 const DEFAULT_READ_SCREEN_PASS = true;
+const DEFAULT_COMPUTER_USE_FALLBACK = true;
 const READ_SCREEN_DONE_MIN_CONFIDENCE = 0.82;
 const ESTIMATED_TIER1_CALL_COST_USD = 0.00015;
 const ESTIMATED_TIER2_CALL_COST_USD = 0.003;
@@ -422,6 +423,7 @@ class PerceptionActionLoop {
     const observationCacheTtlMs = input.observationCacheTtlMs ?? this.observationCacheTtlMs;
     const visionPrimaryRoutingEnabled = resolveVisionPrimaryRoutingEnabledFromEnv();
     const readScreenPassEnabled = resolveReadScreenPassEnabledFromEnv();
+    const computerUseFallbackEnabled = resolveComputerUseFallbackEnabledFromEnv();
     const requestedHttpCachePolicy = input.httpCachePolicy ?? this.defaultHttpCachePolicy;
 
     if (maxSteps <= 0) {
@@ -1451,6 +1453,42 @@ class PerceptionActionLoop {
               resolvedTier = "TIER_2_VISION";
               this.logger(
                 `[loop][step ${step}] policy=READ_SCREEN_DONE confidence=${readScreenAction.confidence.toFixed(2)} url=${urlAtPerception}`
+              );
+            }
+          }
+
+          const shouldAttemptComputerUse =
+            computerUseFallbackEnabled &&
+            shouldAttemptComputerUseFallback({
+              noProgressStreak,
+              lowConfidenceStreak,
+              blockedActionStreak
+            });
+          if (!inferredAction && shouldAttemptComputerUse) {
+            tiersAttempted.push("TIER_2_VISION");
+            try {
+              const computerUseAction = await inferTier2Decision({
+                escalationReason: noProgressStreak > 0 ? "NO_PROGRESS" : null,
+                decisionMode: "COMPUTER_USE",
+                allowDecisionCache: false,
+                writeDecisionCache: false
+              });
+              if (computerUseAction.action !== "FAILED" || noProgressStreak >= maxNoProgressSteps - 1) {
+                inferredAction = computerUseAction;
+                resolvedTier = "TIER_2_VISION";
+                this.logger(
+                  `[loop][step ${step}] policy=COMPUTER_USE_FALLBACK action=${computerUseAction.action} confidence=${computerUseAction.confidence.toFixed(2)} url=${urlAtPerception}`
+                );
+              } else {
+                this.logger(
+                  `[loop][step ${step}] policy=COMPUTER_USE_REJECTED action=FAILED confidence=${computerUseAction.confidence.toFixed(2)} url=${urlAtPerception}`
+                );
+              }
+            } catch (error) {
+              this.logger(
+                `[loop][step ${step}] computer-use-fallback-failed url=${urlAtPerception} error=${
+                  error instanceof Error ? error.message : String(error)
+                }`
               );
             }
           }
@@ -3094,6 +3132,10 @@ function resolveReadScreenPassEnabledFromEnv(): boolean {
   return resolveBooleanEnv("READ_SCREEN_PASS", DEFAULT_READ_SCREEN_PASS);
 }
 
+function resolveComputerUseFallbackEnabledFromEnv(): boolean {
+  return resolveBooleanEnv("COMPUTER_USE_FALLBACK", DEFAULT_COMPUTER_USE_FALLBACK);
+}
+
 function resolveBooleanEnv(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (!raw || !raw.trim()) {
@@ -3140,6 +3182,23 @@ function isReadScreenDoneCandidate(input: {
 
   const minimumConfidence = Math.max(input.confidenceThreshold, READ_SCREEN_DONE_MIN_CONFIDENCE);
   return input.action.confidence >= minimumConfidence;
+}
+
+function shouldAttemptComputerUseFallback(input: {
+  noProgressStreak: number;
+  lowConfidenceStreak: number;
+  blockedActionStreak: number;
+}): boolean {
+  if (input.noProgressStreak >= 2) {
+    return true;
+  }
+  if (input.blockedActionStreak >= 2) {
+    return true;
+  }
+  if (input.lowConfidenceStreak >= 3) {
+    return true;
+  }
+  return false;
 }
 
 function shouldPreferVisionPrimaryAction(input: {
