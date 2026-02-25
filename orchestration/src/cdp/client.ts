@@ -43,7 +43,8 @@ const INTERACTIVE_AX_ROLES = new Set([
   "tab",
   "textbox"
 ]);
-const AGENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
+const AGENT_ACTION_TYPES = ["CLICK", "TYPE", "PRESS_KEY", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
+const SPECIAL_KEYS = ["Enter", "Tab", "Escape"] as const;
 const REQUEST_INTERCEPTION_MODES = ["AGENT_FAST", "VISUAL_RENDER", "DISABLED"] as const;
 const HTTP_CACHE_POLICY_MODES = ["RESPECT_HEADERS", "FORCE_REFRESH", "OVERRIDE_TTL"] as const;
 const REQUEST_CLASSIFICATIONS = ["DOCUMENT_HTML", "JSON_API", "STATIC_ASSET", "OTHER"] as const;
@@ -292,6 +293,7 @@ export interface ExtractDomInteractiveElementsResult {
 }
 
 export type AgentActionType = (typeof AGENT_ACTION_TYPES)[number];
+export type AgentSpecialKey = (typeof SPECIAL_KEYS)[number];
 
 export interface AgentActionTarget {
   x: number;
@@ -302,6 +304,7 @@ export interface AgentActionInput {
   action: AgentActionType;
   target: AgentActionTarget | null;
   text: string | null;
+  key?: AgentSpecialKey | null;
   confidence?: number;
   reasoning?: string;
 }
@@ -324,6 +327,10 @@ export interface ActionExecutionResult {
   action: AgentActionType;
   currentUrl: string;
   navigationObserved: boolean;
+  urlChanged: boolean;
+  scrollChanged: boolean;
+  focusChanged: boolean;
+  inputValueChanged: boolean;
   domMutationObserved: boolean;
   significantDomMutationObserved: boolean;
   domMutationSummary: DomMutationSummary | null;
@@ -403,6 +410,12 @@ export interface GhostTabCdpClient {
   getViewport(): GhostViewportSettings;
   closeTarget(): Promise<void>;
   close(): Promise<void>;
+}
+
+interface ActionEffectSnapshot {
+  scrollY: number;
+  focusToken: string | null;
+  focusValue: string | null;
 }
 
 interface ResolvedExtractNormalizedAXTreeOptions {
@@ -1154,6 +1167,38 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
   ): Promise<ActionExecutionResult> {
     const action = validateAgentActionInput(actionInput);
     const settleTimeoutMs = options.settleTimeoutMs ?? DEFAULT_ACTION_SETTLE_TIMEOUT_MS;
+    const beforeUrl = await this.getCurrentUrl().catch(() => "");
+    const beforeSnapshot = await this.captureActionEffectSnapshot();
+
+    const buildActedExecutionResult = async (params: {
+      settle: Awaited<ReturnType<typeof waitForNavigationOrDomMutation>>;
+      extractedData?: unknown;
+      message?: string | null;
+    }): Promise<ActionExecutionResult> => {
+      const currentUrl = await this.getCurrentUrl();
+      const afterSnapshot = await this.captureActionEffectSnapshot();
+      const effects = computeActionEffectSignals({
+        beforeUrl,
+        afterUrl: currentUrl,
+        beforeSnapshot,
+        afterSnapshot
+      });
+      return {
+        status: "acted",
+        action: action.action,
+        currentUrl,
+        navigationObserved: params.settle.navigationObserved,
+        urlChanged: effects.urlChanged,
+        scrollChanged: effects.scrollChanged,
+        focusChanged: effects.focusChanged,
+        inputValueChanged: effects.inputValueChanged,
+        domMutationObserved: params.settle.domMutationObserved,
+        significantDomMutationObserved: params.settle.significantDomMutationObserved,
+        domMutationSummary: params.settle.domMutationSummary,
+        extractedData: params.extractedData ?? null,
+        message: params.message ?? null
+      };
+    };
 
     switch (action.action) {
       case "CLICK": {
@@ -1163,17 +1208,7 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
 
         await this.dispatchClick(action.target);
         const settle = await waitForNavigationOrDomMutation(this.cdpSession, settleTimeoutMs);
-        return {
-          status: "acted",
-          action: action.action,
-          currentUrl: await this.getCurrentUrl(),
-          navigationObserved: settle.navigationObserved,
-          domMutationObserved: settle.domMutationObserved,
-          significantDomMutationObserved: settle.significantDomMutationObserved,
-          domMutationSummary: settle.domMutationSummary,
-          extractedData: null,
-          message: null
-        };
+        return buildActedExecutionResult({ settle });
       }
       case "TYPE": {
         if (!action.text || action.text.length === 0) {
@@ -1182,64 +1217,39 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
 
         await this.dispatchTyping(action.text);
         const settle = await waitForNavigationOrDomMutation(this.cdpSession, settleTimeoutMs);
-        return {
-          status: "acted",
-          action: action.action,
-          currentUrl: await this.getCurrentUrl(),
-          navigationObserved: settle.navigationObserved,
-          domMutationObserved: settle.domMutationObserved,
-          significantDomMutationObserved: settle.significantDomMutationObserved,
-          domMutationSummary: settle.domMutationSummary,
-          extractedData: null,
-          message: null
-        };
+        return buildActedExecutionResult({ settle });
+      }
+      case "PRESS_KEY": {
+        if (!action.key) {
+          throw new Error("PRESS_KEY action requires a key.");
+        }
+
+        await this.dispatchSpecialKey(action.key);
+        const settle = await waitForNavigationOrDomMutation(this.cdpSession, settleTimeoutMs);
+        return buildActedExecutionResult({ settle });
       }
       case "SCROLL": {
         const deltaY = parseScrollDelta(action.text);
         await this.dispatchScroll(action.target, deltaY);
         const settle = await waitForNavigationOrDomMutation(this.cdpSession, settleTimeoutMs);
-        return {
-          status: "acted",
-          action: action.action,
-          currentUrl: await this.getCurrentUrl(),
-          navigationObserved: settle.navigationObserved,
-          domMutationObserved: settle.domMutationObserved,
-          significantDomMutationObserved: settle.significantDomMutationObserved,
-          domMutationSummary: settle.domMutationSummary,
-          extractedData: null,
-          message: null
-        };
+        return buildActedExecutionResult({ settle });
       }
       case "WAIT": {
         const waitMs = parseWaitDurationMs(action.text);
         await sleep(waitMs);
         const settle = await waitForNavigationOrDomMutation(this.cdpSession, Math.min(waitMs, settleTimeoutMs));
-        return {
-          status: "acted",
-          action: action.action,
-          currentUrl: await this.getCurrentUrl(),
-          navigationObserved: settle.navigationObserved,
-          domMutationObserved: settle.domMutationObserved,
-          significantDomMutationObserved: settle.significantDomMutationObserved,
-          domMutationSummary: settle.domMutationSummary,
-          extractedData: null,
+        return buildActedExecutionResult({
+          settle,
           message: `Waited ${waitMs}ms`
-        };
+        });
       }
       case "EXTRACT": {
         const extractionResult = await this.runExtraction(action.text);
         const settle = await waitForNavigationOrDomMutation(this.cdpSession, settleTimeoutMs);
-        return {
-          status: "acted",
-          action: action.action,
-          currentUrl: await this.getCurrentUrl(),
-          navigationObserved: settle.navigationObserved,
-          domMutationObserved: settle.domMutationObserved,
-          significantDomMutationObserved: settle.significantDomMutationObserved,
-          domMutationSummary: settle.domMutationSummary,
-          extractedData: extractionResult,
-          message: null
-        };
+        return buildActedExecutionResult({
+          settle,
+          extractedData: extractionResult
+        });
       }
       case "DONE":
         return {
@@ -1247,6 +1257,10 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           action: action.action,
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: false,
+          urlChanged: false,
+          scrollChanged: false,
+          focusChanged: false,
+          inputValueChanged: false,
           domMutationObserved: false,
           significantDomMutationObserved: false,
           domMutationSummary: null,
@@ -1259,6 +1273,10 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
           action: action.action,
           currentUrl: await this.getCurrentUrl(),
           navigationObserved: false,
+          urlChanged: false,
+          scrollChanged: false,
+          focusChanged: false,
+          inputValueChanged: false,
           domMutationObserved: false,
           significantDomMutationObserved: false,
           domMutationSummary: null,
@@ -1490,6 +1508,43 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     return screenshot.data;
   }
 
+  private async captureActionEffectSnapshot(): Promise<ActionEffectSnapshot | null> {
+    try {
+      return await evaluateJsonExpression<ActionEffectSnapshot>(
+        this.cdpSession,
+        `(() => {
+          const active = document.activeElement;
+          const focusToken = active
+            ? [
+                String(active.tagName || "").toLowerCase(),
+                active.id || "",
+                active.getAttribute("name") || "",
+                active.getAttribute("role") || "",
+                active.getAttribute("type") || ""
+              ].join("|")
+            : null;
+          let focusValue = null;
+          if (
+            active &&
+            (active instanceof HTMLInputElement ||
+              active instanceof HTMLTextAreaElement ||
+              active instanceof HTMLSelectElement)
+          ) {
+            focusValue = active.value ?? null;
+          }
+
+          return {
+            scrollY: Number(window.scrollY || window.pageYOffset || 0),
+            focusToken,
+            focusValue
+          };
+        })();`
+      );
+    } catch {
+      return null;
+    }
+  }
+
   private async getDocumentMetrics(): Promise<DocumentMetrics> {
     return evaluateJsonExpression<DocumentMetrics>(
       this.cdpSession,
@@ -1567,7 +1622,7 @@ class PlaywrightGhostTabCdpClient implements GhostTabCdpClient {
     }
   }
 
-  private async dispatchSpecialKey(key: "Enter" | "Tab" | "Escape"): Promise<void> {
+  private async dispatchSpecialKey(key: AgentSpecialKey): Promise<void> {
     const keyDetails = getSpecialKeyDetails(key);
     await this.cdpSession.send("Input.dispatchKeyEvent", {
       type: "keyDown",
@@ -2507,10 +2562,22 @@ function validateAgentActionInput(action: AgentActionInput): AgentActionInput {
     throw new Error("Action text must be a string or null.");
   }
 
+  const key = action.key ?? null;
+  if (key !== null && !isSpecialKey(key)) {
+    throw new Error(`Action key must be one of: ${SPECIAL_KEYS.join(", ")}.`);
+  }
+  if (action.action === "PRESS_KEY" && key === null) {
+    throw new Error("PRESS_KEY action requires key.");
+  }
+  if (action.action !== "PRESS_KEY" && key !== null) {
+    throw new Error("Action key is only valid for PRESS_KEY actions.");
+  }
+
   return {
     action: action.action,
     target: action.target ?? null,
     text: action.text ?? null,
+    key,
     confidence: action.confidence,
     reasoning: action.reasoning
   };
@@ -2542,7 +2609,7 @@ function parseWaitDurationMs(text: string | null): number {
   return Math.min(parsed, DEFAULT_WAIT_ACTION_TIMEOUT_MS);
 }
 
-type TypingToken = { kind: "char"; value: string } | { kind: "special"; value: "Enter" | "Tab" | "Escape" };
+type TypingToken = { kind: "char"; value: string } | { kind: "special"; value: AgentSpecialKey };
 
 function parseTypingTokens(text: string): TypingToken[] {
   const tokens: TypingToken[] = [];
@@ -2583,7 +2650,7 @@ function parseTypingTokens(text: string): TypingToken[] {
   return tokens;
 }
 
-function getSpecialKeyDetails(key: "Enter" | "Tab" | "Escape"): {
+function getSpecialKeyDetails(key: AgentSpecialKey): {
   key: string;
   code: string;
   windowsVirtualKeyCode: number;
@@ -2596,6 +2663,46 @@ function getSpecialKeyDetails(key: "Enter" | "Tab" | "Escape"): {
     case "Escape":
       return { key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 };
   }
+}
+
+function isSpecialKey(value: string): value is AgentSpecialKey {
+  return (SPECIAL_KEYS as readonly string[]).includes(value);
+}
+
+function computeActionEffectSignals(input: {
+  beforeUrl: string;
+  afterUrl: string;
+  beforeSnapshot: ActionEffectSnapshot | null;
+  afterSnapshot: ActionEffectSnapshot | null;
+}): {
+  urlChanged: boolean;
+  scrollChanged: boolean;
+  focusChanged: boolean;
+  inputValueChanged: boolean;
+} {
+  const urlChanged = input.beforeUrl !== input.afterUrl;
+
+  const scrollChanged =
+    input.beforeSnapshot !== null &&
+    input.afterSnapshot !== null &&
+    Math.abs(input.afterSnapshot.scrollY - input.beforeSnapshot.scrollY) > 2;
+
+  const focusChanged =
+    input.beforeSnapshot !== null &&
+    input.afterSnapshot !== null &&
+    input.beforeSnapshot.focusToken !== input.afterSnapshot.focusToken;
+
+  const inputValueChanged =
+    input.beforeSnapshot !== null &&
+    input.afterSnapshot !== null &&
+    input.beforeSnapshot.focusValue !== input.afterSnapshot.focusValue;
+
+  return {
+    urlChanged,
+    scrollChanged,
+    focusChanged,
+    inputValueChanged
+  };
 }
 
 async function evaluateJsonExpression<T>(

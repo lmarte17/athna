@@ -19,6 +19,10 @@ const scenarioArtifactsDirectory = path.join(artifactDirectory, "scenarios");
 
 const suiteName = (process.env.PHASE2_SUITE ?? "complex").trim() || "complex";
 
+if (!process.env.GHOST_HEADFUL) {
+  process.env.GHOST_HEADFUL = process.env.GHOST_HEADLESS ?? "true";
+}
+
 const CUSTOM_TASK_INTENT = process.env.PHASE2_TASK_INTENT;
 const CUSTOM_TASK_START_URL = process.env.PHASE2_TASK_START_URL;
 const CUSTOM_SCENARIO_NAME = process.env.PHASE2_SCENARIO;
@@ -256,6 +260,48 @@ function assertOptionalExpectation(expectation, condition, label, scenarioNameVa
     throw new Error(
       `[${scenarioNameValue}] ${label} expectation failed. expected=${expectation} actual=${condition}`
     );
+  }
+}
+
+function validateNoProgressRoutingGuards(loopResult, scenarioNameValue) {
+  let lastNoProgressFingerprint = null;
+  let repeatedNoProgressFingerprintCount = 0;
+
+  for (const [index, record] of loopResult.history.entries()) {
+    if (!record || typeof record !== "object") {
+      continue;
+    }
+
+    const noProgressStreak = Number(record.noProgressStreak ?? 0);
+    const fingerprint =
+      typeof record.actionFingerprint === "string" && record.actionFingerprint.length > 0
+        ? record.actionFingerprint
+        : null;
+
+    if (noProgressStreak > 0 && record.observationCacheDecisionHit === true) {
+      throw new Error(
+        `[${scenarioNameValue}] history[${index}] decision cache hit is disallowed when noProgressStreak > 0.`
+      );
+    }
+
+    if (noProgressStreak <= 0 || !fingerprint) {
+      lastNoProgressFingerprint = null;
+      repeatedNoProgressFingerprintCount = 0;
+      continue;
+    }
+
+    if (fingerprint === lastNoProgressFingerprint) {
+      repeatedNoProgressFingerprintCount += 1;
+    } else {
+      lastNoProgressFingerprint = fingerprint;
+      repeatedNoProgressFingerprintCount = 1;
+    }
+
+    if (repeatedNoProgressFingerprintCount > 2) {
+      throw new Error(
+        `[${scenarioNameValue}] history[${index}] repeated no-progress action fingerprint exceeded limit (fingerprint=${fingerprint}).`
+      );
+    }
   }
 }
 
@@ -549,6 +595,8 @@ function validateLoopResult(loopResult, scenario) {
     "expectDomBypass",
     scenario.name
   );
+
+  validateNoProgressRoutingGuards(loopResult, scenario.name);
 }
 
 /** @returns {ScenarioConfig[]} */

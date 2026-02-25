@@ -6,50 +6,52 @@
     "scenarios": [
       {
         "name": "flight-intent-decomposition",
-        "status": "FAILED",
-        "stepsTaken": 4,
+        "status": "MAX_STEPS",
+        "stepsTaken": 8,
         "summary": {
-          "status": "FAILED",
-          "stepsTaken": 4,
-          "totalSubtasks": 5,
+          "status": "MAX_STEPS",
+          "stepsTaken": 8,
+          "totalSubtasks": 21,
           "completedSubtasks": 0,
           "failedSubtasks": 1,
-          "retryFromCheckpointEvents": 1,
+          "retryFromCheckpointEvents": 0,
+          "replanEvents": 24,
           "checkpoint": {
             "lastCompletedSubtaskIndex": -1,
-            "currentSubtaskAttempt": 2,
+            "currentSubtaskAttempt": 5,
             "subtaskArtifacts": []
           },
           "decomposition": {
             "isDecomposed": true,
             "impliedStepCount": 8,
             "generatedBy": "HEURISTIC_V1",
-            "generatedAt": "2026-02-22T20:51:45.215Z"
+            "generatedAt": "2026-02-25T02:21:34.395Z"
           }
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.2/scenarios/flight-intent-decomposition-task-decomposition-checkpointing-result.json"
       },
       {
         "name": "checkpoint-retry-pressure",
-        "status": "FAILED",
-        "stepsTaken": 3,
+        "status": "MAX_STEPS",
+        "stepsTaken": 10,
         "summary": {
-          "status": "FAILED",
-          "stepsTaken": 3,
-          "totalSubtasks": 5,
+          "status": "MAX_STEPS",
+          "stepsTaken": 10,
+          "totalSubtasks": 45,
           "completedSubtasks": 0,
           "failedSubtasks": 1,
-          "retryFromCheckpointEvents": 2,
+          "retryFromCheckpointEvents": 0,
+          "replanEvents": 60,
           "checkpoint": {
             "lastCompletedSubtaskIndex": -1,
-            "currentSubtaskAttempt": 3,
+            "currentSubtaskAttempt": 11,
             "subtaskArtifacts": []
           },
           "decomposition": {
             "isDecomposed": true,
             "impliedStepCount": 8,
             "generatedBy": "HEURISTIC_V1",
-            "generatedAt": "2026-02-22T20:52:33.218Z"
+            "generatedAt": "2026-02-25T02:22:06.475Z"
           }
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.2/scenarios/checkpoint-retry-pressure-task-decomposition-checkpointing-result.json"
@@ -58,6 +60,7 @@
   },
   "runConfig": {
     "remoteDebuggingPort": 9333,
-    "headful": false
+    "headful": true,
+    "localServerPort": 50747
   }
 }

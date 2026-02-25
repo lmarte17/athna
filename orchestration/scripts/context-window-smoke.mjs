@@ -383,6 +383,41 @@ function validateLoopResult(loopResult, scenario) {
       );
     }
   }
+
+  let lastNoProgressFingerprint = null;
+  let repeatedNoProgressFingerprintCount = 0;
+  for (const [index, record] of loopResult.history.entries()) {
+    const noProgressStreak = Number(record?.noProgressStreak ?? 0);
+    const fingerprint =
+      typeof record?.actionFingerprint === "string" && record.actionFingerprint.length > 0
+        ? record.actionFingerprint
+        : null;
+
+    if (noProgressStreak > 0 && record?.observationCacheDecisionHit === true) {
+      throw new Error(
+        `[${scenario.name}] history[${index}] decision cache hit is disallowed when noProgressStreak > 0.`
+      );
+    }
+
+    if (noProgressStreak <= 0 || !fingerprint) {
+      lastNoProgressFingerprint = null;
+      repeatedNoProgressFingerprintCount = 0;
+      continue;
+    }
+
+    if (fingerprint === lastNoProgressFingerprint) {
+      repeatedNoProgressFingerprintCount += 1;
+    } else {
+      lastNoProgressFingerprint = fingerprint;
+      repeatedNoProgressFingerprintCount = 1;
+    }
+
+    if (repeatedNoProgressFingerprintCount > 2) {
+      throw new Error(
+        `[${scenario.name}] history[${index}] repeated no-progress action fingerprint exceeded limit (fingerprint=${fingerprint}).`
+      );
+    }
+  }
 }
 
 function summarizeSuite(scenarioRuns) {

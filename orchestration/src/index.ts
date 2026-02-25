@@ -125,6 +125,26 @@ export {
 } from "./loop/orchestrator.js";
 
 export {
+  buildDisallowedActionFingerprints,
+  createActionFingerprint,
+  createDiversificationFallbackAction,
+  createSubmitFallbackAction,
+  evaluateDeadlockTriggers,
+  isNoProgressStep,
+  registerActionFingerprintOutcome,
+  shouldReadDecisionCache,
+  shouldScheduleSubmitFallback,
+  shouldWriteDecisionCache,
+  type BuildDisallowedActionFingerprintsInput,
+  type CachePolicyInput,
+  type DeadlockEvaluationInput,
+  type DeadlockEvaluationResult,
+  type DeadlockTrigger,
+  type RegisterActionFingerprintOutcomeInput,
+  type RegisterActionFingerprintOutcomeResult
+} from "./loop/decision-policy.js";
+
+export {
   ALLOWED_GHOST_TAB_STATE_TRANSITIONS,
   createGhostTabTaskErrorDetail,
   createGhostTabTaskStateMachine,

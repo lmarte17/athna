@@ -19,7 +19,17 @@ export const GHOST_TAB_IPC_REQUEST_TYPES = [
 
 export const GHOST_TAB_IPC_RESPONSE_TYPES = ["TASK_RESULT", "TASK_ERROR", "TASK_STATUS"] as const;
 
-const INPUT_EVENT_ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"];
+const INPUT_EVENT_ACTION_TYPES = [
+  "CLICK",
+  "TYPE",
+  "PRESS_KEY",
+  "SCROLL",
+  "WAIT",
+  "EXTRACT",
+  "DONE",
+  "FAILED"
+];
+const INPUT_EVENT_SPECIAL_KEYS = ["Enter", "Tab", "Escape"];
 const GHOST_TAB_TASK_PRIORITIES = ["FOREGROUND", "BACKGROUND"] as const;
 const TASK_STATUS_KINDS = ["QUEUE", "STATE", "SCHEDULER", "SUBTASK"] as const;
 const TASK_STATUS_QUEUE_EVENTS = ["ENQUEUED", "DISPATCHED", "RELEASED"] as const;
@@ -394,6 +404,20 @@ function validatePayloadByType(
       }
       if (payload.text !== undefined && payload.text !== null && typeof payload.text !== "string") {
         details.push("payload.text must be a string or null");
+      }
+      if (payload.key !== undefined && payload.key !== null && typeof payload.key !== "string") {
+        details.push("payload.key must be a string or null");
+      }
+      if (
+        typeof payload.key === "string" &&
+        !INPUT_EVENT_SPECIAL_KEYS.includes(payload.key)
+      ) {
+        details.push(
+          `payload.key must be one of: ${INPUT_EVENT_SPECIAL_KEYS.join(", ")} when provided`
+        );
+      }
+      if (payload.action === "PRESS_KEY" && payload.key == null) {
+        details.push("payload.key must be set for PRESS_KEY actions");
       }
       if (payload.confidence !== undefined) {
         validateRequiredFiniteNumber(payload.confidence, "payload.confidence", details);

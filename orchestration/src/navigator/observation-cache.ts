@@ -81,6 +81,7 @@ export interface NavigatorObservationCacheManager {
   setPerception(url: string, data: CachedPerceptionData, nowMs?: number): void;
   getDecision(url: string, key: string, nowMs?: number): CachedDecisionLookupResult | null;
   setDecision(url: string, key: string, decision: NavigatorActionDecision, nowMs?: number): void;
+  invalidateDecision(url: string, key: string): void;
   getTier2Screenshot(url: string, nowMs?: number): CachedScreenshotLookupResult | null;
   setTier2Screenshot(url: string, screenshot: NavigatorScreenshotInput, nowMs?: number): void;
   invalidate(url: string): void;
@@ -183,6 +184,22 @@ class InMemoryNavigatorObservationCacheManager implements NavigatorObservationCa
       decision,
       cachedAtMs: nowMs
     });
+  }
+
+  invalidateDecision(url: string, key: string): void {
+    const normalizedKey = key.trim();
+    if (!normalizedKey) {
+      return;
+    }
+
+    const entry = this.readLiveEntry(url, Date.now());
+    if (!entry) {
+      return;
+    }
+
+    if (entry.decisions.delete(normalizedKey)) {
+      this.metrics.invalidations += 1;
+    }
   }
 
   getTier2Screenshot(url: string, nowMs = Date.now()): CachedScreenshotLookupResult | null {

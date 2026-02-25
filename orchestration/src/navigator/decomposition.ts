@@ -105,7 +105,7 @@ function buildSubtasks(input: {
   }
 
   const clauses = splitIntentIntoClauses(input.intent);
-  if (input.isDecomposed && clauses.length >= 3) {
+  if (input.isDecomposed && clauses.length >= 2) {
     return clauses.slice(0, MAX_INFERRED_STEPS).map((clause, index) =>
       createSubtaskFromClause({
         id: index + 1,
