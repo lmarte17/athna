@@ -11,7 +11,7 @@
         "summary": {
           "status": "DONE",
           "stepsTaken": 4,
-          "finalUrl": "http://127.0.0.1:54698/enter-required/results?q=athna%20reliability%20routing",
+          "finalUrl": "http://127.0.0.1:56593/enter-required/results?q=athna%20reliability%20routing",
           "typeStep": 2,
           "pressEnterStep": 3
         },
@@ -44,16 +44,17 @@
       },
       {
         "name": "computer-use-fallback",
-        "status": "MAX_STEPS",
-        "stepsTaken": 8,
+        "status": "DONE",
+        "stepsTaken": 5,
         "summary": {
-          "status": "MAX_STEPS",
-          "stepsTaken": 8,
-          "computerUseCalls": 2,
-          "standardCalls": 6,
+          "status": "DONE",
+          "stepsTaken": 5,
+          "providerPlanCalls": 1,
+          "confirmationRequests": 1,
           "fallbackStep": 3,
+          "queuedWaitStep": 4,
           "finalUrlChanged": false,
-          "finalUrl": "http://127.0.0.1:54698/computer-use-link"
+          "finalUrl": "http://127.0.0.1:56593/computer-use-link"
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase5/phase5-5.1/scenarios/computer-use-fallback-decision-routing-result.json"
       }
@@ -62,6 +63,6 @@
   "runConfig": {
     "remoteDebuggingPort": 9333,
     "headful": true,
-    "localServerPort": 54698
+    "localServerPort": 56593
   }
 }

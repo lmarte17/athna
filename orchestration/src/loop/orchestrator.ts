@@ -29,6 +29,9 @@ import {
   type NavigatorEscalationReason,
   type NavigatorInferenceTier
 } from "../navigator/engine.js";
+import type {
+  ComputerUseProvider
+} from "../navigator/computer-use-provider.js";
 import {
   decomposeTaskIntent,
   type TaskDecompositionPlan,
@@ -345,9 +348,20 @@ export interface PerceptionActionTaskCleanupContext {
   errorDetail: GhostTabTaskErrorDetail | null;
 }
 
+export interface ComputerUseSafetyConfirmationRequest {
+  taskId: string;
+  contextId: string | null;
+  step: number;
+  currentUrl: string;
+  safetyReason: string | null;
+  actions: NavigatorActionDecision[];
+  rawFunctionCallCount: number;
+}
+
 export interface PerceptionActionLoopOptions {
   cdpClient: GhostTabCdpClient;
   navigatorEngine: NavigatorEngine;
+  computerUseProvider?: ComputerUseProvider | null;
   taskId?: string;
   contextId?: string;
   stateMachine?: GhostTabTaskStateMachine;
@@ -364,6 +378,9 @@ export interface PerceptionActionLoopOptions {
   onStateTransition?: (event: GhostTabStateTransitionEvent) => void;
   onSubtaskStatus?: (event: SubtaskStatusEvent) => void;
   onStructuredError?: (event: StructuredErrorEvent) => void;
+  onComputerUseSafetyConfirmation?: (
+    request: ComputerUseSafetyConfirmationRequest
+  ) => Promise<boolean> | boolean;
   onTaskCleanup?: (context: PerceptionActionTaskCleanupContext) => Promise<void> | void;
   logger?: (line: string) => void;
 }
@@ -424,6 +441,7 @@ class PerceptionActionLoop {
     const visionPrimaryRoutingEnabled = resolveVisionPrimaryRoutingEnabledFromEnv();
     const readScreenPassEnabled = resolveReadScreenPassEnabledFromEnv();
     const computerUseFallbackEnabled = resolveComputerUseFallbackEnabledFromEnv();
+    const computerUseProvider = this.options.computerUseProvider ?? null;
     const requestedHttpCachePolicy = input.httpCachePolicy ?? this.defaultHttpCachePolicy;
 
     if (maxSteps <= 0) {
@@ -515,6 +533,7 @@ class PerceptionActionLoop {
     let lowConfidenceStreak = 0;
     let blockedActionStreak = 0;
     let pendingSubmitFallbackAction: NavigatorActionDecision | null = null;
+    let pendingComputerUseActions: NavigatorActionDecision[] = [];
     let pendingAXTreeRefetchReason: AXTreeRefetchReason = "INITIAL";
     let lastPerceptionUrl: string | null = null;
     let currentUrl = input.startUrl;
@@ -1263,6 +1282,7 @@ class PerceptionActionLoop {
         let tier2EstimatedPromptTokens = 0;
         let promptTokenAlertTriggered = false;
         let actionFingerprint: string | null = null;
+        let actionFromComputerUseQueue = false;
         let lowConfidenceEscalatedThisStep = false;
         let sameUrlSubtaskNoProgressStreak = 0;
         let tier2ObservationForStep:
@@ -1420,12 +1440,93 @@ class PerceptionActionLoop {
           return tier2Action;
         };
 
+        const resolveComputerUsePlanAction = async (params: {
+          escalationReason: NavigatorEscalationReason | null;
+        }): Promise<{
+          action: NavigatorActionDecision | null;
+          queuedActions: NavigatorActionDecision[];
+        }> => {
+          if (!computerUseProvider) {
+            const decision = await inferTier2Decision({
+              escalationReason: params.escalationReason,
+              decisionMode: "COMPUTER_USE",
+              allowDecisionCache: false,
+              writeDecisionCache: false
+            });
+            return {
+              action: decision,
+              queuedActions: []
+            };
+          }
+
+          const tier2ObservationState = await ensureTier2Observation();
+          const plan = await computerUseProvider.planActions({
+            intent: input.intent,
+            observation: tier2ObservationState.observation,
+            escalationReason: params.escalationReason,
+            maxActions: 3
+          });
+
+          const plannedActions = plan.actions.map((entry) => entry.decision);
+          if (plannedActions.length === 0) {
+            throw new Error(
+              `Computer-use provider returned zero executable actions (rawCalls=${plan.rawFunctionCallCount}).`
+            );
+          }
+
+          if (plan.safetyDecision === "REQUIRE_CONFIRMATION") {
+            const approved = this.options.onComputerUseSafetyConfirmation
+              ? await this.options.onComputerUseSafetyConfirmation({
+                  taskId,
+                  contextId,
+                  step,
+                  currentUrl: urlAtPerception,
+                  safetyReason: plan.safetyReason,
+                  actions: plannedActions,
+                  rawFunctionCallCount: plan.rawFunctionCallCount
+                })
+              : false;
+
+            if (!approved) {
+              return {
+                action: {
+                  action: "FAILED",
+                  target: null,
+                  text:
+                    plan.safetyReason ??
+                    "Computer-use action requires explicit user confirmation and was not approved.",
+                  key: null,
+                  confidence: 0.9,
+                  reasoning:
+                    "Safety gate blocked unconfirmed computer-use action plan."
+                },
+                queuedActions: []
+              };
+            }
+          }
+
+          const [firstAction, ...queuedActions] = plannedActions;
+          return {
+            action: firstAction ?? null,
+            queuedActions
+          };
+        };
+
         transitionState("INFERRING", {
           step,
           url: urlAtPerception
         });
 
-        if (pendingSubmitFallbackAction) {
+        if (pendingComputerUseActions.length > 0) {
+          inferredAction = pendingComputerUseActions.shift() ?? null;
+          actionFromComputerUseQueue = inferredAction !== null;
+          resolvedTier = "TIER_2_VISION";
+          if (inferredAction) {
+            this.logger(
+              `[loop][step ${step}] policy=COMPUTER_USE_QUEUE action=${inferredAction.action} confidence=${inferredAction.confidence.toFixed(2)} remaining=${pendingComputerUseActions.length} url=${urlAtPerception}`
+            );
+          }
+        } else if (pendingSubmitFallbackAction) {
           inferredAction = pendingSubmitFallbackAction;
           pendingSubmitFallbackAction = null;
           resolvedTier = "TIER_1_AX";
@@ -1467,24 +1568,30 @@ class PerceptionActionLoop {
           if (!inferredAction && shouldAttemptComputerUse) {
             tiersAttempted.push("TIER_2_VISION");
             try {
-              const computerUseAction = await inferTier2Decision({
-                escalationReason: noProgressStreak > 0 ? "NO_PROGRESS" : null,
-                decisionMode: "COMPUTER_USE",
-                allowDecisionCache: false,
-                writeDecisionCache: false
+              const computerUsePlan = await resolveComputerUsePlanAction({
+                escalationReason: noProgressStreak > 0 ? "NO_PROGRESS" : null
               });
+              const computerUseAction = computerUsePlan.action;
+              pendingComputerUseActions = computerUsePlan.queuedActions;
+              if (!computerUseAction) {
+                throw new Error("Computer-use planner produced no primary action.");
+              }
               if (computerUseAction.action !== "FAILED" || noProgressStreak >= maxNoProgressSteps - 1) {
                 inferredAction = computerUseAction;
                 resolvedTier = "TIER_2_VISION";
                 this.logger(
-                  `[loop][step ${step}] policy=COMPUTER_USE_FALLBACK action=${computerUseAction.action} confidence=${computerUseAction.confidence.toFixed(2)} url=${urlAtPerception}`
+                  `[loop][step ${step}] policy=COMPUTER_USE_FALLBACK action=${computerUseAction.action} confidence=${computerUseAction.confidence.toFixed(2)} queued=${pendingComputerUseActions.length} provider=${
+                    computerUseProvider ? "true" : "false"
+                  } url=${urlAtPerception}`
                 );
               } else {
                 this.logger(
                   `[loop][step ${step}] policy=COMPUTER_USE_REJECTED action=FAILED confidence=${computerUseAction.confidence.toFixed(2)} url=${urlAtPerception}`
                 );
+                pendingComputerUseActions = [];
               }
             } catch (error) {
+              pendingComputerUseActions = [];
               this.logger(
                 `[loop][step ${step}] computer-use-fallback-failed url=${urlAtPerception} error=${
                   error instanceof Error ? error.message : String(error)
@@ -1957,6 +2064,25 @@ class PerceptionActionLoop {
         });
         noProgressStreak = noProgressStepDetected ? noProgressStreak + 1 : 0;
 
+        if (
+          pendingComputerUseActions.length > 0 &&
+          (execution.navigationObserved ||
+            execution.urlChanged ||
+            actionToExecute.action === "DONE" ||
+            actionToExecute.action === "FAILED")
+        ) {
+          this.logger(
+            `[loop][step ${step}] policy=COMPUTER_USE_QUEUE_CLEAR remaining=${pendingComputerUseActions.length} reason=${
+              execution.navigationObserved || execution.urlChanged ? "NAVIGATION_OR_URL_CHANGE" : actionToExecute.action
+            } url=${currentUrl}`
+          );
+          pendingComputerUseActions = [];
+        } else if (actionFromComputerUseQueue && noProgressStepDetected && pendingComputerUseActions.length > 0) {
+          this.logger(
+            `[loop][step ${step}] policy=COMPUTER_USE_QUEUE_RETAIN remaining=${pendingComputerUseActions.length} reason=NO_PROGRESS_CONTINUE url=${currentUrl}`
+          );
+        }
+
         if (actionFingerprint) {
           const fingerprintOutcome = registerActionFingerprintOutcome({
             fingerprint: actionFingerprint,
@@ -2144,6 +2270,7 @@ class PerceptionActionLoop {
               `[loop][step ${step}] subtask-retry status=IN_PROGRESS active=${getActiveSubtask()?.id ?? "none"} attempt=${checkpoint.currentSubtaskAttempt} lastComplete=${checkpoint.lastCompletedSubtaskIndex}`
             );
             noProgressStreak = 0;
+            pendingComputerUseActions = [];
             pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
             observationCache.invalidate(urlAtPerception);
             observationCache.invalidate(currentUrl);
@@ -2200,6 +2327,7 @@ class PerceptionActionLoop {
             sameUrlSubtaskNoProgressStreak = 0;
             sameUrlSubtaskNoProgressCounts.delete(sameUrlSubtaskStallKey);
             pendingSubmitFallbackAction = null;
+            pendingComputerUseActions = [];
             pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
             observationCache.invalidate(urlAtPerception);
             observationCache.invalidate(currentUrl);
@@ -2222,6 +2350,7 @@ class PerceptionActionLoop {
               `[loop][step ${step}] subtask-retry reason=NO_PROGRESS active=${getActiveSubtask()?.id ?? "none"} attempt=${checkpoint.currentSubtaskAttempt} lastComplete=${checkpoint.lastCompletedSubtaskIndex}`
             );
             noProgressStreak = 0;
+            pendingComputerUseActions = [];
             pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
             observationCache.invalidate(urlAtPerception);
             observationCache.invalidate(currentUrl);

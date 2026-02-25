@@ -229,16 +229,13 @@ async function startLocalScenarioServer() {
   <body>
     <main>
       <h1>Computer Use Link Fixture</h1>
-      <p>Click the continue link to finish.</p>
-      <a id="continue-link" href="/computer-use/success" style="display:block;padding:24px 16px;border:2px solid #333;max-width:420px;">
-        Continue to Success
-      </a>
+      <p>Autofocused input for deterministic typing progress.</p>
+      <label for="agent-input">Agent Input</label>
+      <input id="agent-input" name="agent-input" autocomplete="off" />
     </main>
     <script>
-      document.body.addEventListener("click", (event) => {
-        event.preventDefault();
-        window.location.assign("/computer-use/success");
-      });
+      const input = document.getElementById("agent-input");
+      input?.focus();
     </script>
   </body>
 </html>`);
@@ -422,37 +419,12 @@ function createReadScreenNavigator() {
 
 function createComputerUseFallbackNavigator() {
   const calls = {
-    computerUseCalls: 0,
     standardCalls: 0
   };
 
   return {
     calls,
     async decideNextAction(input) {
-      const currentUrl = String(input?.observation?.currentUrl || "");
-      if (currentUrl.includes("/computer-use/success")) {
-        return {
-          action: "DONE",
-          target: null,
-          text: "computer-use fixture complete",
-          key: null,
-          confidence: 1,
-          reasoning: "Finish after successful navigation."
-        };
-      }
-
-      if (input?.decisionMode === "COMPUTER_USE") {
-        calls.computerUseCalls += 1;
-        return {
-          action: "CLICK",
-          target: { x: 140, y: 190 },
-          text: null,
-          key: null,
-          confidence: 0.93,
-          reasoning: "Computer-use fallback issues a deterministic viewport click."
-        };
-      }
-
       calls.standardCalls += 1;
       return {
         action: "WAIT",
@@ -462,6 +434,66 @@ function createComputerUseFallbackNavigator() {
         confidence: 0.62,
         reasoning: "Deliberate stall to trigger computer-use fallback."
       };
+    }
+  };
+}
+
+function createComputerUseProviderHarness() {
+  const stats = {
+    planCalls: 0,
+    confirmationRequests: 0
+  };
+
+  return {
+    stats,
+    provider: {
+      async planActions() {
+        stats.planCalls += 1;
+        return {
+          safetyDecision: "REQUIRE_CONFIRMATION",
+          safetyReason: "Typing into form field requires confirmation in this scenario.",
+          rawFunctionCallCount: 4,
+          actions: [
+            {
+              sourceFunction: "type_text_at",
+              decision: {
+                action: "TYPE",
+                target: null,
+                text: "confirmed by provider",
+                key: null,
+                confidence: 0.9,
+                reasoning: "Computer-use provider typed text into focused input."
+              }
+            },
+            {
+              sourceFunction: "wait_5_seconds",
+              decision: {
+                action: "WAIT",
+                target: null,
+                text: "300",
+                key: null,
+                confidence: 0.8,
+                reasoning: "Computer-use provider queued wait action."
+              }
+            },
+            {
+              sourceFunction: "answer_from_screen",
+              decision: {
+                action: "DONE",
+                target: null,
+                text: "computer-use provider queue complete",
+                key: null,
+                confidence: 0.95,
+                reasoning: "Computer-use provider queued terminal completion."
+              }
+            }
+          ]
+        };
+      }
+    },
+    async confirm() {
+      stats.confirmationRequests += 1;
+      return true;
     }
   };
 }
@@ -588,29 +620,51 @@ function validateReadScreenScenario(result, navigatorCalls) {
   };
 }
 
-function validateComputerUseFallbackScenario(result, navigatorCalls, startUrl) {
+function validateComputerUseFallbackScenario(result, providerStats, startUrl) {
   assertCondition(result && typeof result === "object", "computer-use result missing.");
   assertCondition(Array.isArray(result.history) && result.history.length > 0, "computer-use history missing.");
   assertCondition(
-    navigatorCalls.computerUseCalls > 0,
-    "computer-use scenario expected at least one COMPUTER_USE decision call."
+    providerStats.planCalls > 0,
+    "computer-use scenario expected at least one provider plan call."
+  );
+  assertCondition(
+    providerStats.confirmationRequests > 0,
+    "computer-use scenario expected safety confirmation callback to be invoked."
+  );
+  assertCondition(
+    result.status === "DONE",
+    `computer-use scenario expected DONE status, got ${String(result.status)}`
   );
 
-  const fallbackStep = result.history.find((record) => {
+  const providerTypeStep = result.history.find((record, index) => {
+    const previousNoProgressStreak = Number(result.history[index - 1]?.noProgressStreak ?? 0);
     return (
       record?.resolvedTier === "TIER_2_VISION" &&
-      record?.action?.action === "CLICK" &&
-      record?.noProgressStreak >= 2
+      record?.action?.action === "TYPE" &&
+      previousNoProgressStreak >= 2
     );
   });
-  assertCondition(Boolean(fallbackStep), "computer-use expected a Tier-2 click after a no-progress streak.");
+  assertCondition(
+    Boolean(providerTypeStep),
+    "computer-use expected a Tier-2 provider TYPE action after a no-progress streak."
+  );
+
+  const queuedWaitStep = result.history.find((record) => {
+    return (
+      record?.action?.action === "WAIT" &&
+      typeof record?.action?.reasoning === "string" &&
+      record.action.reasoning.includes("queued wait action")
+    );
+  });
+  assertCondition(Boolean(queuedWaitStep), "computer-use expected queued WAIT action from provider plan.");
 
   return {
     status: result.status,
     stepsTaken: result.stepsTaken,
-    computerUseCalls: navigatorCalls.computerUseCalls,
-    standardCalls: navigatorCalls.standardCalls,
-    fallbackStep: fallbackStep?.step ?? null,
+    providerPlanCalls: providerStats.planCalls,
+    confirmationRequests: providerStats.confirmationRequests,
+    fallbackStep: providerTypeStep?.step ?? null,
+    queuedWaitStep: queuedWaitStep?.step ?? null,
     finalUrlChanged: typeof result.finalUrl === "string" ? result.finalUrl !== startUrl : false,
     finalUrl: result.finalUrl
   };
@@ -734,10 +788,13 @@ async function main() {
     });
 
     const computerUseNavigator = createComputerUseFallbackNavigator();
+    const computerUseHarness = createComputerUseProviderHarness();
     const computerUseStartUrl = `${localServer.baseUrl}/computer-use-link`;
     const computerUseLoop = createPerceptionActionLoop({
       cdpClient,
       navigatorEngine: computerUseNavigator,
+      computerUseProvider: computerUseHarness.provider,
+      onComputerUseSafetyConfirmation: () => computerUseHarness.confirm(),
       maxSteps: 8,
       maxNoProgressSteps: 6,
       logger: (line) => console.info(`[computer-use] ${line}`)
@@ -750,7 +807,7 @@ async function main() {
     });
     const computerUseSummary = validateComputerUseFallbackScenario(
       computerUseResult,
-      computerUseNavigator.calls,
+      computerUseHarness.stats,
       computerUseStartUrl
     );
     const computerUseArtifact = await writeScenarioArtifact("computer-use-fallback", {

@@ -71,6 +71,16 @@ export {
 } from "./navigator/engine.js";
 
 export {
+  createComputerUseProvider,
+  type ComputerUseActionPlan,
+  type ComputerUsePlannedAction,
+  type ComputerUseProvider,
+  type ComputerUseProviderInput,
+  type ComputerUseProviderOptions,
+  type ComputerUseSafetyDecision
+} from "./navigator/computer-use-provider.js";
+
+export {
   decomposeTaskIntent,
   type DecomposeTaskIntentInput,
   type TaskDecompositionPlan,
@@ -107,6 +117,7 @@ export {
 
 export {
   type AXDeficientPageLog,
+  type ComputerUseSafetyConfirmationRequest,
   createPerceptionActionLoop,
   type EscalationEvent,
   type LoopState,
