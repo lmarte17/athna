@@ -216,6 +216,40 @@ function summarizeCacheReuseWithinTask(input) {
   const cacheReuseWithoutRefetch = result.history.filter(
     (record) => record.observationCachePerceptionHit === true && record.axTreeRefetched === false
   ).length;
+  const noProgressRecords = result.history.filter(
+    (record) => Number(record?.noProgressStreak ?? 0) > 0
+  );
+  const noProgressDecisionCacheHits = noProgressRecords.filter(
+    (record) => record?.observationCacheDecisionHit === true
+  ).length;
+
+  let lastNoProgressFingerprint = null;
+  let repeatedNoProgressFingerprintCount = 0;
+  for (const [index, record] of result.history.entries()) {
+    const noProgressStreak = Number(record?.noProgressStreak ?? 0);
+    const fingerprint =
+      typeof record?.actionFingerprint === "string" && record.actionFingerprint.length > 0
+        ? record.actionFingerprint
+        : null;
+
+    if (noProgressStreak <= 0 || !fingerprint) {
+      lastNoProgressFingerprint = null;
+      repeatedNoProgressFingerprintCount = 0;
+      continue;
+    }
+
+    if (fingerprint === lastNoProgressFingerprint) {
+      repeatedNoProgressFingerprintCount += 1;
+    } else {
+      lastNoProgressFingerprint = fingerprint;
+      repeatedNoProgressFingerprintCount = 1;
+    }
+
+    assertCondition(
+      repeatedNoProgressFingerprintCount <= 2,
+      `within-task-cache-reuse repeated no-progress action fingerprint exceeded limit at history[${index}] (fingerprint=${fingerprint}).`
+    );
+  }
 
   assertCondition(
     result.history[0].observationCachePerceptionHit === false,
@@ -226,16 +260,16 @@ function summarizeCacheReuseWithinTask(input) {
     "within-task-cache-reuse expected at least one perception cache hit."
   );
   assertCondition(
-    decisionCacheHits > 0,
-    "within-task-cache-reuse expected at least one decision cache hit (no re-inference)."
+    noProgressRecords.length > 0,
+    "within-task-cache-reuse expected at least one no-progress step."
+  );
+  assertCondition(
+    noProgressDecisionCacheHits === 0,
+    "within-task-cache-reuse expected zero decision-cache hits while noProgressStreak > 0."
   );
   assertCondition(
     cacheReuseWithoutRefetch > 0,
     "within-task-cache-reuse expected cache hit with axTreeRefetched=false."
-  );
-  assertCondition(
-    navigatorCallCount < result.history.length,
-    `within-task-cache-reuse expected navigator calls (${navigatorCallCount}) < steps (${result.history.length}).`
   );
 
   return {
@@ -247,6 +281,8 @@ function summarizeCacheReuseWithinTask(input) {
     decisionCacheHits,
     screenshotCacheHits,
     cacheReuseWithoutRefetch,
+    noProgressStepCount: noProgressRecords.length,
+    noProgressDecisionCacheHits,
     observationCacheMetrics: result.observationCache
   };
 }

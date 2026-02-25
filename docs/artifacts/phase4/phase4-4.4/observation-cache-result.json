@@ -6,28 +6,30 @@
     "scenarios": [
       {
         "name": "within-task-cache-reuse",
-        "status": "MAX_STEPS",
-        "stepsTaken": 6,
+        "status": "DONE",
+        "stepsTaken": 5,
         "summary": {
           "intent": "Click the Continue button three times before finishing the task.",
-          "status": "MAX_STEPS",
-          "stepsTaken": 6,
-          "navigatorCallCount": 1,
-          "perceptionCacheHits": 5,
-          "decisionCacheHits": 5,
-          "screenshotCacheHits": 0,
-          "cacheReuseWithoutRefetch": 5,
+          "status": "DONE",
+          "stepsTaken": 5,
+          "navigatorCallCount": 5,
+          "perceptionCacheHits": 3,
+          "decisionCacheHits": 0,
+          "screenshotCacheHits": 3,
+          "cacheReuseWithoutRefetch": 3,
+          "noProgressStepCount": 4,
+          "noProgressDecisionCacheHits": 0,
           "observationCacheMetrics": {
             "ttlMs": 60000,
-            "perceptionHits": 5,
+            "perceptionHits": 3,
             "perceptionMisses": 0,
-            "decisionHits": 5,
-            "decisionMisses": 1,
-            "screenshotHits": 0,
-            "screenshotMisses": 1,
-            "entriesWritten": 1,
+            "decisionHits": 0,
+            "decisionMisses": 2,
+            "screenshotHits": 3,
+            "screenshotMisses": 2,
+            "entriesWritten": 2,
             "expiredEntries": 0,
-            "invalidations": 0,
+            "invalidations": 1,
             "finalEntryCount": 1
           }
         },
@@ -41,21 +43,21 @@
           "intent": "Click the Continue button three times before finishing the task.",
           "status": "MAX_STEPS",
           "stepsTaken": 3,
-          "navigatorCallCount": 1,
+          "navigatorCallCount": 3,
           "firstStepPerceptionCacheHit": false,
           "firstStepDecisionCacheHit": false,
           "observationCacheMetrics": {
             "ttlMs": 60000,
             "perceptionHits": 2,
             "perceptionMisses": 0,
-            "decisionHits": 2,
+            "decisionHits": 0,
             "decisionMisses": 1,
-            "screenshotHits": 0,
+            "screenshotHits": 2,
             "screenshotMisses": 1,
             "entriesWritten": 1,
             "expiredEntries": 0,
-            "invalidations": 0,
-            "finalEntryCount": 1
+            "invalidations": 1,
+            "finalEntryCount": 0
           }
         },
         "artifact": "/Users/lmarte/Documents/Projects/athna/docs/artifacts/phase4/phase4-4.4/scenarios/task-session-cache-reset-observation-cache-result.json"
@@ -65,8 +67,8 @@
   "runConfig": {
     "remoteDebuggingPort": 9333,
     "headful": true,
-    "localServerPort": 54094,
-    "startUrl": "http://127.0.0.1:54094/cache-flow",
+    "localServerPort": 50830,
+    "startUrl": "http://127.0.0.1:50830/cache-flow",
     "selectedIntent": "Click the Continue button three times before finishing the task.",
     "observationCacheTtlMs": 60000
   }

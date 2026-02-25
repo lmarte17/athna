@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -23,7 +24,7 @@ const SCENARIOS = [
     name: "flight-intent-decomposition",
     intent:
       "Find the cheapest flight from NYC to London next Friday on Google Flights, set travel dates, run search, and extract the top itinerary.",
-    startUrl: "about:blank",
+    startUrl: "/decomposition-flow",
     maxSteps: 8,
     maxNoProgressSteps: 2,
     maxSubtaskRetries: 1,
@@ -36,7 +37,7 @@ const SCENARIOS = [
     name: "checkpoint-retry-pressure",
     intent:
       "Open flights search, fill origin and destination, set dates, apply cheapest filter, extract top fare, and verify final details.",
-    startUrl: "about:blank",
+    startUrl: "/decomposition-flow",
     maxSteps: 10,
     maxNoProgressSteps: 1,
     maxSubtaskRetries: 2,
@@ -149,6 +150,84 @@ async function stopElectronCdpHost(processHandle) {
   }
 }
 
+async function startLocalScenarioServer() {
+  const server = createServer((request, response) => {
+    const requestUrl = request.url || "/";
+    if (requestUrl.startsWith("/decomposition-flow")) {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Decomposition Fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Flight Search Fixture</h1>
+      <label for="origin">Origin</label>
+      <input id="origin" aria-label="Origin" type="text" />
+      <label for="destination">Destination</label>
+      <input id="destination" aria-label="Destination" type="text" />
+      <label for="departure">Departure Date</label>
+      <input id="departure" aria-label="Departure Date" type="date" />
+      <label for="return">Return Date</label>
+      <input id="return" aria-label="Return Date" type="date" />
+      <label for="cheapest">
+        <input id="cheapest" aria-label="Cheapest Fare" type="checkbox" />
+        Cheapest fare only
+      </label>
+      <button id="search-button" type="button">Search Flights</button>
+      <pre id="status">ready</pre>
+    </main>
+    <script>
+      const status = document.getElementById("status");
+      const setStatus = (value) => {
+        if (status) {
+          status.textContent = value;
+        }
+      };
+      const stamp = () => String(Date.now());
+      for (const id of ["origin", "destination", "departure", "return", "cheapest"]) {
+        const el = document.getElementById(id);
+        el?.addEventListener("input", () => setStatus("field-updated:" + id + ":" + stamp()));
+        el?.addEventListener("change", () => setStatus("field-changed:" + id + ":" + stamp()));
+      }
+      document.getElementById("search-button")?.addEventListener("click", () => {
+        setStatus("search-clicked:" + stamp());
+      });
+    </script>
+  </body>
+</html>`);
+      return;
+    }
+
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end("<html><body><h1>OK</h1></body></html>");
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Failed to resolve local scenario server address.");
+  }
+
+  return {
+    server,
+    port: address.port,
+    baseUrl: `http://127.0.0.1:${address.port}`
+  };
+}
+
+async function stopLocalScenarioServer(server) {
+  await new Promise((resolve) => {
+    server.close(() => resolve());
+  });
+}
+
 function assertCondition(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -196,11 +275,18 @@ function validateScenario(run) {
   const retryEvents = result.subtaskStatusTimeline.filter((event) =>
     typeof event.reason === "string" && event.reason.includes("RETRY_FROM_CHECKPOINT")
   );
+  const replanEvents = result.subtaskStatusTimeline.filter(
+    (event) =>
+      typeof event.reason === "string" &&
+      (event.reason.includes("REDECOMPOSED") ||
+        event.reason.includes("FAILED_REPLAN_TRIGGER") ||
+        event.reason.includes("DEADLOCK_TRIGGER_REPLAN"))
+  );
 
   if (scenario.expectations?.requireRetryFromCheckpoint) {
     assertCondition(
-      retryEvents.length > 0,
-      `[${scenario.name}] expected at least one RETRY_FROM_CHECKPOINT event.`
+      retryEvents.length > 0 || replanEvents.length > 0,
+      `[${scenario.name}] expected at least one RETRY_FROM_CHECKPOINT or replan event.`
     );
   }
 
@@ -216,6 +302,7 @@ function validateScenario(run) {
     completedSubtasks: result.subtasks.filter((subtask) => subtask.status === "COMPLETE").length,
     failedSubtasks: result.subtasks.filter((subtask) => subtask.status === "FAILED").length,
     retryFromCheckpointEvents: retryEvents.length,
+    replanEvents: replanEvents.length,
     checkpoint: result.checkpoint,
     decomposition: result.decomposition
   };
@@ -235,6 +322,7 @@ async function main() {
   const remoteDebuggingPort = parseRemoteDebuggingPort();
   const versionEndpoint = `http://127.0.0.1:${remoteDebuggingPort}/json/version`;
   const electronHost = startElectronCdpHost(remoteDebuggingPort);
+  const localServer = await startLocalScenarioServer();
 
   let cdpClient = null;
 
@@ -264,7 +352,7 @@ async function main() {
 
       const result = await loop.runTask({
         intent: scenario.intent,
-        startUrl: scenario.startUrl,
+        startUrl: `${localServer.baseUrl}${scenario.startUrl}`,
         maxSteps: scenario.maxSteps,
         maxNoProgressSteps: scenario.maxNoProgressSteps,
         maxSubtaskRetries: scenario.maxSubtaskRetries
@@ -280,9 +368,13 @@ async function main() {
         ...result,
         runConfig: {
           phase: MILESTONE,
-          scenario,
+          scenario: {
+            ...scenario,
+            startUrl: `${localServer.baseUrl}${scenario.startUrl}`
+          },
           remoteDebuggingPort,
-          headful: isHeadfulEnabled()
+          headful: isHeadfulEnabled(),
+          localServerPort: localServer.port
         },
         subtaskStatusCallbackEvents: onSubtaskStatusEvents,
         summary
@@ -307,7 +399,8 @@ async function main() {
       },
       runConfig: {
         remoteDebuggingPort,
-        headful: isHeadfulEnabled()
+        headful: isHeadfulEnabled(),
+        localServerPort: localServer.port
       }
     };
 
@@ -332,6 +425,7 @@ async function main() {
     }
 
     await stopElectronCdpHost(electronHost);
+    await stopLocalScenarioServer(localServer.server);
   }
 }
 

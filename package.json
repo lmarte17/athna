@@ -18,6 +18,7 @@
     "tiered:smoke": "npm run tiered:smoke -w @ghost-browser/orchestration",
     "context-window:smoke": "npm run context-window:smoke -w @ghost-browser/orchestration",
     "decomposition:smoke": "npm run decomposition:smoke -w @ghost-browser/orchestration",
+    "decision-routing:smoke": "npm run decision-routing:smoke -w @ghost-browser/orchestration",
     "structured-error:smoke": "npm run structured-error:smoke -w @ghost-browser/orchestration",
     "observation-cache:smoke": "npm run observation-cache:smoke -w @ghost-browser/orchestration",
     "request-interception:smoke": "npm run request-interception:smoke -w @ghost-browser/orchestration",

@@ -54,6 +54,18 @@ import {
   type GhostTabTaskState,
   type GhostTabTaskStateMachine
 } from "../task/state-machine.js";
+import {
+  buildDisallowedActionFingerprints,
+  createActionFingerprint,
+  createDiversificationFallbackAction,
+  createSubmitFallbackAction,
+  evaluateDeadlockTriggers,
+  isNoProgressStep,
+  registerActionFingerprintOutcome,
+  shouldReadDecisionCache,
+  shouldScheduleSubmitFallback,
+  shouldWriteDecisionCache
+} from "./decision-policy.js";
 
 const DEFAULT_MAX_STEPS = 20;
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.75;
@@ -188,6 +200,8 @@ export interface LoopStepRecord {
   targetMightBeBelowFold: boolean;
   scrollCount: number;
   noProgressStreak: number;
+  actionFingerprint: string | null;
+  disallowedActionFingerprintCount: number;
   postActionSignificantDomMutationObserved: boolean;
   postActionMutationSummary: DomMutationSummary | null;
   domExtractionAttempted: boolean;
@@ -490,11 +504,18 @@ class PerceptionActionLoop {
     const tierUsage = createInitialTierUsageMetrics();
     let scrollCount = 0;
     let noProgressStreak = 0;
+    let lowConfidenceStreak = 0;
+    let blockedActionStreak = 0;
+    let pendingSubmitFallbackAction: NavigatorActionDecision | null = null;
     let pendingAXTreeRefetchReason: AXTreeRefetchReason = "INITIAL";
     let lastPerceptionUrl: string | null = null;
     let currentUrl = input.startUrl;
     let finalAction: NavigatorActionDecision | null = null;
     let finalExecution: ActionExecutionResult | null = null;
+    const noProgressFingerprintCounts = new Map<string, number>();
+    const bannedActionFingerprints = new Map<string, number>();
+    const sameUrlSubtaskNoProgressCounts = new Map<string, number>();
+    const subtaskReplanCounts = new Map<string, number>();
 
     const getActiveSubtaskIndex = (): number =>
       subtasks.findIndex((subtask) => subtask.status === "IN_PROGRESS");
@@ -648,6 +669,7 @@ class PerceptionActionLoop {
           action: "WAIT",
           target: null,
           text: "1000",
+          key: null,
           confidence: 0.5,
           reasoning:
             "Retryable structured error fallback: issue a short wait/retry instead of immediate failure."
@@ -658,6 +680,7 @@ class PerceptionActionLoop {
           action: "WAIT",
           target: null,
           text: "1000",
+          key: null,
           confidence: Math.max(0.5, Math.min(1, decision.confidence)),
           reasoning: `Retryable structured error fallback: ${decision.reasoning}`
         };
@@ -770,6 +793,59 @@ class PerceptionActionLoop {
       activeSubtask.lastUpdatedAt = new Date().toISOString();
       checkpoint.currentSubtaskAttempt = activeSubtask.attemptCount;
       emitSubtaskStatus(activeSubtaskIndex, `${params.reason}:RETRY_FROM_CHECKPOINT`);
+      return true;
+    };
+
+    const replanActiveSubtaskFromCheckpoint = (params: {
+      step: number;
+      reason: string;
+      url: string;
+    }): boolean => {
+      const activeSubtaskIndex = getActiveSubtaskIndex();
+      if (activeSubtaskIndex < 0) {
+        return false;
+      }
+
+      const activeSubtask = subtasks[activeSubtaskIndex];
+      const replanCount = subtaskReplanCounts.get(activeSubtask.id) ?? 0;
+      if (replanCount >= 1) {
+        return false;
+      }
+
+      const replanned = decomposeTaskIntent({
+        intent: activeSubtask.intent,
+        startUrl: params.url
+      });
+      if (!Array.isArray(replanned.subtasks) || replanned.subtasks.length === 0) {
+        return false;
+      }
+
+      subtaskReplanCounts.set(activeSubtask.id, replanCount + 1);
+      activeSubtask.status = "FAILED";
+      activeSubtask.failedStep = params.step;
+      activeSubtask.lastUpdatedAt = new Date().toISOString();
+      emitSubtaskStatus(activeSubtaskIndex, `${params.reason}:FAILED_REPLAN_TRIGGER`);
+
+      const replacementSubtasks = initializeRuntimeSubtasks(replanned.subtasks).map(
+        (subtask, index) => ({
+          ...subtask,
+          id: `${activeSubtask.id}-r${replanCount + 1}-${subtask.id}`,
+          startUrl: index === 0 ? params.url : null,
+          status: (index === 0 ? "IN_PROGRESS" : "PENDING") as TaskSubtaskStatus,
+          attemptCount: index === 0 ? Math.max(1, activeSubtask.attemptCount + 1) : 0,
+          completedStep: null,
+          failedStep: null,
+          lastUpdatedAt: new Date().toISOString()
+        })
+      );
+
+      subtasks.splice(activeSubtaskIndex, 1, ...replacementSubtasks);
+      const replacementActive = subtasks[activeSubtaskIndex];
+      checkpoint.currentSubtaskAttempt = replacementActive?.attemptCount ?? 1;
+      for (let index = 0; index < replacementSubtasks.length; index += 1) {
+        emitSubtaskStatus(activeSubtaskIndex + index, `${params.reason}:REDECOMPOSED`);
+      }
+
       return true;
     };
 
@@ -1134,10 +1210,16 @@ class PerceptionActionLoop {
               totalSubtasks: subtasks.length
             })
           : null;
+        const disallowedActionFingerprints = buildDisallowedActionFingerprints({
+          bannedFingerprints: bannedActionFingerprints,
+          step
+        });
         const observation = {
           currentUrl: urlAtPerception,
           interactiveElementIndex: indexResult.elements,
           normalizedAXTree: treeEncoding.payload,
+          noProgressStreak,
+          disallowedActionFingerprints,
           previousActions: contextSnapshot.previousActions,
           previousObservations: contextSnapshot.previousObservations,
           historySummary: contextSnapshot.historySummary,
@@ -1172,13 +1254,23 @@ class PerceptionActionLoop {
         let tier2PromptCharCount = 0;
         let tier2EstimatedPromptTokens = 0;
         let promptTokenAlertTriggered = false;
+        let actionFingerprint: string | null = null;
+        let lowConfidenceEscalatedThisStep = false;
+        let sameUrlSubtaskNoProgressStreak = 0;
 
         transitionState("INFERRING", {
           step,
           url: urlAtPerception
         });
 
-        if (shouldBypassTier1ForNoProgress) {
+        if (pendingSubmitFallbackAction) {
+          inferredAction = pendingSubmitFallbackAction;
+          pendingSubmitFallbackAction = null;
+          resolvedTier = "TIER_1_AX";
+          this.logger(
+            `[loop][step ${step}] policy=SUBMIT_FALLBACK action=PRESS_KEY key=Enter url=${urlAtPerception}`
+          );
+        } else if (shouldBypassTier1ForNoProgress) {
           escalationReason = "NO_PROGRESS";
           tierUsage.noProgressEscalations += 1;
           tier2EscalationEvent = createEscalationEvent({
@@ -1203,11 +1295,13 @@ class PerceptionActionLoop {
             escalationReason: null
           });
           observationCacheDecisionKey = tier1DecisionCacheKey;
-          const tier1CachedDecision = observationCache.getDecision(
-            urlAtPerception,
-            tier1DecisionCacheKey,
-            Date.now()
-          );
+          const allowTier1DecisionCacheRead = shouldReadDecisionCache({
+            noProgressStreak,
+            escalationReason: null
+          });
+          const tier1CachedDecision = allowTier1DecisionCacheRead
+            ? observationCache.getDecision(urlAtPerception, tier1DecisionCacheKey, Date.now())
+            : null;
           observationCacheDecisionHit = tier1CachedDecision !== null;
           this.logger(
             `[loop][step ${step}] state=INFERRING tier=TIER_1_AX url=${urlAtPerception} elements=${indexResult.elementCount} normalizedChars=${indexResult.normalizedCharCount} navigatorTreeChars=${treeEncoding.encodedCharCount} observationChars=${tier1ObservationCharCount} toon=${treeEncoding.usedToonEncoding} scrollY=${scrollPosition.scrollY} viewportH=${scrollPosition.viewportHeight} docH=${scrollPosition.documentHeight} belowFold=${targetMightBeBelowFold} axRefetch=${shouldRefetchAXTree} refetchReason=${axTreeRefetchReason} cacheHit=${observationCacheDecisionHit}`
@@ -1249,7 +1343,13 @@ class PerceptionActionLoop {
             inferredAction = tier1Action;
             resolvedTier = "TIER_1_AX";
             tierUsage.resolvedAtTier1 += 1;
-            if (!tier1CachedDecision) {
+            if (
+              !tier1CachedDecision &&
+              shouldWriteDecisionCache({
+                noProgressStreak,
+                escalationReason: null
+              })
+            ) {
               observationCache.setDecision(
                 urlAtPerception,
                 tier1DecisionCacheKey,
@@ -1261,6 +1361,8 @@ class PerceptionActionLoop {
             escalationReason = isUnsafeTier1Action ? "UNSAFE_ACTION" : "LOW_CONFIDENCE";
             if (escalationReason === "LOW_CONFIDENCE") {
               tierUsage.lowConfidenceEscalations += 1;
+              lowConfidenceStreak += 1;
+              lowConfidenceEscalatedThisStep = true;
             } else {
               tierUsage.unsafeActionEscalations += 1;
             }
@@ -1309,6 +1411,10 @@ class PerceptionActionLoop {
           );
         }
 
+        if (!lowConfidenceEscalatedThisStep) {
+          lowConfidenceStreak = 0;
+        }
+
         if (!axDeficientDetected && axDeficiencyEvaluation.lowInteractiveCount) {
           this.logger(
             `[loop][step ${step}] ax-deficient-check=SKIPPED reason=${axDeficiencyEvaluation.skipReason} elements=${indexResult.elementCount} threshold=${axDeficientInteractiveThreshold} loadComplete=${axDeficiencySignals.isLoadComplete} significantVisual=${axDeficiencySignals.hasSignificantVisualContent} url=${urlAtPerception}`
@@ -1325,6 +1431,7 @@ class PerceptionActionLoop {
               action: "FAILED",
               target: null,
               text: `Stopped after ${noProgressStreak} no-progress steps at scrollY=${Math.round(scrollPosition.scrollY)} on ${urlAtPerception}.`,
+              key: null,
               confidence: 1,
               reasoning:
                 "Above-the-fold heuristic: no additional below-fold content is available, so another viewport screenshot is unlikely to find a new target."
@@ -1375,11 +1482,13 @@ class PerceptionActionLoop {
             escalationReason
           });
           observationCacheDecisionKey = tier2DecisionCacheKey;
-          const tier2CachedDecision = observationCache.getDecision(
-            urlAtPerception,
-            tier2DecisionCacheKey,
-            Date.now()
-          );
+          const allowTier2DecisionCacheRead = shouldReadDecisionCache({
+            noProgressStreak,
+            escalationReason
+          });
+          const tier2CachedDecision = allowTier2DecisionCacheRead
+            ? observationCache.getDecision(urlAtPerception, tier2DecisionCacheKey, Date.now())
+            : null;
           observationCacheDecisionHit = tier2CachedDecision !== null;
           if (tier2CachedDecision) {
             inferredAction = tier2CachedDecision.decision;
@@ -1459,12 +1568,19 @@ class PerceptionActionLoop {
               escalationReason
             });
             if (inferredAction) {
-              observationCache.setDecision(
-                urlAtPerception,
-                tier2DecisionCacheKey,
-                inferredAction,
-                Date.now()
-              );
+              if (
+                shouldWriteDecisionCache({
+                  noProgressStreak,
+                  escalationReason
+                })
+              ) {
+                observationCache.setDecision(
+                  urlAtPerception,
+                  tier2DecisionCacheKey,
+                  inferredAction,
+                  Date.now()
+                );
+              }
             }
           }
           resolvedTier = "TIER_2_VISION";
@@ -1509,6 +1625,7 @@ class PerceptionActionLoop {
               action: "FAILED",
               target: null,
               text: `Tiered perception aborted after ${maxScrollSteps} scroll steps at ${urlAtPerception}.`,
+              key: null,
               confidence: inferredAction.confidence,
               reasoning: "Tier 2 still could not locate a reliable target after maximum scroll retries."
             };
@@ -1524,6 +1641,7 @@ class PerceptionActionLoop {
               action: "SCROLL",
               target: inferredAction.target,
               text: String(scrollStepPx),
+              key: null,
               confidence: inferredAction.confidence,
               reasoning:
                 "Tier 3 fallback: scroll viewport and restart perception from Tier 1 at the next position."
@@ -1534,6 +1652,25 @@ class PerceptionActionLoop {
           }
         } else if (resolvedTier === "TIER_2_VISION") {
           tierUsage.resolvedAtTier2 += 1;
+        }
+
+        actionFingerprint = createActionFingerprint({
+          action: actionToExecute,
+          url: urlAtPerception
+        });
+        if (disallowedActionFingerprints.includes(actionFingerprint)) {
+          const diversifiedAction = createDiversificationFallbackAction({
+            previousAction: actionToExecute,
+            reason: "Disallowed repeated no-progress action fingerprint"
+          });
+          this.logger(
+            `[loop][step ${step}] policy=DIVERSIFY fingerprint="${actionFingerprint}" from=${actionToExecute.action} to=${diversifiedAction.action} url=${urlAtPerception}`
+          );
+          actionToExecute = diversifiedAction;
+          actionFingerprint = createActionFingerprint({
+            action: actionToExecute,
+            url: urlAtPerception
+          });
         }
 
         finalAction = actionToExecute;
@@ -1631,13 +1768,63 @@ class PerceptionActionLoop {
           );
         }
         currentUrl = execution.currentUrl;
-        noProgressStreak = isNoProgressStep({
+        const noProgressStepDetected = isNoProgressStep({
+          action: actionToExecute,
           urlAtPerception,
           urlAfterAction: currentUrl,
           execution
-        })
-          ? noProgressStreak + 1
-          : 0;
+        });
+        noProgressStreak = noProgressStepDetected ? noProgressStreak + 1 : 0;
+
+        if (actionFingerprint) {
+          const fingerprintOutcome = registerActionFingerprintOutcome({
+            fingerprint: actionFingerprint,
+            producedProgress: !noProgressStepDetected,
+            step,
+            noProgressFingerprintCounts,
+            bannedFingerprints: bannedActionFingerprints
+          });
+          if (fingerprintOutcome.newlyBanned && observationCacheDecisionKey) {
+            observationCache.invalidateDecision(urlAtPerception, observationCacheDecisionKey);
+          }
+        }
+
+        if (shouldScheduleSubmitFallback({ action: actionToExecute, execution })) {
+          pendingSubmitFallbackAction = createSubmitFallbackAction();
+        } else if (actionToExecute.action !== "PRESS_KEY") {
+          pendingSubmitFallbackAction = null;
+        }
+
+        if (noProgressStepDetected && (actionToExecute.action === "WAIT" || actionToExecute.action === "FAILED")) {
+          blockedActionStreak += 1;
+        } else {
+          blockedActionStreak = 0;
+        }
+
+        const activeSubtaskIdForStall = activeSubtask?.id ?? "none";
+        const sameUrlSubtaskStallKey = `${currentUrl}|${activeSubtaskIdForStall}`;
+        if (noProgressStepDetected) {
+          sameUrlSubtaskNoProgressStreak =
+            (sameUrlSubtaskNoProgressCounts.get(sameUrlSubtaskStallKey) ?? 0) + 1;
+          sameUrlSubtaskNoProgressCounts.set(sameUrlSubtaskStallKey, sameUrlSubtaskNoProgressStreak);
+        } else {
+          sameUrlSubtaskNoProgressCounts.delete(sameUrlSubtaskStallKey);
+          sameUrlSubtaskNoProgressStreak = 0;
+        }
+
+        const deadlockEvaluation = evaluateDeadlockTriggers({
+          noProgressStreak,
+          lowConfidenceStreak,
+          blockedActionStreak,
+          sameUrlSubtaskNoProgressStreak,
+          maxNoProgressSteps
+        });
+        if (deadlockEvaluation.triggers.length > 0) {
+          this.logger(
+            `[loop][step ${step}] deadlock-triggers=${deadlockEvaluation.triggers.join(",")} noProgress=${noProgressStreak} lowConfidence=${lowConfidenceStreak} blocked=${blockedActionStreak} sameUrlSubtask=${sameUrlSubtaskNoProgressStreak}`
+          );
+        }
+
         const nextAXTreeRefetchReason = determineAXTreeRefetchReason({
           action: actionToExecute,
           execution,
@@ -1692,6 +1879,8 @@ class PerceptionActionLoop {
             targetMightBeBelowFold,
             scrollCount,
             noProgressStreak,
+            actionFingerprint,
+            disallowedActionFingerprintCount: disallowedActionFingerprints.length,
             postActionSignificantDomMutationObserved: execution.significantDomMutationObserved,
             postActionMutationSummary: execution.domMutationSummary,
             domExtractionAttempted,
@@ -1815,6 +2004,33 @@ class PerceptionActionLoop {
           });
         }
 
+        if (noProgressStepDetected && deadlockEvaluation.shouldReplanSubtask) {
+          const replannedFromCheckpoint = replanActiveSubtaskFromCheckpoint({
+            step,
+            reason: "DEADLOCK_TRIGGER_REPLAN",
+            url: currentUrl
+          });
+          if (replannedFromCheckpoint) {
+            this.logger(
+              `[loop][step ${step}] subtask-replan reason=DEADLOCK_TRIGGER_REPLAN active=${getActiveSubtask()?.id ?? "none"} noProgress=${noProgressStreak} sameUrlSubtask=${sameUrlSubtaskNoProgressStreak}`
+            );
+            noProgressStreak = 0;
+            blockedActionStreak = 0;
+            sameUrlSubtaskNoProgressStreak = 0;
+            sameUrlSubtaskNoProgressCounts.delete(sameUrlSubtaskStallKey);
+            pendingSubmitFallbackAction = null;
+            pendingAXTreeRefetchReason = "SIGNIFICANT_DOM_MUTATION";
+            observationCache.invalidate(urlAtPerception);
+            observationCache.invalidate(currentUrl);
+            transitionState("PERCEIVING", {
+              step: step + 1,
+              url: currentUrl,
+              reason: "SUBTASK_REPLAN"
+            });
+            continue;
+          }
+        }
+
         if (noProgressStreak >= maxNoProgressSteps) {
           const retriedFromCheckpoint = retryActiveSubtaskFromCheckpoint({
             step,
@@ -1840,6 +2056,7 @@ class PerceptionActionLoop {
             action: "FAILED",
             target: null,
             text: `Aborted after ${noProgressStreak} no-progress steps at ${currentUrl}.`,
+            key: null,
             confidence: actionToExecute.confidence,
             reasoning:
               "Loop guard triggered because actions produced no navigation, DOM mutation, or URL change."
@@ -2048,6 +2265,7 @@ class PerceptionActionLoop {
       action: action.action,
       target: action.target,
       text: action.text,
+      key: action.key,
       confidence: action.confidence,
       reasoning: action.reasoning
     };
@@ -2088,6 +2306,8 @@ function createStepRecord(input: {
   targetMightBeBelowFold: boolean;
   scrollCount: number;
   noProgressStreak: number;
+  actionFingerprint: string | null;
+  disallowedActionFingerprintCount: number;
   postActionSignificantDomMutationObserved: boolean;
   postActionMutationSummary: DomMutationSummary | null;
   domExtractionAttempted: boolean;
@@ -2139,6 +2359,8 @@ function createStepRecord(input: {
     targetMightBeBelowFold: input.targetMightBeBelowFold,
     scrollCount: input.scrollCount,
     noProgressStreak: input.noProgressStreak,
+    actionFingerprint: input.actionFingerprint,
+    disallowedActionFingerprintCount: input.disallowedActionFingerprintCount,
     postActionSignificantDomMutationObserved: input.postActionSignificantDomMutationObserved,
     postActionMutationSummary: input.postActionMutationSummary,
     domExtractionAttempted: input.domExtractionAttempted,
@@ -2288,11 +2510,17 @@ function evaluateSubtaskVerification(input: {
     default: {
       const confirmed =
         input.execution.navigationObserved ||
+        input.execution.urlChanged ||
         input.execution.domMutationObserved ||
-        input.action.action !== "WAIT";
+        input.execution.scrollChanged ||
+        input.execution.focusChanged ||
+        input.execution.inputValueChanged ||
+        hasStructuredData(input.execution.extractedData);
       return {
         satisfied: confirmed,
-        reason: confirmed ? "meaningful_action_confirmed" : "no_meaningful_action"
+        reason: confirmed
+          ? "meaningful_effect_confirmed"
+          : "no_meaningful_effect_detected"
       };
     }
   }
@@ -2557,6 +2785,7 @@ function resolveDomBypassAction(input: {
         y: round3(box.y + box.height / 2)
       },
       text: null,
+      key: null,
       confidence: 0.9,
       reasoning:
         "DOM extraction bypass selected a single high-confidence interactive target without requiring a screenshot."
@@ -2669,20 +2898,6 @@ function createEscalationEvent(input: {
     resolvedConfidence: input.resolvedConfidence,
     timestamp: new Date().toISOString()
   };
-}
-
-function isNoProgressStep(input: {
-  urlAtPerception: string;
-  urlAfterAction: string;
-  execution: ActionExecutionResult;
-}): boolean {
-  if (input.execution.status !== "acted") {
-    return false;
-  }
-  if (input.execution.navigationObserved || input.execution.domMutationObserved) {
-    return false;
-  }
-  return input.urlAfterAction === input.urlAtPerception;
 }
 
 function assertTier1ConfidencePolicy(input: {

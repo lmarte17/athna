@@ -1,0 +1,586 @@
+import { createServer } from "node:http";
+import { spawn } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const DEFAULT_REMOTE_DEBUGGING_PORT = 9333;
+const POLL_INTERVAL_MS = 250;
+const STARTUP_TIMEOUT_MS = 20_000;
+const MILESTONE = "5.1";
+
+if (!process.env.GHOST_HEADFUL) {
+  process.env.GHOST_HEADFUL = process.env.GHOST_HEADLESS ?? "true";
+}
+
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = path.resolve(scriptDirectory, "..", "..");
+const artifactDirectory = path.join(repositoryRoot, "docs", "artifacts", "phase5", "phase5-5.1");
+const scenarioArtifactsDirectory = path.join(artifactDirectory, "scenarios");
+const artifactPath = path.join(artifactDirectory, "decision-routing-result.json");
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function parseRemoteDebuggingPort() {
+  const rawValue = process.env.GHOST_REMOTE_DEBUGGING_PORT;
+  const parsedPort = Number.parseInt(rawValue ?? String(DEFAULT_REMOTE_DEBUGGING_PORT), 10);
+
+  if (Number.isNaN(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+    throw new Error(`Invalid GHOST_REMOTE_DEBUGGING_PORT: ${String(rawValue)}`);
+  }
+
+  return parsedPort;
+}
+
+function parseBooleanLike(rawValue, defaultValue) {
+  if (typeof rawValue !== "string" || !rawValue.trim()) {
+    return defaultValue;
+  }
+
+  const normalized = rawValue.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
+}
+
+function isHeadfulEnabled() {
+  return parseBooleanLike(process.env.GHOST_HEADFUL, true);
+}
+
+async function waitForWebSocketEndpoint(versionEndpoint, timeoutMs) {
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const response = await fetch(versionEndpoint);
+      if (response.ok) {
+        const payload = await response.json();
+        if (typeof payload.webSocketDebuggerUrl === "string") {
+          return payload.webSocketDebuggerUrl;
+        }
+      }
+    } catch {}
+
+    await sleep(POLL_INTERVAL_MS);
+  }
+
+  throw new Error(`Timed out waiting for Electron CDP host at ${versionEndpoint}`);
+}
+
+function startElectronCdpHost(remoteDebuggingPort) {
+  const runHeadfulGhostTab = isHeadfulEnabled();
+  const scriptName = runHeadfulGhostTab ? "cdp:host:headful" : "cdp:host";
+
+  return spawn("npm", ["run", scriptName, "-w", "@ghost-browser/electron"], {
+    cwd: repositoryRoot,
+    env: {
+      ...process.env,
+      GHOST_REMOTE_DEBUGGING_PORT: String(remoteDebuggingPort),
+      GHOST_HEADFUL: String(runHeadfulGhostTab)
+    },
+    stdio: "inherit"
+  });
+}
+
+function waitForExit(processHandle) {
+  return new Promise((resolve, reject) => {
+    processHandle.once("exit", (code, signal) => {
+      if (code === 0 || signal === "SIGTERM") {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`Process exited unexpectedly with code=${String(code)} signal=${String(signal)}`));
+    });
+  });
+}
+
+async function stopElectronCdpHost(processHandle) {
+  if (processHandle.exitCode !== null) {
+    return;
+  }
+
+  processHandle.kill("SIGTERM");
+
+  try {
+    await Promise.race([waitForExit(processHandle), sleep(5_000)]);
+  } finally {
+    if (processHandle.exitCode === null) {
+      processHandle.kill("SIGKILL");
+    }
+  }
+}
+
+async function startLocalScenarioServer() {
+  const server = createServer((request, response) => {
+    const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
+
+    if (requestUrl.pathname === "/enter-required") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Enter Required Search</title>
+  </head>
+  <body>
+    <main>
+      <h1>Enter Required Search</h1>
+      <p>Typing alone does not submit. Enter is required.</p>
+      <form id="search-form" action="/enter-required/results" method="get">
+        <label for="query">Query</label>
+        <input id="query" name="q" type="search" autocomplete="off" />
+      </form>
+    </main>
+    <script>
+      const input = document.getElementById("query");
+      input?.focus();
+      input?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") {
+          return;
+        }
+        event.preventDefault();
+        const query = encodeURIComponent(input.value || "");
+        window.location.assign("/enter-required/results?q=" + query);
+      });
+    </script>
+  </body>
+</html>`);
+      return;
+    }
+
+    if (requestUrl.pathname === "/enter-required/results") {
+      const query = requestUrl.searchParams.get("q") || "";
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Search Results</title>
+  </head>
+  <body>
+    <main>
+      <h1 id="result-title">Results for: ${escapeHtml(query)}</h1>
+    </main>
+  </body>
+</html>`);
+      return;
+    }
+
+    if (requestUrl.pathname === "/noop-button") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>No-Op Button Fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>No-Op Button Fixture</h1>
+      <button id="noop-button" type="button">Click me (no-op)</button>
+    </main>
+    <script>
+      const button = document.getElementById("noop-button");
+      button?.addEventListener("click", (event) => {
+        event.preventDefault();
+      });
+    </script>
+  </body>
+</html>`);
+      return;
+    }
+
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end("<html><body><h1>OK</h1></body></html>");
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Failed to resolve local scenario server address.");
+  }
+
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  return {
+    server,
+    port: address.port,
+    baseUrl
+  };
+}
+
+async function stopLocalScenarioServer(server) {
+  await new Promise((resolve) => {
+    server.close(() => resolve());
+  });
+}
+
+function assertCondition(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+function getTargetFromObservation(observation, matcher) {
+  if (!observation || !Array.isArray(observation.interactiveElementIndex)) {
+    return null;
+  }
+
+  const entry = observation.interactiveElementIndex.find((candidate) => matcher(candidate));
+  const box = entry?.boundingBox;
+  if (!box) {
+    return null;
+  }
+
+  return {
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 2
+  };
+}
+
+function createEnterFallbackNavigator() {
+  let callCount = 0;
+  return {
+    async decideNextAction(input) {
+      callCount += 1;
+
+      if (callCount === 1) {
+        const target = getTargetFromObservation(input.observation, (candidate) => {
+          const role = String(candidate?.role || "").toLowerCase();
+          const name = String(candidate?.name || "").toLowerCase();
+          return role === "searchbox" || role === "textbox" || name.includes("query");
+        });
+        if (!target) {
+          throw new Error("enter-required fixture: unable to resolve query input target.");
+        }
+        return {
+          action: "CLICK",
+          target,
+          text: null,
+          key: null,
+          confidence: 0.95,
+          reasoning: "Focus the search field before typing."
+        };
+      }
+
+      if (callCount === 2) {
+        return {
+          action: "TYPE",
+          target: null,
+          text: "athna reliability routing",
+          key: null,
+          confidence: 0.95,
+          reasoning: "Type the query without embedding Enter in text."
+        };
+      }
+
+      return {
+        action: "DONE",
+        target: null,
+        text: "enter fixture complete",
+        key: null,
+        confidence: 1,
+        reasoning: "Stop once Enter fallback has been exercised."
+      };
+    }
+  };
+}
+
+function createRepeatedNoopClickNavigator() {
+  return {
+    async decideNextAction(input) {
+      const target = getTargetFromObservation(input.observation, (candidate) => {
+        const role = String(candidate?.role || "").toLowerCase();
+        const name = String(candidate?.name || "").toLowerCase();
+        return role === "button" || name.includes("click me");
+      });
+      if (!target) {
+        throw new Error("noop fixture: unable to resolve no-op button target.");
+      }
+
+      return {
+        action: "CLICK",
+        target,
+        text: null,
+        key: null,
+        confidence: 0.9,
+        reasoning: "Repeatedly click the same no-op button to exercise anti-repeat routing."
+      };
+    }
+  };
+}
+
+function validateEnterRequiredScenario(result, startUrl) {
+  assertCondition(result && typeof result === "object", "enter-required result missing.");
+  assertCondition(Array.isArray(result.history) && result.history.length > 0, "enter-required history missing.");
+
+  const typeStepIndex = result.history.findIndex((record) => record?.action?.action === "TYPE");
+  assertCondition(typeStepIndex >= 0, "enter-required expected at least one TYPE action.");
+
+  const pressEnterStepIndex = result.history.findIndex((record, index) => {
+    if (index <= typeStepIndex || index > typeStepIndex + 2) {
+      return false;
+    }
+    return record?.action?.action === "PRESS_KEY" && record?.action?.key === "Enter";
+  });
+  assertCondition(
+    pressEnterStepIndex >= 0,
+    "enter-required expected PRESS_KEY Enter within 1-2 steps after TYPE."
+  );
+
+  const pressEnterRecord = result.history[pressEnterStepIndex];
+  assertCondition(
+    pressEnterRecord?.execution?.navigationObserved || pressEnterRecord?.execution?.urlChanged,
+    "enter-required expected PRESS_KEY Enter to produce navigation or URL change."
+  );
+
+  assertCondition(
+    typeof result.finalUrl === "string" && result.finalUrl.includes("/enter-required/results"),
+    `enter-required expected finalUrl to include /enter-required/results, got ${String(result.finalUrl)}`
+  );
+  assertCondition(
+    result.finalUrl !== startUrl,
+    "enter-required expected finalUrl to differ from startUrl after Enter submission."
+  );
+
+  return {
+    status: result.status,
+    stepsTaken: result.stepsTaken,
+    finalUrl: result.finalUrl,
+    typeStep: result.history[typeStepIndex]?.step ?? null,
+    pressEnterStep: pressEnterRecord?.step ?? null
+  };
+}
+
+function validateNoopRepeatScenario(result) {
+  assertCondition(result && typeof result === "object", "noop-repeat result missing.");
+  assertCondition(Array.isArray(result.history) && result.history.length > 0, "noop-repeat history missing.");
+
+  let lastNoProgressFingerprint = null;
+  let repeatedNoProgressFingerprintCount = 0;
+  let diversifiedActions = 0;
+  let noProgressDecisionCacheHits = 0;
+
+  for (const [index, record] of result.history.entries()) {
+    const noProgressStreak = Number(record?.noProgressStreak ?? 0);
+    const fingerprint =
+      typeof record?.actionFingerprint === "string" && record.actionFingerprint.length > 0
+        ? record.actionFingerprint
+        : null;
+
+    if (record?.action?.action !== "CLICK") {
+      diversifiedActions += 1;
+    }
+
+    if (noProgressStreak > 0 && record?.observationCacheDecisionHit === true) {
+      noProgressDecisionCacheHits += 1;
+    }
+
+    if (noProgressStreak <= 0 || !fingerprint) {
+      lastNoProgressFingerprint = null;
+      repeatedNoProgressFingerprintCount = 0;
+      continue;
+    }
+
+    if (fingerprint === lastNoProgressFingerprint) {
+      repeatedNoProgressFingerprintCount += 1;
+    } else {
+      lastNoProgressFingerprint = fingerprint;
+      repeatedNoProgressFingerprintCount = 1;
+    }
+
+    assertCondition(
+      repeatedNoProgressFingerprintCount <= 2,
+      `noop-repeat history[${index}] repeated no-progress action fingerprint exceeded limit.`
+    );
+  }
+
+  assertCondition(diversifiedActions > 0, "noop-repeat expected at least one diversified non-CLICK action.");
+  assertCondition(
+    noProgressDecisionCacheHits === 0,
+    "noop-repeat expected zero decision-cache hits while noProgressStreak > 0."
+  );
+
+  return {
+    status: result.status,
+    stepsTaken: result.stepsTaken,
+    diversifiedActions,
+    noProgressDecisionCacheHits
+  };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function writeScenarioArtifact(name, payload) {
+  await mkdir(scenarioArtifactsDirectory, { recursive: true });
+  const scenarioArtifactPath = path.join(
+    scenarioArtifactsDirectory,
+    `${name}-decision-routing-result.json`
+  );
+  await writeFile(scenarioArtifactPath, JSON.stringify(payload, null, 2));
+  return scenarioArtifactPath;
+}
+
+async function main() {
+  const remoteDebuggingPort = parseRemoteDebuggingPort();
+  const versionEndpoint = `http://127.0.0.1:${remoteDebuggingPort}/json/version`;
+  const electronHost = startElectronCdpHost(remoteDebuggingPort);
+  const localServer = await startLocalScenarioServer();
+
+  let cdpClient = null;
+
+  try {
+    const wsEndpoint = await waitForWebSocketEndpoint(versionEndpoint, STARTUP_TIMEOUT_MS);
+    const { connectToGhostTabCdp, createPerceptionActionLoop } = await import("../dist/index.js");
+    cdpClient = await connectToGhostTabCdp({ endpointURL: wsEndpoint });
+
+    const enterStartUrl = `${localServer.baseUrl}/enter-required`;
+    const enterLoop = createPerceptionActionLoop({
+      cdpClient,
+      navigatorEngine: createEnterFallbackNavigator(),
+      maxSteps: 6,
+      maxNoProgressSteps: 4,
+      logger: (line) => console.info(`[enter-required] ${line}`)
+    });
+    const enterResult = await enterLoop.runTask({
+      intent: "Type a query and submit via Enter.",
+      startUrl: enterStartUrl,
+      maxSteps: 6,
+      maxNoProgressSteps: 4
+    });
+    const enterSummary = validateEnterRequiredScenario(enterResult, enterStartUrl);
+    const enterArtifact = await writeScenarioArtifact("enter-required-submit", {
+      ...enterResult,
+      summary: enterSummary,
+      runConfig: {
+        phase: MILESTONE,
+        scenario: "enter-required-submit",
+        remoteDebuggingPort,
+        headful: isHeadfulEnabled(),
+        startUrl: enterStartUrl,
+        localServerPort: localServer.port
+      }
+    });
+
+    const noopStartUrl = `${localServer.baseUrl}/noop-button`;
+    const noopLoop = createPerceptionActionLoop({
+      cdpClient,
+      navigatorEngine: createRepeatedNoopClickNavigator(),
+      maxSteps: 7,
+      maxNoProgressSteps: 6,
+      logger: (line) => console.info(`[noop-repeat] ${line}`)
+    });
+    const noopResult = await noopLoop.runTask({
+      intent: "Repeatedly click the only button.",
+      startUrl: noopStartUrl,
+      maxSteps: 7,
+      maxNoProgressSteps: 6
+    });
+    const noopSummary = validateNoopRepeatScenario(noopResult);
+    const noopArtifact = await writeScenarioArtifact("noop-repeat-diversification", {
+      ...noopResult,
+      summary: noopSummary,
+      runConfig: {
+        phase: MILESTONE,
+        scenario: "noop-repeat-diversification",
+        remoteDebuggingPort,
+        headful: isHeadfulEnabled(),
+        startUrl: noopStartUrl,
+        localServerPort: localServer.port
+      }
+    });
+
+    const scenarios = [
+      {
+        name: "enter-required-submit",
+        status: enterResult.status,
+        stepsTaken: enterResult.stepsTaken,
+        summary: enterSummary,
+        artifact: enterArtifact
+      },
+      {
+        name: "noop-repeat-diversification",
+        status: noopResult.status,
+        stepsTaken: noopResult.stepsTaken,
+        summary: noopSummary,
+        artifact: noopArtifact
+      }
+    ];
+
+    await mkdir(artifactDirectory, { recursive: true });
+    await writeFile(
+      artifactPath,
+      JSON.stringify(
+        {
+          ok: true,
+          phase: MILESTONE,
+          summary: {
+            scenarioCount: scenarios.length,
+            scenarios
+          },
+          runConfig: {
+            remoteDebuggingPort,
+            headful: isHeadfulEnabled(),
+            localServerPort: localServer.port
+          }
+        },
+        null,
+        2
+      )
+    );
+
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          phase: MILESTONE,
+          artifact: artifactPath,
+          scenarioCount: scenarios.length
+        },
+        null,
+        2
+      )
+    );
+  } finally {
+    if (cdpClient) {
+      await cdpClient.close().catch(() => {});
+    }
+    await stopElectronCdpHost(electronHost);
+    await stopLocalScenarioServer(localServer.server);
+  }
+}
+
+main().catch((error) => {
+  console.error(
+    JSON.stringify(
+      {
+        ok: false,
+        phase: MILESTONE,
+        error: error instanceof Error ? error.message : String(error)
+      },
+      null,
+      2
+    )
+  );
+  process.exitCode = 1;
+});

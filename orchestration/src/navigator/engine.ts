@@ -11,9 +11,11 @@ import { resolvePromptTokenAlertThresholdFromEnv } from "./context-window.js";
 const DEFAULT_FLASH_MODEL = "gemini-2.5-flash";
 const DEFAULT_PRO_MODEL = "gemini-2.5-pro";
 const MAX_MALFORMED_RETRIES = 1;
-const ACTION_TYPES = ["CLICK", "TYPE", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
+const ACTION_TYPES = ["CLICK", "TYPE", "PRESS_KEY", "SCROLL", "WAIT", "EXTRACT", "DONE", "FAILED"] as const;
+const SPECIAL_KEYS = ["Enter", "Tab", "Escape"] as const;
 
 export type NavigatorActionType = (typeof ACTION_TYPES)[number];
+export type NavigatorSpecialKey = (typeof SPECIAL_KEYS)[number];
 
 export interface NavigatorActionTarget {
   x: number;
@@ -24,6 +26,7 @@ export interface NavigatorActionDecision {
   action: NavigatorActionType;
   target: NavigatorActionTarget | null;
   text: string | null;
+  key: NavigatorSpecialKey | null;
   confidence: number;
   reasoning: string;
 }
@@ -48,6 +51,8 @@ export interface NavigatorObservationInput {
   currentUrl?: string;
   interactiveElementIndex?: InteractiveElementIndexEntry[];
   normalizedAXTree?: unknown[];
+  noProgressStreak?: number;
+  disallowedActionFingerprints?: string[];
   previousActions?: NavigatorActionDecision[];
   previousObservations?: string[];
   historySummary?: string | null;
@@ -208,6 +213,8 @@ function buildNavigatorUserPayload(
   const previousActions = input.observation.previousActions ?? [];
   const observation: Record<string, unknown> = {
     currentUrl: input.observation.currentUrl ?? null,
+    noProgressStreak: input.observation.noProgressStreak ?? 0,
+    disallowedActionFingerprints: input.observation.disallowedActionFingerprints ?? [],
     previousActions,
     previousObservations: input.observation.previousObservations ?? [],
     historySummary: input.observation.historySummary ?? null,
@@ -270,12 +277,13 @@ function buildNavigatorPrompt(
     "You are the Ghost Browser Navigator Engine.",
     "Decide exactly one next action for the current web page based on the user's intent and page context.",
     "Use this exact JSON schema and no extra keys:",
-    '{"action":"CLICK|TYPE|SCROLL|WAIT|EXTRACT|DONE|FAILED","target":{"x":number,"y":number}|null,"text":string|null,"confidence":number,"reasoning":string}',
+    '{"action":"CLICK|TYPE|PRESS_KEY|SCROLL|WAIT|EXTRACT|DONE|FAILED","target":{"x":number,"y":number}|null,"text":string|null,"key":"Enter|Tab|Escape"|null,"confidence":number,"reasoning":string}',
     "Rules:",
     "- action must be uppercase and one of the allowed values.",
     "- confidence must be between 0.0 and 1.0.",
     "- For CLICK, target must be non-null and point to the best matching interactive element.",
     "- For TYPE, text must be non-empty; target may be null if typing into focused input.",
+    "- For PRESS_KEY, key must be one of Enter, Tab, Escape and target must be null.",
     "- If isInitialStep=true for a search intent, the first action MUST be CLICK on the best input/search field before any TYPE action.",
     "- normalizedAXTree may be raw normalized nodes OR a compact encoded array where index 0 is a legend string. Use the legend to decode.",
     "- previousActions/previousObservations contain only the most recent context window.",
@@ -290,6 +298,8 @@ function buildNavigatorPrompt(
     "- If structuredError.retryable=false and no alternative route is clear, return FAILED with concise reasoning.",
     "- When tier is TIER_2_VISION, use the screenshot as visual ground truth for coordinates.",
     "- If no actionable target is present in current viewport, return SCROLL with text=\"800\".",
+    "- If noProgressStreak > 0, do not repeat the same action/target/text combination.",
+    "- disallowedActionFingerprints lists action fingerprints to avoid on this step.",
     "- Keep reasoning concise.",
     "- Return valid JSON only, no markdown.",
     challengeMode
@@ -372,6 +382,7 @@ function validateNavigatorAction(value: unknown): NavigatorActionDecision {
 
   const target = validateTarget(candidate.target);
   const text = validateText(candidate.text);
+  const key = validateKey(candidate.key);
   const confidence = Number(candidate.confidence);
   const reasoning = typeof candidate.reasoning === "string" ? candidate.reasoning.trim() : "";
 
@@ -391,10 +402,19 @@ function validateNavigatorAction(value: unknown): NavigatorActionDecision {
     throw new Error("TYPE action requires non-empty text.");
   }
 
+  if (action === "PRESS_KEY" && key === null) {
+    throw new Error("PRESS_KEY action requires a non-null key.");
+  }
+
+  if (action === "PRESS_KEY" && target !== null) {
+    throw new Error("PRESS_KEY action requires target=null.");
+  }
+
   return {
     action,
     target,
     text,
+    key,
     confidence,
     reasoning
   };
@@ -430,6 +450,22 @@ function validateText(text: unknown): string | null {
   }
 
   return text;
+}
+
+function validateKey(key: unknown): NavigatorSpecialKey | null {
+  if (key === null || key === undefined) {
+    return null;
+  }
+
+  if (typeof key !== "string") {
+    throw new Error("key must be a string or null.");
+  }
+
+  if (!(SPECIAL_KEYS as readonly string[]).includes(key)) {
+    throw new Error(`Invalid key: ${String(key)}`);
+  }
+
+  return key as NavigatorSpecialKey;
 }
 
 function canUseVertex(projectId: string | undefined, region: string | undefined): boolean {
