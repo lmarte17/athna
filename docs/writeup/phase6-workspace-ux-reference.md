@@ -5,15 +5,16 @@ This document consolidates what we implemented in Phase 6 (6.1–6.3, 6.5–6.6)
 
 Primary Phase 6 goal from `docs/build/phase-6.md`:
 
-- Build the foreground Electron workspace shell: dual-row tab layout (user context tabs + per-context Ghost Tab rows), natural language command bar, intent classification and routing, live task status feed, read-only Ghost Tab visibility, and user-initiated task cancellation.
+- Build the foreground Electron workspace shell: dual-row tab layout (user context tabs + per-context Ghost Tab rows), natural language command bar, intent classification and routing, live task status feed, live Ghost Tab visibility in the main browser surface (read-only by default), and user-initiated task cancellation.
 
 ## Scope Summary
 Implemented in Phase 6:
 
 - Start Page default tab and mirrored command bar with free-text input, URL normalization, and mode dropdown (`AUTO`, `BROWSE`, `DO`, `MAKE`, `RESEARCH`)
 - Four-intent classifier routing commands to `FOREGROUND_NAVIGATION`, `GHOST_RESEARCH`, `GHOST_TRANSACT`, or `MAKER_GENERATE`
-- Second-row Ghost Strip per context, collapsible sidebar task status feed, context-scoped background badges, and 2 Hz IPC throttle
-- `GhostContextManager.captureGhostPage()` and `workspace:get-task-screenshot` IPC channel backing a read-only PiP ghost viewer with ~2 Hz polling
+- Second-row Ghost Tab row per context, collapsible sidebar task status feed, context-scoped background badges, and 2 Hz IPC throttle
+- Tabs-first Ghost UX: clickable Ghost tabs, context-scoped active Ghost selection, completed-tab dismiss action, and cancelled-tab removal from Ghost row
+- Live main-canvas Ghost visibility: selecting a Ghost tab swaps the foreground surface from context tab view to Ghost tab view (read-only by default)
 - `WorkspaceController.cancelTask()`, `workspace:cancel-task` IPC channel, `CANCELLED` task status, cancel controls on every active Ghost chip and status feed item, and BrowserContext destroy-as-abort mechanism
 
 Not implemented in Phase 6 (intentionally deferred):
@@ -33,12 +34,12 @@ This is how Phase 6 work maps to `ghost_browser_requirements.docx.md` and why it
   - Why: pre-dispatch classification avoids wasting Ghost Tab pool resources on simple navigations while maximising parallelism for research and transact tasks.
 
 - Ghost Tab context row and task feed (`Spec §09`, Task Feed):
-  - Per-context Ghost Strip in the second row and a collapsible sidebar show live task state, subtask progress, elapsed time, and current URL scoped to the active workspace context.
+  - Per-context second-row Ghost tabs plus a collapsible sidebar show live task state, subtask progress, elapsed time, and current URL scoped to the active workspace context.
   - Why: users running parallel Ghost Tab agents need context-isolated visibility without being overwhelmed by unrelated tasks from other tabs.
 
 - Ghost Tab read-only visibility (`Spec §09`, Ghost Tab Viewer):
-  - Read-only PiP panel with ~2 Hz screenshot polling gives real-time visual feedback on agent work without allowing accidental interaction.
-  - Why: operator situational awareness is a core UX requirement; `pointer-events: none` ensures the constraint is enforced at the element level.
+  - Selecting a Ghost tab now swaps the **main browser canvas** to that live Ghost tab surface rather than opening a screenshot PiP overlay.
+  - Why: direct live visibility in the primary viewport improves operator awareness while preserving read-only safety defaults.
 
 - Task cancellation (`Spec §09`, Task Control):
   - Immediate cancel via BrowserContext destruction; partial results frozen and preserved in Status Feed.
@@ -96,9 +97,11 @@ Result:
 ### 6.3 Task Status Feed
 How:
 
-- Added second-row Ghost Strip beneath top-row context tabs showing per-context Ghost Tab chips with live status labels.
+- Added second-row Ghost tabs beneath top-row context tabs showing per-context Ghost tab entries with live state.
 - Added collapsible right sidebar with context-scoped task status feed showing current URL, current action, elapsed time, and subtask progress (`N/M`).
-- Context switching swaps the visible Ghost Strip and sidebar feed to the newly active context's tasks.
+- Context switching swaps the visible Ghost row and sidebar feed to the newly active context's tasks.
+- Added completed-task dismiss controls in the Ghost row while keeping completed task history in the sidebar feed.
+- Kept cancelled tasks out of the Ghost row while preserving them in the status feed.
 - Added background task-count badges on inactive top tabs (`C1` format: running + completed count).
 - Capped IPC state broadcast rate at 2 Hz with a sliding window token budget.
 
@@ -121,38 +124,36 @@ Result:
   - `docs/artifacts/phase6/phase6-6.3/status-feed-context-switch.png`
   - `docs/artifacts/phase6/phase6-6.3/status-feed-live-running.png`
 
-### 6.5 Ghost Tab Visibility (Read-Only PiP Viewer)
+### 6.5 Ghost Tab Visibility (Live Main Surface, Read-Only by Default)
 How:
 
-- Added `GhostContextManager.captureGhostPage(contextId)` using Electron's `webContents.capturePage()` on the offscreen ghost `BrowserWindow`; returns base64 PNG.
-- Added `workspace:get-task-screenshot` on-demand IPC channel: renderer sends `taskId`, main process resolves `ghostContextId` and calls `captureGhostPage()`.
-- Built fixed PiP overlay (bottom-right) opening when a Ghost chip is clicked; header shows task short ID + intent; body is a non-interactive `<img>` (`pointer-events: none`).
-- Renderer polls at ~2 Hz while task is RUNNING or QUEUED; stops on completion and captures one final frame.
-- Viewer auto-closes on context switch if the viewed task belongs to a different workspace context.
+- Refactored Ghost contexts to managed Electron `BrowserView` surfaces keyed by `contextId` and resolved from `GhostContextManager`.
+- Added active-surface routing in `WorkspaceController` so the main viewport can present either:
+  - context tab `BrowserView` (`CONTEXT`), or
+  - selected Ghost tab `BrowserView` (`GHOST`).
+- Added `workspace:switch-ghost-tab` IPC and renderer handling so clicking a Ghost tab activates live Ghost view in the main canvas.
+- Added read-only enforcement for Ghost surfaces via keyboard and pointer input blocking.
+- Added `workspace:dismiss-ghost-tab` IPC and context-scoped completed-tab dismissal behavior.
 
 Why:
 
-- Real-time agent progress visibility is a core UX requirement; the read-only constraint and `pointer-events: none` enforce operational isolation at the element level.
+- Real-time agent visibility in the primary canvas is a better operator model than screenshot polling, and read-only blocking preserves execution safety.
 
 Result:
 
-- All 6 foundational checks passed.
-- `ghostContextScreenshotCapture`: CDP screenshot returned valid base64 data.
-- `screenshotIsValidJpeg`: buffers start with JPEG SOI marker (`0xFF 0xD8 0xFF`).
-- `screenshotDimensionsMatch`: both contexts `1280×900`.
-- `screenshotIsNonTrivial`: context 1 `13 259 B`, context 2 `13 306 B` (both well above 4 KB floor).
-- `multipleContextsIsolated`: two distinct data-URL pages produced different screenshot data.
-- `poolReturnedToIdle`: final pool state `available=2, inUse=0, queued=0`.
-- Artifacts:
-  - `docs/artifacts/phase6/phase6-6.5/ghost-tab-visibility-result.json`
-  - `docs/artifacts/phase6/phase6-6.5/ghost-context-1-screenshot.jpg`
-  - `docs/artifacts/phase6/phase6-6.5/ghost-context-2-screenshot.jpg`
+- Live-ghost smoke passed against the running Electron app:
+  - `ghostSurfaceReached: true`
+  - `restoredContextSurface: true`
+  - Active ghost context resolved and rendered as live `GHOST` surface.
+- Tabs-shell smoke passed:
+  - Context strip present, Ghost strip present, status sidebar present.
+  - Legacy screenshot PiP viewer removed from renderer shell.
 
 ### 6.6 Task Cancellation
 How:
 
 - Added `WorkspaceController.cancelTask(taskId)`: sets status to `CANCELLED` immediately, freezes partial result snapshot (`currentUrl`, `currentState`, `currentAction`, `progressLabel`, `durationMs`), then calls `ghostContextDestroyer(ghostContextId)`.
-- `ghostContextDestroyer` closure (matching Phase 6.5's `ghostPageCapturer` pattern) routes to `GhostContextManager.destroyContext(contextId, allowReplenish=true)` — closes the `BrowserWindow`, which causes every in-flight CDP call to throw, cascading to `failRuntimeTask()`.
+- `ghostContextDestroyer` closure routes to `GhostContextManager.destroyContext(contextId, allowReplenish=true)` — closes the ghost context webContents, which causes every in-flight CDP call to throw, cascading to `failRuntimeTask()`.
 - Added `CANCELLED` terminal status to `WorkspaceTaskStatus` with guards in `finalizeRuntimeTask()`, `failRuntimeTask()`, and `applyRuntimeStatusMessage()` to silently discard late orchestration events.
 - Deferred-destroy path handles QUEUED-then-cancelled race: if `cancelTask()` fires before the orchestration layer assigns a `ghostContextId`, the guard in `applyRuntimeStatusMessage()` captures the contextId from the first arriving status message and calls `destroyContext()` immediately.
 - Added `workspace:cancel-task` IPC channel; added `×` cancel buttons on every QUEUED/RUNNING ghost chip and "Cancel" buttons on every QUEUED/RUNNING status feed item (both use `stopPropagation` to avoid triggering chip selection or viewer open).
@@ -179,15 +180,15 @@ Result:
 - Mirrored command bar with a single shared draft state to avoid input divergence between Start Page and top-chrome positions.
 - Mode-override strict-precedence rule with recorded `MODE_OVERRIDE` source for auditability.
 - 2 Hz IPC state broadcast throttle (sliding-window token budget) to cap renderer update cost under heavy orchestration activity.
-- Context-scoped Ghost Strip and sidebar feed so users only see tasks relevant to the active workspace context.
-- On-demand screenshot pull (`workspace:get-task-screenshot`) rather than server-push streaming, keeping the IPC channel stateless and avoiding frame backpressure.
-- `captureGhostPage()` uses Electron's `webContents.capturePage()` (forces fresh OSR frame) rather than CDP `Page.captureScreenshot`, which can return stale composited frames on offscreen windows.
+- Context-scoped Ghost tabs and sidebar feed so users only see tasks relevant to the active workspace context.
+- Active-surface routing keeps a single primary viewport and swaps between context and Ghost surfaces without opening secondary viewer chrome.
+- Read-only Ghost input guards block pointer and keyboard interaction on Ghost surfaces by default.
 - BrowserContext destroy-as-abort for cancellation — a single kill path with no additional abort signal plumbing through the orchestration stack.
 - `allowReplenish=true` on cancel destroys so the pool self-heals without manual intervention.
 
 ## Known Tradeoffs and Residual Risks
 - Phase 6.4 (Result Surface) was deferred; task completion in the current UI shows status transitions but does not render structured extracted-data cards or confidence indicators.
-- PiP viewer polls at ~2 Hz; very fast-moving pages (rapid navigation sequences) may show stale frames between captures.
+- With read-only default enforcement, users cannot directly intervene in Ghost surfaces without adding an explicit takeover mode in a later phase.
 - The deferred-destroy path for QUEUED tasks fires on the first incoming status message after cancel; there is a brief window between `cancelTask()` and `destroyContext()` where the task may begin executing on the ghost context.
 - Cancel smoke operates at the pool/lease layer (early release) rather than forcing an actual CDP target crash; full crash-path cancellation is covered by the live app manual validation steps.
 - GENERATE tasks (`MAKER_GENERATE` route) reach `QUEUED` status but cannot progress to RUNNING until Phase 7 implements the Maker Engine; submitting them will produce a `failRuntimeTask` outcome via an unimplemented route error.
@@ -196,8 +197,8 @@ Result:
 - Phase 6 completes the user-facing interaction layer on top of the concurrent runtime infrastructure built in Phases 3–5.
 - The command bar requires no special syntax — plain text and an optional mode hint are the complete input model.
 - Intent classification routes work to the right execution path before any Ghost Tab resources are allocated, keeping simple navigations fast and parallel research tasks automatically pooled.
-- Every live task is observable in real time: Ghost Strip chips + sidebar feed + PiP screenshot viewer together provide three levels of visibility granularity.
-- Cancellation is policy-enforced and non-cooperative — destroying the BrowserWindow provides a hard stop without requiring the agent to reach a safe point.
+- Every live task is observable in real time: Ghost tabs + sidebar feed + live main-surface Ghost rendering provide direct visibility without screenshot polling.
+- Cancellation is policy-enforced and non-cooperative — destroying the Ghost context provides a hard stop without requiring the agent to reach a safe point.
 - All milestones are backed by reproducible smoke artifacts with quantitative assertions and, where applicable, screenshot evidence.
 
 ## Quick Evidence Index
@@ -215,5 +216,7 @@ Result:
   - `docs/artifacts/phase6/phase6-6.2/scenarios/` (5 scenario files)
   - `docs/artifacts/phase6/phase6-6.3/task-status-feed-result.json`
   - `docs/artifacts/phase6/phase6-6.3/task-status-feed-live-validation-result.json`
-  - `docs/artifacts/phase6/phase6-6.5/ghost-tab-visibility-result.json`
   - `docs/artifacts/phase6/phase6-6.6/task-cancellation-result.json`
+- Runtime smoke scripts (live app):
+  - `electron/scripts/workspace-tabs-shell-smoke.mjs`
+  - `electron/scripts/ghost-live-view-smoke.mjs`

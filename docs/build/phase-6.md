@@ -26,7 +26,14 @@
 
 ## Phase 6: Command Bar & UX Layer
 
-**Goal:** The foreground Electron window uses a dual-row workspace: top-row user context tabs plus per-context Ghost Tab rows, with a polished command bar, live status, and result display.
+**Goal:** The foreground Electron window uses a dual-row workspace: top-row user context tabs plus per-context Ghost Tab rows, with a polished command bar, live status, and live ghost-surface visibility in the main browser canvas.
+
+### Direction Update (Tabs-First + Live Ghost Surface)
+
+Phase 6 implementation now follows a two-step UX direction before Phase 7:
+
+1. **Tabs-first shell:** the second row is a first-class Ghost Tab row (clickable tabs, status states, dismiss completed tabs, hide cancelled tabs from the row).
+2. **Live ghost surface:** selecting a Ghost Tab swaps the main browser viewport to that live agent-controlled Ghost Tab surface (not screenshot PiP), while keeping Ghost input read-only by default.
 
 ### 6.1 Command Bar — Natural Language Input
 
@@ -50,9 +57,9 @@
 
 | Item             | Detail                                                                                                                                                                                                                                                                                                                                 |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Task**         | Build a context-scoped task status feed and second-row Ghost Tab strip                                                                                                                                                                                                                                                                    |
-| **Actions**      | Keep the sidebar status feed, and add a second row of Ghost Tabs beneath the top-row tabs. Each top tab owns its own Ghost Tab set and task list. Switching top tabs performs context switching: the visible Ghost row, sidebar tasks, and active-task focus swap to that top-tab context. Per task show current URL, current action, elapsed time, progress indicator (subtask N of M), and Ghost Tab state. IPC updates are capped at 2Hz. Sidebar stays collapsible. Show background badges on top tabs for running/completed Ghost tasks in non-active contexts. |
-| **Acceptance**   | Active context shows live status updates and its matching Ghost Tab row. Switching top tabs swaps to a different Ghost Tab set without cross-context leakage. Multiple concurrent tasks remain trackable through badges and context-local lists. Updates remain smooth at 2Hz cap.                                                                 |
+| **Task**         | Build a context-scoped task status feed and first-class second-row Ghost Tab row                                                                                                                                                                                                                                                        |
+| **Actions**      | Keep the sidebar status feed, and add a second row of **clickable Ghost Tabs** beneath the top-row tabs. Each top tab owns its own Ghost Tab set and task list. Switching top tabs performs context switching: the visible Ghost row, sidebar tasks, and active Ghost selection swap to that top-tab context. Per task show current URL, current action, elapsed time, progress indicator (subtask N of M), and Ghost Tab state. Completed Ghost Tabs remain in-row until dismissed; cancelled Ghost Tabs are removed from the row and remain in status history. IPC updates are capped at 2Hz. Sidebar stays collapsible. Show background badges on top tabs for running/completed Ghost tasks in non-active contexts. |
+| **Acceptance**   | Active context shows live status updates and its matching Ghost Tab row. Switching top tabs swaps to a different Ghost Tab set without cross-context leakage. Multiple concurrent tasks remain trackable through badges and context-local lists. Completed tabs can be dismissed; cancelled tabs are hidden from the row but retained in status history. Updates remain smooth at 2Hz cap. |
 | **Req Coverage** | Spec §09 (Task Status Feed)                                                                                                                                                                                                                                                                                                            |
 
 ### 6.4 Result Surface & Confidence Indicator
@@ -64,13 +71,13 @@
 | **Acceptance**   | Completed research task shows a result card with source URLs, extracted data, and confidence level in its owning context. User can click source URLs to visit them. Applet button launches the generated visualization for that context.                                                                                     |
 | **Req Coverage** | Spec §09 (Result Surface)                                                                                                                                                                                                                                                                                              |
 
-### 6.5 Ghost Tab Visibility (Read-Only)
+### 6.5 Ghost Tab Visibility (Live Main Surface, Read-Only by Default)
 
 | Item             | Detail                                                                                                                                                                                                                                                                    |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Task**         | Provide read-only Ghost Tab visibility through context Ghost rows                                                                                                                                                                                                           |
-| **Actions**      | Clicking a Ghost Tab in the second row (or task in sidebar) opens a read-only view of that Ghost Tab's current state (last captured screenshot or live view). Ghost Tab must NOT receive user input focus. Keep visibility scoped to the active top-tab context. Display as picture-in-picture overlay or separate panel. |
-| **Acceptance**   | User can inspect what the agent sees in any Ghost Tab for the active context. User cannot interact with Ghost Tabs. View refreshes on each screenshot capture and remains isolated from other contexts unless user switches top tabs.                                         |
+| **Task**         | Provide read-only live Ghost Tab visibility through context Ghost rows in the main browser viewport                                                                                                                                                                          |
+| **Actions**      | Clicking a Ghost Tab in the second row swaps the main browser canvas to that Ghost Tab's live surface. Keep visibility scoped to the active top-tab context. Remove the screenshot PiP dependency for primary Ghost viewing. Enforce read-only behavior for Ghost surfaces by default (block keyboard and pointer input), while preserving a future path for explicit user takeover controls. |
+| **Acceptance**   | User can inspect what the agent sees in any Ghost Tab for the active context in real time. Ghost surfaces are non-interactive by default. Switching back to a top-row context tab restores the user-controlled context surface, with no cross-context leakage.                                                     |
 | **Req Coverage** | Spec §09 (Ghost Tab Visibility)                                                                                                                                                                                                                                           |
 
 ### 6.6 Task Cancellation
